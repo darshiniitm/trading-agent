@@ -1,0 +1,467 @@
+<title>Test vs Control Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --paper:#F5F6F8; --panel:#FFFFFF; --sunk:#EDEFF3;
+  --ink:#15181D; --ink-2:#454C57; --ink-3:#767E8B;
+  --rule:#DCE0E7; --rule-2:#C6CCD6;
+  --accent:#9C6316; --accent-soft:#F0E4D2;
+  --loss:#A32A20; --loss-soft:#F6E3E0;
+  --gain:#186049; --gain-soft:#DCEDE5;
+  --flag:#7A5AA8; --flag-soft:#EDE6F5;
+  --pend:#6B7280; --pend-soft:#E7E9EC;
+  --shadow:0 1px 2px rgba(21,24,29,.06),0 8px 24px -12px rgba(21,24,29,.14);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1116; --panel:#161A21; --sunk:#1C212A;
+    --ink:#E7EAEF; --ink-2:#AAB2BF; --ink-3:#79828F;
+    --rule:#262C36; --rule-2:#333B47;
+    --accent:#D19A4E; --accent-soft:#332714;
+    --loss:#E0796C; --loss-soft:#331C19;
+    --gain:#5FBF97; --gain-soft:#12291F;
+    --flag:#B79AE0; --flag-soft:#241C33;
+    --pend:#9AA3AF; --pend-soft:#232830;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1116; --panel:#161A21; --sunk:#1C212A;
+  --ink:#E7EAEF; --ink-2:#AAB2BF; --ink-3:#79828F;
+  --rule:#262C36; --rule-2:#333B47;
+  --accent:#D19A4E; --accent-soft:#332714;
+  --loss:#E0796C; --loss-soft:#331C19;
+  --gain:#5FBF97; --gain-soft:#12291F;
+  --flag:#B79AE0; --flag-soft:#241C33;
+  --pend:#9AA3AF; --pend-soft:#232830;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px; margin:0 auto; padding:0 24px 96px}
+h1,h2,h3{font-family:Newsreader,Georgia,serif; font-weight:600; text-wrap:balance; margin:0}
+.num{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-variant-numeric:tabular-nums}
+
+header{border-bottom:1px solid var(--rule); padding:56px 0 28px; margin-bottom:44px}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:500}
+h1{font-size:clamp(32px,5vw,46px); line-height:1.1; margin:14px 0 12px; letter-spacing:-.01em}
+.standfirst{font-size:18px; color:var(--ink-2); max-width:62ch; margin:0}
+.meta{display:flex; flex-wrap:wrap; gap:8px 28px; margin-top:24px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--ink-3)}
+.meta b{color:var(--ink-2); font-weight:500}
+
+section{margin-bottom:60px; scroll-margin-top:20px}
+.step-head{display:flex; align-items:baseline; gap:16px; margin-bottom:8px}
+.step-n{font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; color:var(--accent); border:1px solid var(--accent); border-radius:3px; padding:2px 7px; flex:none; letter-spacing:.04em}
+h2{font-size:26px; letter-spacing:-.005em}
+.lede{color:var(--ink-2); margin:0 0 22px; max-width:68ch}
+.arrow{text-align:center; color:var(--rule-2); font-size:20px; margin:-34px 0 26px; font-family:"IBM Plex Mono",monospace}
+
+.card{background:var(--panel); border:1px solid var(--rule); border-radius:8px; box-shadow:var(--shadow); overflow:hidden}
+.card-head{padding:12px 18px; border-bottom:1px solid var(--rule); background:var(--sunk); font-family:"IBM Plex Mono",monospace; font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-2); font-weight:500; display:flex; justify-content:space-between; align-items:center; gap:12px}
+.card-head .side{font-normal:normal; text-transform:none; letter-spacing:0; color:var(--ink-3)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-size:13.5px}
+th,td{padding:9px 14px; text-align:right; white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th:nth-child(2),td:nth-child(2){text-align:left}
+thead th{font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); font-weight:500; border-bottom:1px solid var(--rule-2); background:var(--panel)}
+tbody tr{border-bottom:1px solid var(--rule)}
+tbody tr:last-child{border-bottom:0}
+tbody td{color:var(--ink-2)}
+td.tick{font-family:"IBM Plex Mono",monospace; font-weight:500; color:var(--ink)}
+td.n{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums}
+.neg{color:var(--loss); font-weight:500}
+.pos{color:var(--gain); font-weight:500}
+tr.out td{opacity:.62}
+tr.total{background:var(--sunk); font-weight:600}
+tr.total td{color:var(--ink)}
+
+.pill{display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; padding:2px 7px; border-radius:3px; font-weight:500}
+.pill-out{background:var(--loss-soft); color:var(--loss)}
+.pill-in{background:var(--gain-soft); color:var(--gain)}
+.pill-flag{background:var(--accent-soft); color:var(--accent)}
+.pill-pend{background:var(--pend-soft); color:var(--pend)}
+.pill-arm{background:var(--flag-soft); color:var(--flag)}
+
+.spec{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:0; border-top:1px solid var(--rule)}
+.spec div{padding:11px 18px; border-bottom:1px solid var(--rule); display:flex; gap:14px; align-items:baseline}
+.spec dt{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3); flex:none; width:96px}
+.spec dd{margin:0; font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--ink)}
+
+.funnel{padding:20px 18px 8px}
+.frow{display:grid; grid-template-columns:170px 1fr 92px; align-items:center; gap:14px; margin-bottom:13px}
+.flabel{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-2)}
+.ftrack{background:var(--sunk); border-radius:3px; height:22px; position:relative; overflow:hidden}
+.fbar{height:100%; background:var(--accent); opacity:.85; border-radius:3px; min-width:3px}
+.fbar.final{background:var(--flag)}
+.fcount{font-family:"IBM Plex Mono",monospace; font-size:13px; text-align:right; font-variant-numeric:tabular-nums}
+.fdrop{color:var(--loss); font-size:11.5px}
+
+.callout{border-left:3px solid var(--accent); background:var(--panel); padding:16px 20px; margin:26px 0; border-radius:0 6px 6px 0; border-top:1px solid var(--rule); border-right:1px solid var(--rule); border-bottom:1px solid var(--rule)}
+.callout h3{font-size:17px; margin-bottom:6px}
+.callout p{margin:0; color:var(--ink-2); font-size:15px; max-width:68ch}
+.callout.flag{border-left-color:var(--flag)}
+.callout.pend{border-left-color:var(--pend)}
+
+.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); border-radius:8px; overflow:hidden}
+.stat{background:var(--panel); padding:16px 18px}
+.stat .k{font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3)}
+.stat .v{font-family:"IBM Plex Mono",monospace; font-size:23px; font-weight:500; margin-top:5px; letter-spacing:-.01em}
+.stat .s{font-size:12px; color:var(--ink-3); margin-top:2px}
+
+.two{display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:20px}
+.checklist{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:0}
+.checklist li{display:flex; gap:12px; padding:11px 18px; border-bottom:1px solid var(--rule); font-size:14.5px; color:var(--ink-2)}
+.checklist li:last-child{border-bottom:0}
+.checklist .mk{flex:none; font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:600; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-top:1px}
+.mk.done{background:var(--gain-soft); color:var(--gain)}
+.mk.no{background:var(--loss-soft); color:var(--loss)}
+.mk.wait{background:var(--pend-soft); color:var(--pend)}
+.checklist b{color:var(--ink)}
+.foot{border-top:1px solid var(--rule); margin-top:56px; padding-top:20px; color:var(--ink-3); font-size:13.5px}
+code{font-family:"IBM Plex Mono",monospace; font-size:.9em; background:var(--sunk); padding:1px 5px; border-radius:3px}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+p{max-width:68ch}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Live forward test &middot; updated 2026-09-13</div>
+  <h1>Test vs Control Ledger</h1>
+  <p class="standfirst">Two weeks tracked against the frozen 104-week prior, plus the shadow arms built to raise trade count and gain inside the same universe &mdash; without moving the spec. Both weeks are now graded, all four experiments included.</p>
+  <div class="meta">
+    <span><b>Spec</b> config/rules.yaml &mdash; unchanged</span>
+    <span><b>Weeks logged</b> 2</span>
+    <span><b>Graded</b> 2 of 2</span>
+    <span><b>Daily-bar cache</b> 500 tickers, 782k bars</span>
+    <span><b>Live capital</b> Control only &mdash; T1/T2/T3 shadow</span>
+  </div>
+</header>
+
+<!-- 01 -->
+<section>
+  <div class="step-head"><span class="step-n">01</span><h2>The rule stays frozen</h2></div>
+  <p class="lede">Every arm below evaluates the exact same signal. Nothing in this section changes between weeks or between Control and any Test arm &mdash; that's the point of running them side by side.</p>
+  <div class="card">
+    <div class="card-head">config/rules.yaml &mdash; still the whole strategy</div>
+    <dl class="spec">
+      <div><dt>Universe</dt><dd>Mid150 &cup; Small250 &cup; Nifty500, &#8377;10,000&ndash;50,000cr</dd></div>
+      <div><dt>Signal</dt><dd>VStop(10,2.0) flip_up AND RSI(14) &isin; [50,65]</dd></div>
+      <div><dt>Risk cap</dt><dd>reject if R/EP &gt; 15%</dd></div>
+      <div><dt>Sizing</dt><dd>Control: equal weight &middot; T2: 1%&divide;R &middot; T3: by confidence</dd></div>
+    </dl>
+  </div>
+</section>
+<div class="arrow">&darr;</div>
+
+<!-- 02 -->
+<section>
+  <div class="step-head"><span class="step-n">02</span><h2>Week 1 &mdash; fwd_2026-08-24</h2></div>
+  <p class="lede">Signal Friday 21 Aug close. Graded against the week of 24&ndash;28 Aug. This is the record the response plan was written about.</p>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-head">Filter funnel</div>
+    <div class="funnel">
+      <div class="frow"><div class="flabel">candidate universe</div><div class="ftrack"><div class="fbar" style="width:100%"></div></div><div class="fcount">500</div></div>
+      <div class="frow"><div class="flabel">market-cap band</div><div class="ftrack"><div class="fbar" style="width:53.2%"></div></div><div class="fcount">266 <span class="fdrop">&minus;234</span></div></div>
+      <div class="frow"><div class="flabel">liquidity &ge; &#8377;10cr</div><div class="ftrack"><div class="fbar" style="width:53.2%"></div></div><div class="fcount">266 <span class="fdrop">&minus;0</span></div></div>
+      <div class="frow"><div class="flabel">VStop flip up</div><div class="ftrack"><div class="fbar" style="width:0.6%"></div></div><div class="fcount">3 <span class="fdrop">&minus;263</span></div></div>
+      <div class="frow"><div class="flabel">RSI &isin; [50,65]</div><div class="ftrack"><div class="fbar final" style="width:0.4%"></div></div><div class="fcount">2 <span class="fdrop">&minus;1</span></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">Survivors &rarr; trade decision &mdash; 24 Aug 2026<span class="side">2 survivors, 1 trade</span></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Ticker</th><th>Arm result</th><th>RSI</th><th>R / EP</th><th>Conf.</th></tr></thead>
+      <tbody>
+        <tr><td class="tick">ENGINERSIN</td><td><span class="pill pill-in">Control &middot; taken</span></td><td class="n">60.5</td><td class="n">13.97%</td><td class="n">62.1</td></tr>
+        <tr class="out"><td class="tick">NSLNISP</td><td><span class="pill pill-out">shadow &middot; risk cap</span></td><td class="n">60.0</td><td class="n neg">15.88%</td><td class="n">&mdash;</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <div class="card-head">Graded &mdash; every stock, week of 24&ndash;28 Aug<span class="side">exit: Friday close, neither hit its stop</span></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Ticker</th><th>Status</th><th>Entry (open)</th><th>Exit px</th><th>Gross</th><th>Net</th><th>R mult.</th></tr></thead>
+      <tbody>
+        <tr><td class="tick">ENGINERSIN</td><td><span class="pill pill-in">taken</span></td><td class="n">254.00</td><td class="n">280.00</td><td class="n pos">+10.24%</td><td class="n pos">+9.74%</td><td class="n">+0.73</td></tr>
+        <tr class="out"><td class="tick">NSLNISP</td><td><span class="pill pill-out">shadow</span></td><td class="n">48.35</td><td class="n">46.19</td><td class="n neg">&minus;4.47%</td><td class="n neg">&minus;4.97%</td><td class="n">&minus;0.30</td></tr>
+        <tr class="total"><td>Basket</td><td>equal weight, taken only</td><td class="n">&mdash;</td><td class="n">&mdash;</td><td class="n pos">+10.24%</td><td class="n pos">+9.74%</td><td class="n">1 / 1 up</td></tr>
+      </tbody>
+    </table></div>
+    <div style="padding:14px 18px;font-size:13.5px;color:var(--ink-3);border-top:1px solid var(--rule)">
+      Prior expectation for the traded basket that week: &minus;1.81%. Nifty Midcap 150 that week: &minus;1.31%. ENGINERSIN beat both; NSLNISP would have dragged the basket down had the risk cap not excluded it.
+    </div>
+  </div>
+
+  <div class="callout">
+    <h3>+9.74% is not a verdict &mdash; n=1</h3>
+    <p>The 104-week study puts a single mid-cap week's standard deviation at 5&ndash;6% against a &minus;1.4% expected edge. This result sits comfortably inside what a losing strategy produces one week in several. The risk cap did its job &mdash; it kept the basket out of the &minus;4.97% shadow &mdash; but that's one data point too, in the opposite direction. Both get logged, neither gets acted on.</p>
+  </div>
+</section>
+<div class="arrow">&darr;</div>
+
+<!-- 03 -->
+<section>
+  <div class="step-head"><span class="step-n">03</span><h2>Week 2 &mdash; fwd_2026-08-31</h2></div>
+  <p class="lede">Signal Friday 4 Sep close, recorded before Monday 7 Sep's open per the "record before the week opens" rule. Graded against the week of 7&ndash;11 Sep close.</p>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-head">Filter funnel</div>
+    <div class="funnel">
+      <div class="frow"><div class="flabel">candidate universe</div><div class="ftrack"><div class="fbar" style="width:100%"></div></div><div class="fcount">501</div></div>
+      <div class="frow"><div class="flabel">market-cap band</div><div class="ftrack"><div class="fbar" style="width:53.7%"></div></div><div class="fcount">269 <span class="fdrop">&minus;232</span></div></div>
+      <div class="frow"><div class="flabel">liquidity &ge; &#8377;10cr</div><div class="ftrack"><div class="fbar" style="width:53.7%"></div></div><div class="fcount">269 <span class="fdrop">&minus;0</span></div></div>
+      <div class="frow"><div class="flabel">VStop flip up</div><div class="ftrack"><div class="fbar" style="width:0.8%"></div></div><div class="fcount">4 <span class="fdrop">&minus;265</span></div></div>
+      <div class="frow"><div class="flabel">RSI &isin; [50,65]</div><div class="ftrack"><div class="fbar final" style="width:0.6%"></div></div><div class="fcount">3 <span class="fdrop">&minus;1</span></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">Survivors + near-miss &rarr; trade decision &mdash; 31 Aug 2026<span class="side">3 survivors, 1 near-miss, 1 trade</span></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Ticker</th><th>Arm result</th><th>RSI</th><th>R / EP</th><th>Conf.</th></tr></thead>
+      <tbody>
+        <tr><td class="tick">LICHSGFIN</td><td><span class="pill pill-in">Control &middot; taken</span></td><td class="n">57.6</td><td class="n">11.26%</td><td class="n">75.4</td></tr>
+        <tr class="out"><td class="tick">GRAPHITE</td><td><span class="pill pill-out">shadow &middot; risk cap</span></td><td class="n">59.4</td><td class="n neg">15.70%</td><td class="n">&mdash;</td></tr>
+        <tr class="out"><td class="tick">TEJASNET</td><td><span class="pill pill-out">shadow &middot; risk cap</span></td><td class="n">61.0</td><td class="n neg">18.92%</td><td class="n">&mdash;</td></tr>
+        <tr class="out"><td class="tick">CGCL</td><td><span class="pill pill-flag">near-miss &middot; RSI 74.5</span></td><td class="n neg">74.5</td><td class="n">15.55%</td><td class="n">&mdash;</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">Graded &mdash; every stock, week of 7&ndash;11 Sep<span class="side">2 shadow rejections in one week &mdash; a first</span></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Ticker</th><th>Status</th><th>Entry (open)</th><th>Exit px</th><th>Gross</th><th>Net</th><th>R mult.</th></tr></thead>
+      <tbody>
+        <tr><td class="tick">LICHSGFIN</td><td><span class="pill pill-in">taken</span></td><td class="n">551.00</td><td class="n">562.90</td><td class="n pos">+2.16%</td><td class="n pos">+1.66%</td><td class="n">+0.23</td></tr>
+        <tr class="out"><td class="tick">GRAPHITE</td><td><span class="pill pill-out">shadow</span></td><td class="n">718.00</td><td class="n">825.80</td><td class="n pos">+15.01%</td><td class="n pos">+14.51%</td><td class="n">+1.10</td></tr>
+        <tr class="out"><td class="tick">TEJASNET</td><td><span class="pill pill-out">shadow</span></td><td class="n">615.00</td><td class="n">552.65</td><td class="n neg">&minus;10.14%</td><td class="n neg">&minus;10.64%</td><td class="n">&minus;0.53</td></tr>
+        <tr class="out"><td class="tick">CGCL</td><td><span class="pill pill-flag">near-miss</span></td><td class="n">282.70</td><td class="n">266.00</td><td class="n neg">&minus;5.91%</td><td class="n neg">&minus;6.41%</td><td class="n">&minus;0.37</td></tr>
+        <tr class="total"><td>Basket</td><td>equal weight, taken only</td><td class="n">&mdash;</td><td class="n">&mdash;</td><td class="n pos">+2.16%</td><td class="n pos">+1.66%</td><td class="n">1 / 1 up</td></tr>
+      </tbody>
+    </table></div>
+    <div style="padding:14px 18px;font-size:13.5px;color:var(--ink-3);border-top:1px solid var(--rule)">
+      Shadow basket net: <strong>+1.94%</strong> (average of GRAPHITE and TEJASNET) &mdash; roughly a wash this week, unlike week 1 where the cap was a clear net positive. One would have been the week's biggest winner, the other its biggest loser.
+    </div>
+  </div>
+
+  <div class="callout pend">
+    <h3>+1.66% and a near-wash on the risk cap &mdash; still n=2</h3>
+    <p>Second graded week, second time the traded result beats the &minus;1.81% prior. The risk-cap shadow basket (+1.94%) is close to neutral this week, which cuts against week 1's clean "the cap helped" read &mdash; exactly the kind of independent, not-yet-conclusive signal &sect;2 says to log and not react to.</p>
+  </div>
+</section>
+<div class="arrow">&darr;</div>
+
+<!-- 04 -->
+<section>
+  <div class="step-head"><span class="step-n">04</span><h2>Stocks and trades, all four experiments</h2></div>
+  <p class="lede">Control plus the three registered Test arms (T1, T2, T3), read against each other on the same two weeks. T2 and T3 re-weight capital across Control's own trade list, so on a single-trade week every arm holds the identical position at 100% weight; the split only becomes visible once a week clears more than one name past the risk cap. T1 is the exception &mdash; it scans more days, so it can add stocks outright, and now that the daily-bar backfill has run, it did.</p>
+
+  <div class="two" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-head">Control<span class="side">real capital, equal weight</span></div>
+      <div class="scroll"><table>
+        <thead><tr><th>Week</th><th>Stock</th><th>Weight</th></tr></thead>
+        <tbody>
+          <tr><td class="n">fwd_2026-08-24</td><td class="tick">ENGINERSIN</td><td class="n">100%</td></tr>
+          <tr><td class="n">fwd_2026-08-31</td><td class="tick">LICHSGFIN</td><td class="n">100%</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <div class="card-head">T1 &mdash; rolling window<span class="side">shadow, same rule</span></div>
+      <div class="scroll"><table>
+        <thead><tr><th>Week</th><th>Stock</th><th>Weight</th></tr></thead>
+        <tbody>
+          <tr class="out"><td class="n">fwd_2026-08-24</td><td colspan="2"><span class="pill pill-pend">not scanned &mdash; T1 didn't exist yet</span></td></tr>
+          <tr><td class="n">fwd_2026-08-31</td><td colspan="2"><span class="pill pill-flag">17 extra names &mdash; graded below</span></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <div class="card-head">T2 &mdash; 1%&divide;R weight<span class="side">shadow reweight</span></div>
+      <div class="scroll"><table>
+        <thead><tr><th>Week</th><th>Stock</th><th>Weight</th></tr></thead>
+        <tbody>
+          <tr><td class="n">fwd_2026-08-24</td><td class="tick">ENGINERSIN</td><td class="n">100%</td></tr>
+          <tr><td class="n">fwd_2026-08-31</td><td class="tick">LICHSGFIN</td><td class="n">100%</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <div class="card-head">T3 &mdash; confidence weight<span class="side">shadow reweight</span></div>
+      <div class="scroll"><table>
+        <thead><tr><th>Week</th><th>Stock</th><th>Weight</th></tr></thead>
+        <tbody>
+          <tr><td class="n">fwd_2026-08-24</td><td class="tick">ENGINERSIN</td><td class="n">100%</td></tr>
+          <tr><td class="n">fwd_2026-08-31</td><td class="tick">LICHSGFIN</td><td class="n">100%</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">Everything the funnel touched, by week &mdash; including what none of the four took<span class="side">for reference</span></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Week</th><th>Ticker</th><th>Where it landed</th><th>RSI</th><th>R / EP</th><th>Conf.</th></tr></thead>
+      <tbody>
+        <tr><td class="n">fwd_2026-08-24</td><td class="tick">ENGINERSIN</td><td><span class="pill pill-in">Control + T2 + T3</span></td><td class="n">60.5</td><td class="n">13.97%</td><td class="n">62.1</td></tr>
+        <tr class="out"><td class="n">fwd_2026-08-24</td><td class="tick">NSLNISP</td><td><span class="pill pill-out">shadow &middot; risk cap, all four</span></td><td class="n">60.0</td><td class="n neg">15.88%</td><td class="n">&mdash;</td></tr>
+        <tr><td class="n">fwd_2026-08-31</td><td class="tick">LICHSGFIN</td><td><span class="pill pill-in">Control + T1 + T2 + T3</span></td><td class="n">57.6</td><td class="n">11.26%</td><td class="n">75.4</td></tr>
+        <tr class="out"><td class="n">fwd_2026-08-31</td><td class="tick">GRAPHITE</td><td><span class="pill pill-out">shadow &middot; risk cap, all four</span></td><td class="n">59.4</td><td class="n neg">15.70%</td><td class="n">&mdash;</td></tr>
+        <tr class="out"><td class="n">fwd_2026-08-31</td><td class="tick">TEJASNET</td><td><span class="pill pill-out">shadow &middot; risk cap, all four</span></td><td class="n">61.0</td><td class="n neg">18.92%</td><td class="n">&mdash;</td></tr>
+        <tr class="out"><td class="n">fwd_2026-08-31</td><td class="tick">CGCL</td><td><span class="pill pill-flag">near-miss &middot; RSI 74.5, all four</span></td><td class="n neg">74.5</td><td class="n">15.55%</td><td class="n">&mdash;</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+<div class="arrow">&darr;</div>
+
+<!-- 04b -->
+<section>
+  <div class="step-head"><h2>T1's full catch &mdash; week of 31 Aug</h2></div>
+  <p class="lede">Scanning Mon 31 Aug&ndash;Fri 4 Sep at daily resolution instead of only Friday's weekly close. Every name below flipped VStop+RSI on at least one day inside the window, was independently re-verified against <strong>all four</strong> conditions at Friday's close, then graded the same way as Control: entry at Monday's open, exit Friday's close unless the stop was hit intraweek.</p>
+
+  <div class="stats" style="margin-bottom:20px">
+    <div class="stat"><div class="k">Confirmed / graded</div><div class="v pos">17</div><div class="s">vs Control's 1 trade</div></div>
+    <div class="stat"><div class="k">Basket net</div><div class="v neg">&minus;0.61%</div><div class="s">6 up, 11 down</div></div>
+    <div class="stat"><div class="k">Stopped out</div><div class="v neg">3</div><div class="s">ANANTRAJ, ELGIEQUIP, SAMMAANCAP</div></div>
+    <div class="stat"><div class="k">Reversed before Friday</div><div class="v" style="color:var(--ink-3)">4</div><div class="s">never became a pick</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">Graded &mdash; every T1 pick, week of 7&ndash;11 Sep<span class="side">17 names</span></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Ticker</th><th>Entry (open)</th><th>Exit px</th><th>Exit reason</th><th>Net</th><th>R mult.</th></tr></thead>
+      <tbody>
+        <tr><td class="tick">JUBLPHARMA</td><td class="n">928.00</td><td class="n">1,025.20</td><td>week_close</td><td class="n pos">+9.97%</td><td class="n">+1.59</td></tr>
+        <tr><td class="tick">PWL</td><td class="n">127.47</td><td class="n">136.10</td><td>week_close</td><td class="n pos">+6.27%</td><td class="n">+0.68</td></tr>
+        <tr><td class="tick">AEGISVOPAK</td><td class="n">281.65</td><td class="n">295.10</td><td>week_close</td><td class="n pos">+4.28%</td><td class="n">+0.70</td></tr>
+        <tr><td class="tick">GESHIP</td><td class="n">1,369.00</td><td class="n">1,412.20</td><td>week_close</td><td class="n pos">+2.66%</td><td class="n">+0.53</td></tr>
+        <tr><td class="tick">HBLENGINE</td><td class="n">695.70</td><td class="n">722.20</td><td>week_close</td><td class="n pos">+3.31%</td><td class="n">+0.59</td></tr>
+        <tr><td class="tick">ANGELONE</td><td class="n">303.80</td><td class="n">305.00</td><td>week_close</td><td class="n neg">&minus;0.11%</td><td class="n">+0.05</td></tr>
+        <tr><td class="tick">KIRLOSENG</td><td class="n">2,180.00</td><td class="n">2,168.60</td><td>week_close</td><td class="n neg">&minus;1.02%</td><td class="n">&minus;0.13</td></tr>
+        <tr><td class="tick">KAJARIACER</td><td class="n">1,235.00</td><td class="n">1,226.40</td><td>week_close</td><td class="n neg">&minus;1.20%</td><td class="n">&minus;0.21</td></tr>
+        <tr><td class="tick">IGL</td><td class="n">153.25</td><td class="n">151.98</td><td>week_close</td><td class="n neg">&minus;1.33%</td><td class="n">&minus;0.50</td></tr>
+        <tr><td class="tick">PFOCUS</td><td class="n">315.00</td><td class="n">310.85</td><td>week_close</td><td class="n neg">&minus;1.82%</td><td class="n">&minus;0.12</td></tr>
+        <tr><td class="tick">UPL</td><td class="n">580.10</td><td class="n">572.95</td><td>week_close</td><td class="n neg">&minus;1.73%</td><td class="n">&minus;0.42</td></tr>
+        <tr class="out"><td class="tick">USHAMART</td><td class="n">497.10</td><td class="n">488.17</td><td>stop_hit</td><td class="n neg">&minus;2.30%</td><td class="n">&minus;1.00</td></tr>
+        <tr><td class="tick">CASTROLIND</td><td class="n">191.80</td><td class="n">188.03</td><td>week_close</td><td class="n neg">&minus;2.47%</td><td class="n">&minus;0.58</td></tr>
+        <tr><td class="tick">TITAGARH</td><td class="n">878.75</td><td class="n">842.15</td><td>week_close</td><td class="n neg">&minus;4.67%</td><td class="n">&minus;0.60</td></tr>
+        <tr class="out"><td class="tick">ANANTRAJ</td><td class="n">622.00</td><td class="n">587.61</td><td>stop_hit</td><td class="n neg">&minus;6.03%</td><td class="n">&minus;1.00</td></tr>
+        <tr class="out"><td class="tick">ELGIEQUIP</td><td class="n">644.90</td><td class="n">605.34</td><td>stop_hit</td><td class="n neg">&minus;6.63%</td><td class="n">&minus;1.00</td></tr>
+        <tr class="out"><td class="tick">SAMMAANCAP</td><td class="n">159.20</td><td class="n">148.00</td><td>stop_hit</td><td class="n neg">&minus;7.54%</td><td class="n">&minus;1.00</td></tr>
+        <tr class="total"><td>Basket</td><td>equal weight, 17 names</td><td class="n">&mdash;</td><td>&mdash;</td><td class="n neg">&minus;0.61%</td><td class="n">6 / 17 up</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <div class="card-head">Reversed before Friday &mdash; would never have been a Control trade<span class="side">4 names</span></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Ticker</th><th>Why excluded</th></tr></thead>
+      <tbody>
+        <tr class="out"><td class="tick">CAMS</td><td>flipped mid-week, trend reversed before Friday</td></tr>
+        <tr class="out"><td class="tick">NUVOCO</td><td>flipped mid-week, trend reversed before Friday</td></tr>
+        <tr class="out"><td class="tick">OLAELEC</td><td>flipped mid-week, trend reversed before Friday</td></tr>
+        <tr class="out"><td class="tick">ONESOURCE</td><td>flipped mid-week, RSI had drifted to 46.2 by Friday (below the 50 floor)</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="callout flag">
+    <h3>17 extra trades, &minus;0.61% net &mdash; volume without an edge, so far</h3>
+    <p>T1 did exactly what it was built to do &mdash; it found 17 tradeable names Control's Friday-only anchor missed entirely, a 17x jump in trade count from one week's evidence. But more trades isn't the goal by itself: the basket lost money (6 up, 11 down, 3 stopped out), while Control's single pick that same week made +1.66%. n=1 for this arm too &mdash; not a verdict either way, but the first read cuts against "more scanning = more edge," not for it. A bug was caught and fixed while building this arm &mdash; the first run wrongly kept a name whose RSI had drifted out of band by Friday &mdash; so the picks graded above are the corrected list.</p>
+  </div>
+</section>
+<div class="arrow">&darr;</div>
+
+<!-- 05 -->
+<section>
+  <div class="step-head"><span class="step-n">05</span><h2>What's accumulating, and what isn't yet</h2></div>
+  <p class="lede">Output of <code>python3 -m tests.track_forward summary</code> against both graded records. Every series needs 13 weeks for a first look, 26 for a real read &mdash; the same bar the strategy's own headline numbers were held to.</p>
+
+  <div class="stats" style="margin-bottom:20px">
+    <div class="stat"><div class="k">Control basket</div><div class="v pos">+5.70%</div><div class="s">n=2 avg &middot; need 13</div></div>
+    <div class="stat"><div class="k">Shadow basket</div><div class="v neg">&minus;1.51%</div><div class="s">n=2 avg &middot; need 13</div></div>
+    <div class="stat"><div class="k">Near-miss basket</div><div class="v neg">&minus;6.41%</div><div class="s">n=1 &middot; need 13</div></div>
+    <div class="stat"><div class="k">T1 extra (shadow)</div><div class="v neg">&minus;0.61%</div><div class="s">n=1 wk graded (17 trades)</div></div>
+    <div class="stat"><div class="k">T2 / T3 vs Control</div><div class="v">0.00%</div><div class="s">n=1 wk paired &middot; no divergence yet</div></div>
+    <div class="stat"><div class="k">Confidence rank-IC</div><div class="v" style="color:var(--ink-3)">n=2 trades</div><div class="s">needs &ge;3 to compute</div></div>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <div class="card-head">Diagnostic pack &mdash; wired, waiting on weeks</div>
+      <ul class="checklist">
+        <li><span class="mk done">&check;</span><div><b>Near-miss series</b> logs automatically every grade (<code>near_miss_basket_net_pct</code>).</div></li>
+        <li><span class="mk done">&check;</span><div><b>Shadow series</b> logs automatically every grade (<code>shadow_basket_net_pct</code>).</div></li>
+        <li><span class="mk done">&check;</span><div><b>T2 / T3 reweights</b> now computed at grade time, stored alongside Control.</div></li>
+        <li><span class="mk done">&check;</span><div><b>Rank-IC</b> of confidence vs. realized return, new in <code>harness.py</code>.</div></li>
+        <li><span class="mk done">&check;</span><div><b>T1 shadow scan</b> now live and graded &mdash; 17 names traded shadow, &minus;0.61% net.</div></li>
+        <li><span class="mk wait">&hellip;</span><div>Bootstrap CI on every series &mdash; mechanically ready, statistically silent below n=13.</div></li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-head">Housekeeping check</div>
+      <ul class="checklist">
+        <li><span class="mk done">&check;</span><div><b>Risk-cap rejection isn't sticky.</b> A name refused one week is re-screened from nothing the next &mdash; asserted directly in <code>test_no_persistent_rejection.py</code>, not just by inspection.</div></li>
+        <li><span class="mk done">&check;</span><div><b>T1 rolling window.</b> Daily-bar backfill complete (500 tickers, 782k bars); scan is live, graded weekly alongside Control.</div></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <div class="card-head">Bugs caught building this &mdash; fixed, not swept under</div>
+    <ul class="checklist">
+      <li><span class="mk done">&check;</span><div><b>T1's Friday re-check skipped the RSI band.</b> First run kept a name (RSI 46.2) that had drifted below the 50 floor; fixed to require the same two conditions Control's own predicate checks, not just trend continuation.</div></li>
+      <li><span class="mk done">&check;</span><div><b><code>summary()</code>'s glob matched T1's sibling file too.</b> Was silently blending T1's basket return into the Control series; scoped the two globs apart.</div></li>
+      <li><span class="mk done">&check;</span><div><b>T2/T3-vs-Control deltas paired by array position, not by week.</b> With unequal series lengths this compared the wrong weeks' returns; now pairs by <code>record_id</code>.</div></li>
+    </ul>
+  </div>
+</section>
+<div class="arrow">&darr;</div>
+
+<!-- 06 -->
+<section>
+  <div class="step-head"><span class="step-n">06</span><h2>Guardrails still in force</h2></div>
+  <p class="lede">None of the above changes what happens with real capital. These are the lines the response plan draws, restated so they travel with the data.</p>
+  <div class="two">
+    <div class="card">
+      <div class="card-head">Do not</div>
+      <ul class="checklist">
+        <li><span class="mk no">&times;</span><div>Loosen the RSI band or the 15% risk cap on this evidence.</div></li>
+        <li><span class="mk no">&times;</span><div>Let T1/T2/T3 touch real capital before it beats Control with a bootstrap CI that excludes zero.</div></li>
+        <li><span class="mk no">&times;</span><div>Widen the universe or VStop sensitivity to chase trade count &mdash; that path is the V-series, not this one.</div></li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-head">Open, unresolved</div>
+      <ul class="checklist">
+        <li><span class="mk done">&check;</span><div>Daily-bar priority &mdash; resolved this session (backfilled); still sharpens V3/V4 entry timing separately.</div></li>
+        <li><span class="mk wait">?</span><div>Extended history: pull 10+ years now, or keep the partly-spent window.</div></li>
+        <li><span class="mk wait">?</span><div>Regime gate V6 and shorting V7 &mdash; both still parked.</div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div class="foot">
+  <p style="margin:0 0 6px"><strong>Reproduce:</strong> <code>record</code> to log a week, <code>t1</code> for the shadow scan, <code>grade &lt;path&gt;</code> / <code>t1grade &lt;path&gt;</code> once the week closes, <code>summary</code> to rebuild every number above &mdash; all via <code>python3 -m tests.track_forward &lt;cmd&gt;</code>, reading/writing <code>results/forward_test/picks_*.json</code>.</p>
+  <p style="margin:0">Source plan: <code>docs/forward-test-response-and-volume-plan.md</code>. Two documents it cites &mdash; a <code>claude/</code>-prefixed improvement plan and a standalone <code>forward-test-log.md</code> &mdash; don't exist in this checkout; every number here is instead sourced directly from <code>tests/track_forward.py</code> and the JSON records it writes.</p>
+</div>
+</div>
+
+</body></html>
