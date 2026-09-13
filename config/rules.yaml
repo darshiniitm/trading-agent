@@ -1,0 +1,76 @@
+# Weekly VStop + RSI Mid-Cap Screener — Rule Spec
+# This file IS the strategy. Editing it changes what the screen/backtest does.
+# See design doc §0 for the English -> predicate translation table.
+
+data_source: opensource   # opensource (yfinance + NSE archive CSVs) | paid (not implemented yet)
+
+universe:
+  index_lists:            # NSE archive constituent CSVs unioned to form the candidate universe
+    - midcap150
+    - smallcap250
+    - nifty500
+  market_cap_cr:
+    min: 10000
+    max: 50000
+  liquidity:
+    metric: median_weekly_turnover_cr
+    lookback_weeks: 8
+    min: 10
+
+signals:
+  - id: vstop_flip
+    indicator: vstop
+    params:
+      length: 10
+      mult: 2.0
+      timeframe: weekly
+      source: close
+    predicate: "flip_up == True"
+
+  - id: rsi_band
+    indicator: rsi
+    params:
+      period: 14
+      method: wilder
+      timeframe: weekly
+      source: close
+    predicate: "value >= 50 and value <= 65"
+
+combine: AND
+
+sector:
+  benchmark: NIFTY_MIDCAP_150
+  benchmark_ticker: "NIFTYMIDCAP150.NS"   # verified reachable via yfinance
+  rs_lookbacks_weeks: [4, 13]
+  outperforming:
+    rs_gt: 0
+    top_k: 5
+  mode: soft                  # soft = score input / highlight only, never eliminates a stock
+
+trade:
+  entry: next_week_open
+  stop: vstop_line
+  target_r_multiple: 2.0        # target = EP + target_r_multiple * R
+  exit_horizon: fixed_1w        # fixed_1w (primary) | trend_hold (secondary report)
+  max_r_pct: 0.15                # reject trades where R/EP > 15% (SL implausibly wide)
+  confidence:
+    weights:
+      rr: 0.25
+      rsi_sweetspot: 0.15
+      sector_rs: 0.20
+      trend_quality: 0.15
+      volume: 0.15
+      liquidity: 0.10
+
+validation:
+  entry_fill: next_week_open
+  exit:
+    stop_hit: "intraweek_low <= SL"
+    else: week_close
+  walk_forward_weeks: 104
+  costs_pct_round_trip: 0.5
+
+data:
+  history_weeks: 260           # ~5y of weekly bars fetched per ticker (buffer for ATR/RSI warmup + 104wk walk-forward)
+  min_bars_required: 30        # minimum bars needed before a stock is eligible for indicator computation
+  cache_dir: data_cache

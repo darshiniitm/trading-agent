@@ -1,0 +1,183 @@
+
+# Forward-Test Response & Trade-Volume Plan
+
+*Version 0.6 — 2026-09-13. Follows `docs/forward_test_findings.md` (repo), `claude/forward-test-log.md`, `claude/vstop-strategy-revision-plan.md`, and `claude/selection-and-analysis-improvement-plan.md`. Scope: (1) what the first graded forward-test week actually tells us and doesn't, (2) a **Test-vs-Control** design for raising trade count and gain *inside* the existing universe, VStop parameters, RSI band and risk cap — no condition in the strategy spec changes, and no per-trade or portfolio risk goes up, and nothing gets adopted until it beats Control on logged evidence. (3) §3.7 — what T1's first live week says and how T1 specifically gets refined, with Control untouched throughout.*
+
+*Companion: `test-vs-control-ledger.html` (published as an artifact) renders every week in this section visually and is rebuilt after each grade.*
+
+---
+
+## 0. What just happened
+
+Record `fwd_2026-08-24` graded on 2026-09-06:
+
+| | |
+|---|---|
+| Basket (1 trade: ENGINERSIN) | **+9.74% net** |
+| Prior expectation (104-week walk-forward) | −1.81% |
+| Benchmark (Nifty Midcap 150) that week | −1.31% |
+| Shadow (NSLNISP, rejected by 15% risk cap) | −4.97% |
+| Near-miss (IFCI, RSI 67.9 — filtered by the band) | +12.77% (not traded) |
+
+Read literally, every name that flipped VStop that week made money or beat the benchmark, and the risk cap correctly kept the basket out of the one loser.
+
+**This changes nothing about the strategy, and the standing rules already say why.** One trade is not a sample — the 104-week study put the standard deviation of a single mid-cap week at 5–6%, against a −1.4% expected edge; +9.74% is well inside what a broken strategy produces by chance one week in several. The pre-registered prior explicitly forbids updating on this. What it *does* do is validate that the near-miss tracking built into `run_screen()` after the RSI-ceiling observation is working exactly as designed, and it hands us two live hypotheses to register for later, not to act on now.
+
+---
+
+## 1. Two problems, kept separate (as the existing plan requires)
+
+| | Question | Where it's answered |
+|---|---|---|
+| **Response to this finding** | Does the IFCI/RSI-ceiling observation or the risk-cap result change anything today | §2 — no, not yet; here's what accumulating it looks like |
+| **Trade volume** | How to get more trades per week, and more out of the ones taken, without loosening or widening any condition already in the strategy spec | §3 — as a Test-vs-Control design |
+
+---
+
+## 2. Responding to the forward-test finding without breaking discipline
+
+The finding is real but it is `n=1`. The correct response is the one `docs/forward_test_findings.md` already names: accumulate.
+
+- **RSI ceiling (65):** IFCI is the first data point in what will become the `near_miss` population (`graded.near_miss_basket_net_pct`, per ticket already shipped in `run_screen()`). Nothing changes until this population is large enough to bootstrap a confidence interval — the same bar the strategy's own headline numbers were held to (CI95 excluding zero). Rough rule of thumb from the existing project: treat ~13 weeks as a first look, ~26 as a real read, matching the cadence already set for the forward-test log itself (Part C of the improvement plan).
+- **15% risk cap:** this week is a point *in favor* of the cap (it kept the basket out of the −4.97% shadow). That's one data point too, and it cuts the other way from the RSI observation — a reminder that the two "near miss" questions are independent and should be graded independently, not bundled into a single "loosen the filters" narrative.
+
+**Concrete action:** no code or parameter change. Just keep grading. Add both series (RSI near-miss basket returns, shadow/risk-cap basket returns) to the standard diagnostic pack (§A2 of the improvement plan) so they show up automatically on every future grade rather than requiring a manual look back at this document.
+
+**Second week (`fwd_2026-08-31`), graded 2026-09-13:** Control basket +1.66% (1 trade, LICHSGFIN). Shadow (2 risk-cap rejects) +1.94% net, split +14.51% / −10.64% — another reminder the cap's two rejects can land on either side of the line in a given week. Near-miss (CGCL, RSI 74.5) −6.41% — this time the ceiling's reject *would* have lost money, the opposite of week one's IFCI. Two weeks now point in opposite directions on the RSI-ceiling question, which is exactly why §2's rule stands: accumulate, don't react.
+
+---
+
+## 3. Test vs Control: raising trade count and gain without touching the spec
+
+**Ground rule for everything below:** the universe (₹10–50k cr cap band), the liquidity floor, VStop(10,2), RSI(14) in [50,65], and the flat 15% risk cap are the conditions you specified — they don't move in this plan. Every Test arm evaluates the *same* rule against more opportunities to satisfy it, or changes how capital is deployed across trades that already pass the *same* rule unchanged. Nothing here is adopted on judgment — each arm runs as a shadow against Control, on the same weeks, and only replaces Control if it clears a pre-registered gate.
+
+### 3.1 Control — defined once, frozen
+
+**Control is the current production code, unchanged, exactly as it produced `fwd_2026-08-24` and `fwd_2026-08-31`:**
+
+- Weekly funnel anchored to the Mon–Fri calendar week, signal read from Friday's close only.
+- Universe, liquidity floor, VStop(10,2), RSI[50,65], 15% risk cap — as specified.
+- Equal-weight sizing across whatever survives the funnel that week.
+- A rejected name (risk-cap shadow) is dropped for that week only; re-screened fresh next week.
+
+Control keeps running exactly as today, keeps taking the real capital, and keeps being logged in `forward-test-log.md` the same way. It is the baseline every Test arm is measured against — not a strategy variant, a fixed reference point. **Nothing in §3.7 below changes anything in this subsection.**
+
+### 3.2 Test arms — each a separate registered experiment
+
+Each arm changes exactly one mechanism, runs in **shadow mode** (computed and logged every week, no capital) alongside Control, and is graded against Control on the same weeks — the same discipline already used for the risk-cap shadow (NSLNISP) and the RSI near-miss (IFCI), just applied to volume/allocation questions instead of filter questions.
+
+| Arm | Mechanism (only this changes) | What stays identical to Control | Hypothesis | Kill criterion |
+|---|---|---|---|---|
+| **T1 — Rolling window** | Same VStop(10,2)+RSI[50,65] rule evaluated on a rolling 5-trading-day window (or several weekly cycles offset by a day each), not only the Mon–Fri anchor | Universe, thresholds, risk cap, sizing | Catches genuine flips the Friday-only anchor misses, without changing what "a flip" means | Trades captured by T1-only vs Control-only show no better (or worse) per-trade return than Control's existing trades, at matched sample size |
+| **T2 — Fixed-fractional sizing** | Re-weight the *same trade list Control produces* by 1% capital ÷ R per position, instead of equal weight | Trade selection identical to Control — this is an allocation replay, not a new signal | Portfolio-level return/vol improves on weeks with >1 survivor because risk is normalized instead of split evenly | No improvement in risk-adjusted (not raw) return vs Control on the same trade list |
+| **T3 — Confidence-weighted allocation** | On weeks with >1 survivor, tilt capital toward the higher-confidence name(s) instead of equal split | Trade selection identical to Control | Confidence score (per B6's planned rank-IC test) is a real ordering signal, so tilting toward it beats equal weight | Rank-IC not significantly different from zero, or tilted allocation underperforms equal weight |
+| **Housekeeping check** | Confirm a risk-cap-rejected name is never silently excluded from later weeks | N/A — verification, not an experiment | — | — |
+
+**Why fixed-fractional (1% ÷ R) for T2, specifically.** This isn't picked for novelty — it's the direct fix for a defect the project has already diagnosed. `selection-and-analysis-improvement-plan.md` (B4) points out that under Control's equal weight, a 12-pick week and a 1-pick week carry the same *per-position* size, so total portfolio risk on any given week is really set by how many names happen to survive the funnel, not by design. Sizing each position at (risk budget) ÷ R makes the dollar risk per position constant regardless of survivor count — it's a normalization of the risk that's already implicit in Control, not an addition to it. It was chosen over the alternatives for concrete reasons:
+
+- **R is already on every trade record** (`R_ref`, `R_pct_of_close` are computed fields today). Sizing off it needs no new estimate and can't introduce a new source of error.
+- **Volatility/ATR-based sizing** is effectively the same idea already — R itself is derived from the VStop distance, which is ATR-based — so a separate ATR sizing scheme would be redundant with what R already encodes.
+- **Kelly-style sizing** was not used because it needs a trusted edge/variance estimate to size off, and the strategy's own headline expectancy is currently negative (−1.37%/trade); sizing aggressively off an edge estimate that isn't yet established would be the opposite of risk-conscious here.
+- **A flat rupee amount per trade** was rejected because it ignores stop distance entirely — a wide-stop name and a tight-stop name would carry very different risk for the same position size, which is the exact problem being fixed.
+- **The "1%" figure is a placeholder**, not a derived number — the thing actually under test is the *method* (size by R) against Control's method (equal weight); the specific fraction is a parameter to set once the method itself is validated, not something this plan is claiming to have optimized.
+
+T1 is the only arm that can actually add trade *count*; T2 and T3 improve what's extracted from trades Control already takes. All three can run simultaneously in shadow mode without interfering, since none of them touch what Control itself does.
+
+### 3.3 How Test and Control run side by side
+
+1. Every signal week, Control runs as today and its trades are the ones with real capital, logged exactly as now.
+2. In the same run, T1's rolling-window scan is computed and logged as a shadow basket — same format as the existing risk-cap shadow — with its own funnel and its own picks.
+3. T2 and T3 don't need a separate scan: they're re-weightings of Control's own trade list, logged as alternate basket returns for the same picks.
+4. Nothing here changes what capital is deployed on. Test stays paper until §3.5 says otherwise.
+
+### 3.4 Metrics compared, every graded week
+
+- Trade count: Control vs T1 (the number this section exists to move).
+- Basket net return: Control vs T1-shadow vs T2-reweighted vs T3-reweighted, same weeks.
+- Per-trade expectancy and alpha vs eligible universe (the same diagnostic already used to judge Control itself in §2 of the improvement plan) computed separately for each arm.
+- How many of T1's extra trades come from flips that would have reversed by Friday anyway (a legitimate concern to track, not just count raw volume as good) — live as of `fwd_2026-08-31`: `n_extra_confirmed: 17`, `n_extra_reversed: 4`.
+
+### 3.5 When a Test arm is allowed to touch real capital
+
+Same discipline as the strategy-level validation gates in `vstop-strategy-revision-plan.md` §6.2, scaled to this smaller question:
+
+1. Register each arm before it starts running (id, hypothesis, kill criterion — the table in §3.2 *is* the registration; nothing else runs unregistered).
+2. Development-set weeks first if there's history to replay it against; otherwise accumulate shadow weeks going forward — same ~13/~26-week cadence as §2.
+3. An arm graduates from shadow to live only if its basket return beats Control's, on the same weeks, with a bootstrap CI that excludes zero — not merely "looked better one week."
+4. One graduation decision per arm, not a running re-evaluation — if it doesn't clear the bar at the review point, it stays shadow (or is retired), it doesn't get a second look on cherry-picked weeks.
+5. Graduating T2 or T3 changes *sizing*, not selection — lower bar for risk, since by construction they can't add a new losing trade Control wasn't already going to take.
+
+**T1 is not at its review point yet — one live week (`fwd_2026-08-31`) is nowhere near ~13.** §3.7 below is about refining how T1 is instrumented between now and that review, not about judging it early.
+
+### 3.6 What was deliberately left out of Test
+
+Widening the market-cap band or index membership, and loosening the VStop ATR multiplier, would move trade count faster than any Test arm above — and are excluded on purpose. They'd change the universe or the signal definition itself, which `vstop-strategy-revision-plan.md` §1 already flagged as evidence-spending tinkering rather than a mechanism-driven test. If either is ever wanted, it's a new registered variant (its own id, its own dev-set test, its own kill criterion) in the existing V-series — not a Test arm in this plan, which exists specifically to hold the spec fixed.
+
+### 3.7 T1's first live week — what it says, and how T1 gets refined (Control untouched)
+
+`fwd_2026-08-31` is T1's first graded week. Result: **T1 basket −0.61% net across 17 trades, against Control's +1.66% on its 1 trade.** Four of the 17 (23.5%) hit their full −1R stop within the week — a stop-out rate the 104-week backtest behind Control didn't produce at this frequency. Separately, 4 more candidates T1 caught mid-week had already reversed by Friday and were correctly never traded (`n_extra_reversed: 4`).
+
+**This is one week. It does not kill T1** — §3.5's gate is ~13 weeks away, and n=17 trades in a single week carries about as much statistical weight as n=1 week of Control. But it's also not nothing: a 23.5% full-stop rate and a pooled negative week are exactly the kind of early signal worth *instrumenting further*, not reacting to. Four refinements, none of which touch Control or loosen any condition in §3.1:
+
+1. **Audit T1's rolling-window code against the same boundary-inclusivity discipline the project already applies to Control.** The jump from Control's 4 weekly VStop flips to T1's 21 (17 confirmed + 4 reversed) in the same week is large. Before reading any signal into this week's weak result, confirm T1 is checking the *identical* thresholds (VStop(10,2), RSI 50≤x≤65 inclusive, same cap band and liquidity floor) on each rolling window — not a subtly looser version of the rule. This is the cheapest check and should happen before anything else; it's also exactly the class of silent, flattering-or-unflattering bug `vstop-screener-test-plan.md` §1 already ranks as the most dangerous kind.
+2. **Stop pooling T1 into one basket — split it by window offset.** T1 currently lumps every rolling-window catch (Monday-anchored, Tuesday-anchored, etc.) into a single 17-name basket. Recording which offset each pick came from and grading offsets separately will show whether the stop-outs and the loss are concentrated in specific offsets (e.g., flips caught very early in the week, with more days for the move to run before the stop has ratcheted) or spread evenly. That's the difference between "prune one weak offset" and "the whole mechanism needs rethinking" — and right now the pooled number can't distinguish them.
+3. **Add "days since flip" as a recorded field on every T1 pick.** A signal confirmed Monday and one confirmed Thursday are mechanically different bets — the Monday one has more room for the position to move against the stop before Friday's entry. Recording this lets the eventual review test directly whether stop-out rate correlates with how early in the window the flip fired, rather than guessing from the pooled basket.
+4. **Keep tracking the reversal rate (`n_extra_reversed / (n_extra_reversed + n_extra_confirmed)`) as T1's own health metric**, separate from basket return. This week it's 4/21 ≈ 19%. A rising reversal rate over time would say the rolling-window relaxation is mostly finding noise that resolves itself; a falling one says the confirmed catches are getting more reliable.
+5. **Build toward a composite per-candidate score** — see §3.8 for the full feature list. Not live, not weighted, and not a selection change; a later, separately tested layer on top of whichever T1 candidates items 1–4 leave standing.
+
+None of this is a parameter change, a threshold change, or a change to Control. It's additional instrumentation on T1 specifically, so that when the ~13-week review in §3.5 comes, the answer can say *why* T1 did or didn't work — offset-by-offset and by days-since-flip — instead of only a single pooled number that this week's result already shows can mask very different things happening inside it.
+
+### 3.8 Feature list for a composite candidate score (feeds T1 refinement item 5, and T3)
+
+§3.7's refinements tell us *where* to look inside T1's pooled basket. The complementary question is whether a **per-candidate score** — built from features already sitting in the trade record plus the new ones §3.7 introduces — can separate this week's five T1 winners from its four stop-outs before the fact, not just explain them after. This is a **feature list, not a weighting scheme yet**: per B6 in `selection-and-analysis-improvement-plan.md`, any such score gets rank-IC tested against forward return before it's trusted with anything — weights are a conclusion, not an input, and nothing below is proposed as live today. It slots in as T1 refinement **item 5**, and doubles as the feature set T3's confidence-weighted allocation (§3.2) would eventually draw on.
+
+**A. Already on every trade record today — zero new computation**
+- `confidence` — the engine's existing composite score (the one B6 already plans to rank-IC test on its own).
+- `R_pct_of_close` — stop distance as a % of signal close; a volatility/risk proxy, and the same number the 15% cap is measured against.
+- `rsi` — raw value; distance from the band's center (57.5) vs sitting near either edge (50 or 65) may carry different information than a bare in/out-of-band flag.
+- `atr` — absolute volatility, independent of price level (two names can share `R_pct_of_close` with very different ATR if priced differently).
+- `turnover_cr` — liquidity headroom above the ₹10cr floor; a name at 3x the floor fills differently than one at 1.05x.
+- `mktcap_cr` — position within the ₹10–50k cr band (near an edge vs centered).
+
+**B. One-line derivations from (A) — still zero new data**
+- **Risk-cap headroom** = `0.15 − R_pct_of_close/100`. How much margin a name has below the cap, not just whether it's under it — Graphite (15.70%, rejected) and Tejas (18.92%, rejected) failed by very different amounts; headroom distinguishes them, a pass/fail flag doesn't.
+- **RSI band centrality** = `1 − |rsi − 57.5| / 7.5`. Distance-from-center instead of inside/outside.
+- **Liquidity multiple** = `turnover_cr / 10`. Same floor, continuous instead of binary.
+
+**C. New from §3.7's T1 instrumentation — needs that work done first**
+- **Days-since-flip** (item 3) — how early in the window the signal confirmed.
+- **Window-offset identity** (item 2) — which rolling anchor caught it, once offsets are split out.
+- **Per-ticker historical reversal frequency** — how often *this name specifically* has shown up in `extra_reversed` in past weeks, once there's enough T1 history to compute it. A name that reverses repeatedly is a different bet than one appearing for the first time.
+
+**D. Would need new data — flagged, not started**
+- **Sector RS** — already computed as a soft signal per `vstop-screener-test-plan.md` §8 ("sector is not a filter"); available to add as a score feature without new data collection, just a new read of an existing computation.
+- **Signal-week pop size** (the move into the flip) — available today, but flagged explicitly: `vstop-strategy-revision-plan.md` §1 already closed pop-size *as a filter* (no subset of the 244-trade backtest was profitable on it). Including it as one continuous input to a multi-feature score is a different question from using it alone as a gate, but it's re-opening ground the project deliberately closed — any test using it should say so explicitly and treat a positive result with extra suspicion, not fold it in quietly.
+
+**What this is not, yet:** a ranking formula, a set of weights, or anything that changes which T1 candidates get traded. The next step — separate from this plan — is B6's rank-IC test, run first on the existing single `confidence` score, then extended to whichever of (A)–(C) are cheap enough to add before the next T1 review. (D)'s sector-RS is cheap and fine to include; its pop-size entry is intentionally harder to greenlight.
+
+---
+
+## 4. What not to do
+
+- Do not loosen the RSI band or the risk cap based on this one week.
+- Do not let any Test arm touch real capital before it clears §3.5 — shadow logging only until then.
+- Do not widen the universe or the VStop sensitivity to chase trade count inside this plan — that path exists (the V-series), this isn't it.
+- Do not let a good (or bad) forward-test week change the phase-3/4/5 sequencing gates already agreed (dev set only, one validation pass, frozen finalists).
+- Do not judge T1 on one week in either direction — the point of §3.7 is better instrumentation, not an early verdict.
+
+---
+
+## 5. Immediate, time-sensitive action
+
+Standing rule 1 in `forward-test-log.md`: *"Record before the week opens. A pick logged after Monday's open is not a forward test."* The signal week Mon 7 Sep–Fri 11 Sep has already closed; its forward-test record (Control, and T1 alongside it) needs to be logged **before market open tomorrow (Mon 14 Sep 2026, IST)** or that week's evidence is lost to the log, not just delayed.
+
+---
+
+## 6. Open decisions
+
+1. Which of the §3.7 T1 refinements to implement first — the boundary-inclusivity audit (item 1) is the cheapest and should happen regardless of the others; offset-splitting and days-since-flip (items 2–3) are instrumentation for the next several weeks; the composite score (item 5 / §3.8) waits on items 2–3 and on B6's rank-IC methodology, so it's the last of the five, not urgent this week.
+2. Whether §3.8(D)'s signal-week-pop-size feature is worth re-testing inside a multi-feature score at all, given `vstop-strategy-revision-plan.md` §1 already closed it as a standalone filter — in scope for the score, or excluded from the feature list entirely?
+3. Daily bars priority (existing, motivated by T1 as well as V3/V4 entry timing).
+4. Extended history (existing): pull 10+ years now for a clean holdout, or accept the partly-spent validation window.
+5. Regime gate V6 (existing): still out unless you say otherwise.
+6. Shorting V7 (existing): diagnostic only, or a real candidate if the inverse confirms.
