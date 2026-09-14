@@ -1,7 +1,7 @@
 
 # Forward-Test Response & Trade-Volume Plan
 
-*Version 0.6 — 2026-09-13. Follows `docs/forward_test_findings.md` (repo), `claude/forward-test-log.md`, `claude/vstop-strategy-revision-plan.md`, and `claude/selection-and-analysis-improvement-plan.md`. Scope: (1) what the first graded forward-test week actually tells us and doesn't, (2) a **Test-vs-Control** design for raising trade count and gain *inside* the existing universe, VStop parameters, RSI band and risk cap — no condition in the strategy spec changes, and no per-trade or portfolio risk goes up, and nothing gets adopted until it beats Control on logged evidence. (3) §3.7 — what T1's first live week says and how T1 specifically gets refined, with Control untouched throughout.*
+*Version 0.7 — 2026-09-13. Follows `docs/forward_test_findings.md` (repo), `claude/forward-test-log.md`, `claude/vstop-strategy-revision-plan.md`, and `claude/selection-and-analysis-improvement-plan.md`. Scope: (1) what the first graded forward-test week actually tells us and doesn't, (2) a **Test-vs-Control** design for raising trade count and gain *inside* the existing universe, VStop parameters, RSI band and risk cap — no condition in the strategy spec changes, and no per-trade or portfolio risk goes up, and nothing gets adopted until it beats Control on logged evidence. (3) §3.7 — what T1's first live week says and how T1 specifically gets refined, with Control untouched throughout. (4) §3.8 — the T1 candidate-score parameter list, reorganized into edge signal / risk guardrail / instrumentation-pending buckets, with a scoring-architecture decision (gate vs. blend) still open.*
 
 *Companion: `test-vs-control-ledger.html` (published as an artifact) renders every week in this section visually and is rebuilt after each grade.*
 
@@ -127,33 +127,41 @@ Widening the market-cap band or index membership, and loosening the VStop ATR mu
 
 None of this is a parameter change, a threshold change, or a change to Control. It's additional instrumentation on T1 specifically, so that when the ~13-week review in §3.5 comes, the answer can say *why* T1 did or didn't work — offset-by-offset and by days-since-flip — instead of only a single pooled number that this week's result already shows can mask very different things happening inside it.
 
-### 3.8 Feature list for a composite candidate score (feeds T1 refinement item 5, and T3)
+### 3.8 Parameter list for a composite T1 candidate score (feeds T1 refinement item 5, and T3)
 
-§3.7's refinements tell us *where* to look inside T1's pooled basket. The complementary question is whether a **per-candidate score** — built from features already sitting in the trade record plus the new ones §3.7 introduces — can separate this week's five T1 winners from its four stop-outs before the fact, not just explain them after. This is a **feature list, not a weighting scheme yet**: per B6 in `selection-and-analysis-improvement-plan.md`, any such score gets rank-IC tested against forward return before it's trusted with anything — weights are a conclusion, not an input, and nothing below is proposed as live today. It slots in as T1 refinement **item 5**, and doubles as the feature set T3's confidence-weighted allocation (§3.2) would eventually draw on.
+§3.7's refinements tell us *where* to look inside T1's pooled basket. The complementary question is whether a **per-candidate score** can separate winners from stop-outs before the fact, not just explain them after. This is a **parameter list, not a weighting scheme yet**: per B6 in `selection-and-analysis-improvement-plan.md`, any such score gets rank-IC tested against forward return before it's trusted with anything — weights are a conclusion, not an input. It slots in as T1 refinement **item 5**, and doubles as the feature set T3's confidence-weighted allocation (§3.2) would eventually draw on.
 
-**A. Already on every trade record today — zero new computation**
+**Scoring-architecture principle (new in v0.7):** the parameters below split into two kinds that must not be blended into one number the same way. *Edge-signal* parameters (3.8.1) are what the rank-IC test is actually trying to validate — they're allowed to move the score up or down continuously. *Risk-guardrail* parameters (3.8.2) describe how much room a candidate has before it breaches a hard limit we already enforce elsewhere (the 15% risk cap, the liquidity floor, the market-cap band) — these should **gate or discount** the score, not add to it, the same way sector RS is already a soft input while the risk cap is already a hard filter in `build_trades()`. Folding a guardrail into an additive blend lets "safely far from the cap" outscore "genuinely better setup," which is exactly the kind of thing B6's rank-IC test would then validate for the wrong reason. §6 records the open decision on exactly how gating vs. discounting is implemented.
+
+**Control impact: none.** Every parameter in 3.8.1 and 3.8.2 is read off T1 candidates only, in shadow mode — nothing here touches `config/rules.yaml`, the universe, VStop(10,2), RSI[50,65], the 15% risk cap, or Control's equal-weight sizing, and nothing here runs inside `record()` or `build_trades()` as Control calls them. §3.1's "Control — defined once, frozen" still holds exactly as written: Control keeps running unmodified, keeps taking the real capital, and keeps being logged in `forward-test-log.md` the same way, whether or not a T1 score ever ships. The score is scoped to T1's own candidate list (and, per §3.2, to T3's reweighting of Control's *existing* trade list) — it can change how T1/T3 are read or ranked, never what Control screens, selects, or sizes.
+
+#### 3.8.1 Edge-signal parameters (what the rank-IC test evaluates)
+
+Already on every trade record today — zero new computation:
 - `confidence` — the engine's existing composite score (the one B6 already plans to rank-IC test on its own).
-- `R_pct_of_close` — stop distance as a % of signal close; a volatility/risk proxy, and the same number the 15% cap is measured against.
-- `rsi` — raw value; distance from the band's center (57.5) vs sitting near either edge (50 or 65) may carry different information than a bare in/out-of-band flag.
-- `atr` — absolute volatility, independent of price level (two names can share `R_pct_of_close` with very different ATR if priced differently).
-- `turnover_cr` — liquidity headroom above the ₹10cr floor; a name at 3x the floor fills differently than one at 1.05x.
-- `mktcap_cr` — position within the ₹10–50k cr band (near an edge vs centered).
+- `rsi` — raw value; **RSI band centrality** = `1 − |rsi − 57.5| / 7.5` (one-line derivation) may carry different information than a bare in/out-of-band flag.
+- `RR` (reward:risk) — already computed as `rr_comp` in `build_trades()`.
+- Trend quality — `(close − SL) / atr`; already computed.
+- Volume ratio — `volume / avg_vol_8w`; already computed.
+- Sector RS — `rs_4w` / `rs_13w` and the `outperforming` flag; already computed, already soft by design.
 
-**B. One-line derivations from (A) — still zero new data**
-- **Risk-cap headroom** = `0.15 − R_pct_of_close/100`. How much margin a name has below the cap, not just whether it's under it — Graphite (15.70%, rejected) and Tejas (18.92%, rejected) failed by very different amounts; headroom distinguishes them, a pass/fail flag doesn't.
-- **RSI band centrality** = `1 − |rsi − 57.5| / 7.5`. Distance-from-center instead of inside/outside.
-- **Liquidity multiple** = `turnover_cr / 10`. Same floor, continuous instead of binary.
+New, needs §3.7's T1 instrumentation done first (item 5 depends on items 2–3):
+- **Days-since-flip** (item 3) — how early in the window the signal confirmed. Not yet recorded anywhere in `record_t1_shadow()`.
+- **Window-offset identity** (item 2) — which rolling anchor caught it, once offsets are split out. Not yet recorded.
+- **Per-ticker historical reversal frequency** — how often *this name specifically* has shown up in `extra_reversed` in past weeks. Needs enough T1 history to compute at all (not available with only one or two graded T1 weeks) — §6 records an open question on a minimum-history threshold before this is trusted.
 
-**C. New from §3.7's T1 instrumentation — needs that work done first**
-- **Days-since-flip** (item 3) — how early in the window the signal confirmed.
-- **Window-offset identity** (item 2) — which rolling anchor caught it, once offsets are split out.
-- **Per-ticker historical reversal frequency** — how often *this name specifically* has shown up in `extra_reversed` in past weeks, once there's enough T1 history to compute it. A name that reverses repeatedly is a different bet than one appearing for the first time.
+Flagged, not started — deliberately excluded pending a separate decision:
+- **Signal-week pop size** (the move into the flip) — available today, but `vstop-strategy-revision-plan.md` §1 already closed pop-size *as a standalone filter* (no subset of the 244-trade backtest was profitable on it). Including it as one continuous input to a multi-feature score is a different question from using it alone as a gate, but it's re-opening ground the project deliberately closed — leave out of the v1 score; any test using it should say so explicitly and treat a positive result with extra suspicion.
 
-**D. Would need new data — flagged, not started**
-- **Sector RS** — already computed as a soft signal per `vstop-screener-test-plan.md` §8 ("sector is not a filter"); available to add as a score feature without new data collection, just a new read of an existing computation.
-- **Signal-week pop size** (the move into the flip) — available today, but flagged explicitly: `vstop-strategy-revision-plan.md` §1 already closed pop-size *as a filter* (no subset of the 244-trade backtest was profitable on it). Including it as one continuous input to a multi-feature score is a different question from using it alone as a gate, but it's re-opening ground the project deliberately closed — any test using it should say so explicitly and treat a positive result with extra suspicion, not fold it in quietly.
+#### 3.8.2 Risk-guardrail parameters (gate or discount, never blend as edge)
 
-**What this is not, yet:** a ranking formula, a set of weights, or anything that changes which T1 candidates get traded. The next step — separate from this plan — is B6's rank-IC test, run first on the existing single `confidence` score, then extended to whichever of (A)–(C) are cheap enough to add before the next T1 review. (D)'s sector-RS is cheap and fine to include; its pop-size entry is intentionally harder to greenlight.
+- **Risk-cap headroom** = `0.15 − R_pct_of_close/100`. How much margin a name has below the 15% cap, not just whether it's under it — Graphite (15.70%, rejected) and Tejas (18.92%, rejected) failed by very different amounts; headroom distinguishes them, a pass/fail flag doesn't. Note: `R_pct_of_close` is computed off the signal-week's close (a same-day proxy), while the cap actually enforced in `build_trades()` is `R/EP` — usually close but not guaranteed identical; treat headroom as a proxy, not the exact enforced quantity.
+- **Liquidity multiple** = `turnover_cr / 10`. Same floor as today, continuous instead of binary — headroom above the liquidity floor, not just pass/fail.
+- **Market-cap band position** — how centered vs. edge-of-band (₹10–50k cr) a name sits. A name near 49k cr is one good week from falling out of the universe entirely; that's a guardrail fact about durability, not an edge signal.
+- **ATR** (absolute volatility) — cross-check against `R_pct_of_close`, since two names can share the same %-risk with very different absolute volatility (relevant to T2's sizing, not just T1's score).
+- **Weekly survivor count** — not per-candidate, but relevant context: a candidate scored highly in a 1-survivor week and a candidate scored highly in a 12-survivor week aren't competing for capital the same way. Worth carrying alongside the score, not folded into it.
+
+**What this is not, yet:** a ranking formula, a set of weights, or anything that changes which T1 candidates get traded. The next step — separate from this plan — is B6's rank-IC test, run first on the existing single `confidence` score, then extended to whichever of 3.8.1's parameters are cheap enough to add before the next T1 review, with 3.8.2 wired in as a gate/discount rather than a blended input. 3.8.1's sector-RS is cheap and fine to include; the pop-size entry stays flagged, not included.
 
 ---
 
@@ -181,3 +189,6 @@ Standing rule 1 in `forward-test-log.md`: *"Record before the week opens. A pick
 4. Extended history (existing): pull 10+ years now for a clean holdout, or accept the partly-spent validation window.
 5. Regime gate V6 (existing): still out unless you say otherwise.
 6. Shorting V7 (existing): diagnostic only, or a real candidate if the inverse confirms.
+7. §3.8 scoring architecture: implement risk-guardrail parameters (headroom, liquidity multiple, band position) as a multiplicative discount on the edge-signal score, or as a hard gate below some threshold, or just as separate ledger columns with no single blended number at all?
+8. §3.8.1 per-ticker reversal frequency: what's the minimum number of past T1 appearances before this parameter is trusted enough to include, given only one or two T1 weeks are graded so far?
+9. §3.8 v1 scope: ship a first version of the score from 3.8.1 + 3.8.2's already-computed parameters now, or wait until §3.7 items 2–3 (window-offset, days-since-flip) land so the full parameter set is available at once?

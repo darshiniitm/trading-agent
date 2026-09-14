@@ -33,6 +33,7 @@ import numpy as np
 import pandas as pd
 
 from src.backtest.harness import bootstrap_ci, confidence_rank_ic
+from src.screen.candidate_score import compute_candidate_score
 from src.screen.daily_scale import daily_rule_spec
 from src.screen.engine import run_screen, compute_features_for_ticker, _slice_as_of
 from src.trade.builder import build_trades, _rsi_band_bounds
@@ -50,6 +51,35 @@ PRIOR = {
     "note": "A single week has almost no statistical power. This record accumulates; "
             "it does not adjudicate. Do not update beliefs on one week either way.",
 }
+
+# Shadow-only score filter for T1 (docs/forward-test-response-and-volume-plan.md §3.8).
+# NOT a graduation to real capital -- §3.5/§4 require a bootstrap CI beating Control
+# before any Test arm touches real capital, and T1 is nowhere near that review point
+# (1 graded week). This just carves out a second shadow sub-basket (T1 names scoring
+# >=40) so the eventual rank-IC/graduation decision has evidence on whether
+# thresholding the (still-unvalidated) score actually helps, instead of guessing.
+T1_SCORE_FILTER_THRESHOLD = 40.0
+
+
+def _score_row(row: dict, rule_spec: dict, rsi_band: tuple[float, float], rs_primary: float | None) -> dict:
+    """§3.8 v1 composite score (docs/forward-test-response-and-volume-plan.md).
+    row must carry rsi, atr, signal_close, vstop_line_SL, volume, avg_vol_8w,
+    turnover_cr, mktcap_cr, R_pct_of_close. Returns {} if a required input is
+    missing (e.g. a near-miss with no vstop_line) rather than guessing."""
+    required = (row.get("rsi"), row.get("atr"), row.get("signal_close"), row.get("vstop_line_SL"),
+                row.get("volume"), row.get("avg_vol_8w"), row.get("turnover_cr"), row.get("R_pct_of_close"))
+    if any(v is None for v in required):
+        return {}
+    tc = rule_spec["trade"]
+    return compute_candidate_score(
+        rsi=row["rsi"], atr=row["atr"], close=row["signal_close"], sl=row["vstop_line_SL"],
+        volume=row["volume"], avg_vol_8w=row["avg_vol_8w"], rs_primary=rs_primary,
+        turnover_cr=row["turnover_cr"], mktcap_cr=row["mktcap_cr"],
+        r_pct_of_close=row["R_pct_of_close"], target_r_multiple=tc["target_r_multiple"],
+        rsi_band=rsi_band, risk_cap_pct=tc["max_r_pct"],
+        liquidity_floor_cr=rule_spec["universe"]["liquidity"]["min"],
+    )
+
 
 EXIT_RULE = {
     "entry": "open of the first trading day of the following week",
@@ -79,12 +109,16 @@ def record():
         if not b.empty:
             bench_close = float(b["close"].iloc[-1])
 
+    rsi_band = _rsi_band_bounds(rule_spec)
+    primary_lb = rule_spec["sector"]["rs_lookbacks_weeks"][0]
+    rs_col = f"rs_{primary_lb}w"
+
     rows = []
     for _, s in survivors.iterrows():
         tk = s["ticker"]
         tr = trades[trades["ticker"] == tk].iloc[0] if tk in taken else None
         R = float(s["close"]) - float(s["vstop_line"])
-        rows.append({
+        row = {
             "ticker": tk,
             "name": s.get("name"),
             "sector": s.get("sector"),
@@ -93,6 +127,8 @@ def record():
             "vstop_line_SL": round(float(s["vstop_line"]), 4),
             "rsi": round(float(s["rsi"]), 3),
             "atr": round(float(s["atr"]), 4) if pd.notna(s.get("atr")) else None,
+            "volume": float(s["volume"]) if pd.notna(s.get("volume")) else None,
+            "avg_vol_8w": float(s["avg_vol_8w"]) if pd.notna(s.get("avg_vol_8w")) else None,
             "mktcap_cr": round(float(s["mktcap_cr"]), 1),
             "turnover_cr": round(float(s["median_weekly_turnover_cr"]), 2),
             "R_ref": round(R, 4),
@@ -100,12 +136,14 @@ def record():
             "target_ref": round(float(tr["target"]), 4) if tr is not None else None,
             "confidence": float(tr["confidence"]) if tr is not None else None,
             "EP": "PENDING — next week's open",
-        })
+        }
+        row.update(_score_row(row, rule_spec, rsi_band, s.get(rs_col)))
+        rows.append(row)
 
     near_rows = []
     for _, s in near_miss.iterrows():
         R = float(s["close"]) - float(s["vstop_line"]) if pd.notna(s.get("vstop_line")) else None
-        near_rows.append({
+        near_row = {
             "ticker": s["ticker"],
             "name": s.get("name"),
             "sector": s.get("sector"),
@@ -114,6 +152,8 @@ def record():
             "vstop_line_SL": round(float(s["vstop_line"]), 4) if pd.notna(s.get("vstop_line")) else None,
             "rsi": round(float(s["rsi"]), 3) if pd.notna(s.get("rsi")) else None,
             "atr": round(float(s["atr"]), 4) if pd.notna(s.get("atr")) else None,
+            "volume": float(s["volume"]) if pd.notna(s.get("volume")) else None,
+            "avg_vol_8w": float(s["avg_vol_8w"]) if pd.notna(s.get("avg_vol_8w")) else None,
             "mktcap_cr": round(float(s["mktcap_cr"]), 1),
             "turnover_cr": round(float(s["median_weekly_turnover_cr"]), 2),
             "R_ref": round(R, 4) if R is not None else None,
@@ -121,7 +161,16 @@ def record():
             "target_ref": None,
             "confidence": None,
             "EP": "PENDING — next week's open",
-        })
+        }
+        # near-miss rows aren't in survivors_df, so they never got the sector-RS merge; look it up separately.
+        rs_val = None
+        sec_rs = res["sector_rs"]
+        if s.get("sector") in set(sec_rs.get("sector", [])):
+            match = sec_rs[sec_rs["sector"] == s["sector"]]
+            if not match.empty and rs_col in match.columns:
+                rs_val = match.iloc[0][rs_col]
+        near_row.update(_score_row(near_row, rule_spec, rsi_band, rs_val))
+        near_rows.append(near_row)
 
     rec = {
         "record_id": f"fwd_{as_of.date()}",
@@ -374,6 +423,10 @@ def record_t1_shadow():
     CR = 1e7
     liq_lookback = spec["universe"]["liquidity"]["lookback_weeks"]
     uni_by_ticker = uni.set_index("ticker")
+    rsi_band = (rsi_lo, rsi_hi)
+    primary_lb = rule_spec["sector"]["rs_lookbacks_weeks"][0]
+    rs_col = f"rs_{primary_lb}w"
+    sec_rs = control_res["sector_rs"]  # Friday-anchored, computed once above; same table Control's own picks use.
 
     picks = []
     for tk in extra_confirmed:
@@ -383,19 +436,34 @@ def record_t1_shadow():
         turnover_cr = (panel["close"] * panel["volume"]).tail(liq_lookback) / CR
         sh = shares.get(tk)
         row = uni_by_ticker.loc[tk] if tk in uni_by_ticker.index else {}
-        picks.append({
+        sector = row.get("sector") if hasattr(row, "get") else None
+        pick = {
             "ticker": tk,
             "name": row.get("name") if hasattr(row, "get") else None,
-            "sector": row.get("sector") if hasattr(row, "get") else None,
+            "sector": sector,
             "status": "T1_EXTRA_vs_control",
             "signal_close": round(float(feats["close"]), 4),
             "vstop_line_SL": round(float(feats["vstop_line"]), 4),
             "rsi": round(float(feats["rsi"]), 3) if feats["rsi"] is not None else None,
+            "atr": round(float(feats["atr"]), 4) if feats.get("atr") is not None else None,
+            "volume": float(feats["volume"]) if feats.get("volume") is not None else None,
+            "avg_vol_8w": float(feats["avg_vol_8w"]) if feats.get("avg_vol_8w") is not None else None,
             "mktcap_cr": round(float(feats["close"]) * sh / CR, 1) if sh else None,
             "turnover_cr": round(float(turnover_cr.median()), 2) if len(turnover_cr) else None,
             "R_ref": round(R, 4),
             "R_pct_of_close": round(R / float(feats["close"]) * 100, 3),
-        })
+        }
+        rs_val = None
+        if sector is not None and not sec_rs.empty and sector in set(sec_rs["sector"]) and rs_col in sec_rs.columns:
+            match = sec_rs[sec_rs["sector"] == sector]
+            if not match.empty:
+                rs_val = match.iloc[0][rs_col]
+        pick.update(_score_row(pick, rule_spec, rsi_band, rs_val))
+        pick["score_filter_eligible"] = bool(pick.get("candidate_score") is not None
+                                              and pick["candidate_score"] >= T1_SCORE_FILTER_THRESHOLD)
+        picks.append(pick)
+
+    filtered_tickers = [p["ticker"] for p in picks if p.get("score_filter_eligible")]
 
     rec = {
         "record_id": f"fwd_{as_of.date()}_t1",
@@ -412,6 +480,14 @@ def record_t1_shadow():
         "n_extra_reversed": len(extra_reversed),
         "extra_reversed_tickers": extra_reversed,
         "picks": picks,
+        "score_filter_note": ("SHADOW ONLY -- not a graduation to real capital. §3.5/§4 require a "
+                               "bootstrap CI beating Control before any Test arm touches real money; "
+                               "T1 is nowhere near that review point. This threshold carves out a "
+                               "second shadow sub-basket to accumulate evidence on whether the "
+                               "(still-unvalidated) §3.8 score helps, per open decision #9."),
+        "score_filter_threshold": T1_SCORE_FILTER_THRESHOLD,
+        "n_filtered_eligible": len(filtered_tickers),
+        "filtered_tickers": filtered_tickers,
         "graded": None,
     }
     out_path = OUT / f"picks_{as_of.date()}_t1.json"
@@ -443,17 +519,26 @@ def grade_t1(path):
             return
 
     df = pd.DataFrame(out)
+    filtered_set = set(rec.get("filtered_tickers", []))
+    filtered_df = df[df["ticker"].isin(filtered_set)] if filtered_set else df.iloc[0:0]
     summary = {
         "graded_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "n_traded": int(len(df)),
         "basket_net_pct": round(float(df["ret_pct_net"].mean()), 3) if len(df) else None,
+        "score_filter_threshold": rec.get("score_filter_threshold"),
+        "n_filtered_eligible": len(filtered_df),
+        "filtered_basket_net_pct": round(float(filtered_df["ret_pct_net"].mean()), 3) if len(filtered_df) else None,
         "detail": out,
     }
     rec["graded"] = summary
     Path(path).write_text(json.dumps(rec, indent=2))
     print(f"=== GRADED {rec['record_id']} ===")
     print(df[["ticker", "exit_reason", "exit_price", "ret_pct", "ret_pct_net"]].to_string(index=False))
-    print(f"\n  T1 shadow basket net: {summary['basket_net_pct']}%")
+    print(f"\n  T1 shadow basket net (all {summary['n_traded']}): {summary['basket_net_pct']}%")
+    if summary["filtered_basket_net_pct"] is not None:
+        print(f"  T1 score>={summary['score_filter_threshold']:.0f} shadow sub-basket "
+              f"(n={summary['n_filtered_eligible']}): {summary['filtered_basket_net_pct']}%  "
+              f"<- SHADOW ONLY, not real capital")
 
 
 # ~13 weeks = first look, ~26 weeks = a real read (docs/forward-test-response-and-volume-plan.md §2).

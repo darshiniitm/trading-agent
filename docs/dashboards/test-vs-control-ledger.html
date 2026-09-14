@@ -134,14 +134,14 @@ p{max-width:68ch}
 
 <div class="wrap">
 <header>
-  <div class="eyebrow">Live forward test &middot; updated 2026-09-13</div>
+  <div class="eyebrow">Live forward test &middot; updated 2026-09-14</div>
   <h1>Test vs Control Ledger</h1>
-  <p class="standfirst">Two weeks tracked against the frozen 104-week prior, plus the shadow arms built to raise trade count and gain inside the same universe &mdash; without moving the spec. Both weeks are now graded, all four experiments included.</p>
+  <p class="standfirst">Three weeks tracked against the frozen 104-week prior, plus the shadow arms built to raise trade count and gain inside the same universe &mdash; without moving the spec. Weeks 1&ndash;2 are graded; week 3's shortlist is live now (entered Mon 14 Sep) and grades after Friday 18 Sep close.</p>
   <div class="meta">
     <span><b>Spec</b> config/rules.yaml &mdash; unchanged</span>
-    <span><b>Weeks logged</b> 2</span>
-    <span><b>Graded</b> 2 of 2</span>
-    <span><b>Daily-bar cache</b> 500 tickers, 782k bars</span>
+    <span><b>Weeks logged</b> 3</span>
+    <span><b>Graded</b> 2 of 3</span>
+    <span><b>Daily-bar cache</b> 500 tickers, refreshed 2026-09-14</span>
     <span><b>Live capital</b> Control only &mdash; T1/T2/T3 shadow</span>
   </div>
 </header>
@@ -158,6 +158,27 @@ p{max-width:68ch}
       <div><dt>Risk cap</dt><dd>reject if R/EP &gt; 15%</dd></div>
       <div><dt>Sizing</dt><dd>Control: equal weight &middot; T2: 1%&divide;R &middot; T3: by confidence</dd></div>
     </dl>
+  </div>
+</section>
+<div class="arrow">&darr;</div>
+
+<!-- 01b -->
+<section>
+  <div class="step-head"><h2>Per-trade score &mdash; &sect;3.8 v1 <span class="pill pill-flag" style="margin-left:6px">shadow, not used to select or size</span></h2></div>
+  <p class="lede">Every survivor table below now carries a <strong>Score</strong> column: <code>edge_score &times; guardrail = candidate_score</code>. This resolves &sect;6 open decision #9 in favour of shipping a v1 now, from parameters already computed today, rather than waiting on &sect;3.7 items 2&ndash;3 (window-offset split, days-since-flip) &mdash; which still don't exist and aren't in this score.</p>
+  <div class="two" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-head">Edge score (0&ndash;100)<span class="side">&sect;3.8.1</span></div>
+      <div style="padding:14px 18px;font-size:13.5px;color:var(--ink-2)">Identical formula/weights to <code>build_trades()</code>'s own <code>confidence</code> &mdash; RR, RSI-band centrality, sector RS, trend quality (ATR-based), volume ratio, liquidity. Same number for a Control trade and a T1 candidate, so the two are directly comparable.</div>
+    </div>
+    <div class="card">
+      <div class="card-head">Guardrail multiplier (0&ndash;1)<span class="side">&sect;3.8.2</span></div>
+      <div style="padding:14px 18px;font-size:13.5px;color:var(--ink-2)">Risk-cap headroom, liquidity multiple, market-cap band position &mdash; <strong>discounts</strong> the edge score, never adds to it, per &sect;3.8's gate-or-discount-never-blend rule. A name sitting right against the 15% cap or the &#8377;50k cr band edge gets discounted hard even with a strong edge score.</div>
+    </div>
+  </div>
+  <div class="callout flag">
+    <h3>Still not live, still not weighted</h3>
+    <p>Not used to select or size any trade in any arm &mdash; §3.8 is explicit that weights are unvalidated until B6's rank-IC test runs against enough graded weeks. Days-since-flip, window-offset identity, and per-ticker reversal frequency (§3.8.1's instrumentation-pending bucket) aren't in this v1; they still wait on §3.7 items 2&ndash;3.</p>
   </div>
 </section>
 <div class="arrow">&darr;</div>
@@ -181,12 +202,13 @@ p{max-width:68ch}
   <div class="card">
     <div class="card-head">Survivors &rarr; trade decision &mdash; 24 Aug 2026<span class="side">2 survivors, 1 trade</span></div>
     <div class="scroll"><table>
-      <thead><tr><th>Ticker</th><th>Arm result</th><th>RSI</th><th>R / EP</th><th>Conf.</th></tr></thead>
+      <thead><tr><th>Ticker</th><th>Arm result</th><th>RSI</th><th>R / EP</th><th>Conf.</th><th>Score (edge &times; guard)</th></tr></thead>
       <tbody>
-        <tr><td class="tick">ENGINERSIN</td><td><span class="pill pill-in">Control &middot; taken</span></td><td class="n">60.5</td><td class="n">13.97%</td><td class="n">62.1</td></tr>
-        <tr class="out"><td class="tick">NSLNISP</td><td><span class="pill pill-out">shadow &middot; risk cap</span></td><td class="n">60.0</td><td class="n neg">15.88%</td><td class="n">&mdash;</td></tr>
+        <tr><td class="tick">ENGINERSIN</td><td><span class="pill pill-in">Control &middot; taken</span></td><td class="n">60.5</td><td class="n">13.97%</td><td class="n">62.1</td><td class="n">62.1 &times; 0.09 = <strong>5.5</strong></td></tr>
+        <tr class="out"><td class="tick">NSLNISP</td><td><span class="pill pill-out">shadow &middot; risk cap</span></td><td class="n">60.0</td><td class="n neg">15.88%</td><td class="n">&mdash;</td><td class="n neg">72.7 &times; 0.00 = <strong>0.0</strong></td></tr>
       </tbody>
     </table></div>
+    <div style="padding:10px 18px;font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--rule)">Score computed retroactively this session (&sect;3.8 v1 didn't exist when this week was recorded). Edge score for the taken trade reuses the originally-logged confidence value; NSLNISP's (never scored at the time, since only trades got a confidence number) is freshly computed off the now-refreshed data cache.</div>
   </div>
 
   <div class="card" style="margin-top:20px">
@@ -230,14 +252,15 @@ p{max-width:68ch}
   <div class="card">
     <div class="card-head">Survivors + near-miss &rarr; trade decision &mdash; 31 Aug 2026<span class="side">3 survivors, 1 near-miss, 1 trade</span></div>
     <div class="scroll"><table>
-      <thead><tr><th>Ticker</th><th>Arm result</th><th>RSI</th><th>R / EP</th><th>Conf.</th></tr></thead>
+      <thead><tr><th>Ticker</th><th>Arm result</th><th>RSI</th><th>R / EP</th><th>Conf.</th><th>Score (edge &times; guard)</th></tr></thead>
       <tbody>
-        <tr><td class="tick">LICHSGFIN</td><td><span class="pill pill-in">Control &middot; taken</span></td><td class="n">57.6</td><td class="n">11.26%</td><td class="n">75.4</td></tr>
-        <tr class="out"><td class="tick">GRAPHITE</td><td><span class="pill pill-out">shadow &middot; risk cap</span></td><td class="n">59.4</td><td class="n neg">15.70%</td><td class="n">&mdash;</td></tr>
-        <tr class="out"><td class="tick">TEJASNET</td><td><span class="pill pill-out">shadow &middot; risk cap</span></td><td class="n">61.0</td><td class="n neg">18.92%</td><td class="n">&mdash;</td></tr>
-        <tr class="out"><td class="tick">CGCL</td><td><span class="pill pill-flag">near-miss &middot; RSI 74.5</span></td><td class="n neg">74.5</td><td class="n">15.55%</td><td class="n">&mdash;</td></tr>
+        <tr><td class="tick">LICHSGFIN</td><td><span class="pill pill-in">Control &middot; taken</span></td><td class="n">57.6</td><td class="n">11.26%</td><td class="n">75.4</td><td class="n pos">75.4 &times; 0.75 = <strong>56.4</strong></td></tr>
+        <tr class="out"><td class="tick">GRAPHITE</td><td><span class="pill pill-out">shadow &middot; risk cap</span></td><td class="n">59.4</td><td class="n neg">15.70%</td><td class="n">&mdash;</td><td class="n neg">67.3 &times; 0.00 = <strong>0.0</strong></td></tr>
+        <tr class="out"><td class="tick">TEJASNET</td><td><span class="pill pill-out">shadow &middot; risk cap</span></td><td class="n">61.0</td><td class="n neg">18.92%</td><td class="n">&mdash;</td><td class="n neg">70.8 &times; 0.00 = <strong>0.0</strong></td></tr>
+        <tr class="out"><td class="tick">CGCL</td><td><span class="pill pill-flag">near-miss &middot; RSI 74.5</span></td><td class="n neg">74.5</td><td class="n">15.55%</td><td class="n">&mdash;</td><td class="n neg">52.7 &times; 0.00 = <strong>0.0</strong></td></tr>
       </tbody>
     </table></div>
+    <div style="padding:10px 18px;font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--rule)">CGCL's guardrail is 0 independently of the RSI ceiling that actually excluded it &mdash; its R/EP (15.55&ndash;15.66%, small drift from the cache refresh) is itself just over the 15% cap, so it was doubly excluded, not only by RSI. Score computed retroactively; see &sect;01b.</div>
   </div>
 
   <div class="card">
@@ -264,10 +287,46 @@ p{max-width:68ch}
 </section>
 <div class="arrow">&darr;</div>
 
+<!-- 03b -->
+<section>
+  <div class="step-head"><span class="step-n">03b</span><h2>Week 3 &mdash; fwd_2026-09-07 <span class="pill pill-pend" style="margin-left:6px">pending</span></h2></div>
+  <p class="lede">Signal Friday 11 Sep close. Entry is this week's open (Mon 14 Sep); grades after Friday 18 Sep close. Data cache was refreshed for this record &mdash; full 500-ticker universe (was 101 cached) plus the daily-bar backfill T1 needs.</p>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-head">Filter funnel</div>
+    <div class="funnel">
+      <div class="frow"><div class="flabel">candidate universe</div><div class="ftrack"><div class="fbar" style="width:100%"></div></div><div class="fcount">501</div></div>
+      <div class="frow"><div class="flabel">market-cap band</div><div class="ftrack"><div class="fbar" style="width:52.7%"></div></div><div class="fcount">264 <span class="fdrop">&minus;237</span></div></div>
+      <div class="frow"><div class="flabel">liquidity &ge; &#8377;10cr</div><div class="ftrack"><div class="fbar" style="width:52.7%"></div></div><div class="fcount">264 <span class="fdrop">&minus;0</span></div></div>
+      <div class="frow"><div class="flabel">VStop flip up</div><div class="ftrack"><div class="fbar" style="width:0.6%"></div></div><div class="fcount">3 <span class="fdrop">&minus;261</span></div></div>
+      <div class="frow"><div class="flabel">RSI &isin; [50,65]</div><div class="ftrack"><div class="fbar final" style="width:0.6%"></div></div><div class="fcount">3 <span class="fdrop">&minus;0</span></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">Survivors &rarr; trade decision &mdash; 7 Sep 2026<span class="side">3 survivors, 2 trades, 0 near-miss</span></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Ticker</th><th>Arm result</th><th>RSI</th><th>R / EP</th><th>Conf.</th><th>Score (edge &times; guard)</th></tr></thead>
+      <tbody>
+        <tr><td class="tick">JUBLPHARMA</td><td><span class="pill pill-in">Control &middot; taken</span></td><td class="n">59.1</td><td class="n">13.21%</td><td class="n">72.8</td><td class="n neg">72.8 &times; 0.22 = <strong>16.3</strong></td></tr>
+        <tr><td class="tick">SPLPETRO</td><td><span class="pill pill-in">Control &middot; taken</span></td><td class="n">62.3</td><td class="n">14.12%</td><td class="n">61.8</td><td class="n neg">61.8 &times; 0.10 = <strong>5.9</strong></td></tr>
+        <tr class="out"><td class="tick">PINELABS</td><td><span class="pill pill-out">shadow &middot; risk cap</span></td><td class="n">57.5</td><td class="n neg">19.60%</td><td class="n">&mdash;</td><td class="n neg">75.0 &times; 0.00 = <strong>0.0</strong></td></tr>
+      </tbody>
+    </table></div>
+    <div style="padding:10px 18px;font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--rule)">Both of this week's Control trades score low despite decent edge &mdash; both sit within ~2pp of the 15% risk cap (headroom 1.79pp and 0.89pp), so the guardrail discounts them hard. That's the guardrail doing exactly what &sect;3.8.2 asks: flag thin margin, not reward it.</div>
+  </div>
+
+  <div class="callout pend">
+    <h3>2-name week, both taken &mdash; T1 adds 14 more, shadow only</h3>
+    <p>First week with two Control trades since tracking began (T2/T3's reweighting only becomes visible on multi-name weeks, and this is the first live case). PINELABS missed by risk-cap headroom alone (R/EP 19.6% vs the 15% cap). No RSI near-miss this week. Full four-arm shortlist for the week in &sect;04 below; nothing here has traded yet.</p>
+  </div>
+</section>
+<div class="arrow">&darr;</div>
+
 <!-- 04 -->
 <section>
   <div class="step-head"><span class="step-n">04</span><h2>Stocks and trades, all four experiments</h2></div>
-  <p class="lede">Control plus the three registered Test arms (T1, T2, T3), read against each other on the same two weeks. T2 and T3 re-weight capital across Control's own trade list, so on a single-trade week every arm holds the identical position at 100% weight; the split only becomes visible once a week clears more than one name past the risk cap. T1 is the exception &mdash; it scans more days, so it can add stocks outright, and now that the daily-bar backfill has run, it did.</p>
+  <p class="lede">Control plus the three registered Test arms (T1, T2, T3), read against each other across all three weeks logged so far. T2 and T3 re-weight capital across Control's own trade list, so on a single-trade week every arm holds the identical position at 100% weight; the split only becomes visible once a week clears more than one name past the risk cap, as week 3 finally does. T1 is the exception &mdash; it scans more days, so it can add stocks outright, and now that the daily-bar backfill has run, it does every week.</p>
 
   <div class="two" style="margin-bottom:20px">
     <div class="card">
@@ -277,6 +336,8 @@ p{max-width:68ch}
         <tbody>
           <tr><td class="n">fwd_2026-08-24</td><td class="tick">ENGINERSIN</td><td class="n">100%</td></tr>
           <tr><td class="n">fwd_2026-08-31</td><td class="tick">LICHSGFIN</td><td class="n">100%</td></tr>
+          <tr><td class="n">fwd_2026-09-07</td><td class="tick">JUBLPHARMA</td><td class="n">50%</td></tr>
+          <tr><td class="n">fwd_2026-09-07</td><td class="tick">SPLPETRO</td><td class="n">50% <span class="pill pill-pend" style="margin-left:4px">pending</span></td></tr>
         </tbody>
       </table></div>
     </div>
@@ -287,6 +348,18 @@ p{max-width:68ch}
         <tbody>
           <tr class="out"><td class="n">fwd_2026-08-24</td><td colspan="2"><span class="pill pill-pend">not scanned &mdash; T1 didn't exist yet</span></td></tr>
           <tr><td class="n">fwd_2026-08-31</td><td colspan="2"><span class="pill pill-flag">17 extra names &mdash; graded below</span></td></tr>
+          <tr><td class="n">fwd_2026-09-07</td><td colspan="2"><span class="pill pill-pend">14 extra names, equal weight &mdash; pending, see &sect;04b</span></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <div class="card-head">T1-filtered &mdash; score &ge;40<span class="side">shadow sub-basket, still no capital</span></div>
+      <div class="scroll"><table>
+        <thead><tr><th>Week</th><th>Stock</th><th>Weight</th></tr></thead>
+        <tbody>
+          <tr class="out"><td class="n">fwd_2026-08-24</td><td colspan="2"><span class="pill pill-pend">not scanned &mdash; T1 didn't exist yet</span></td></tr>
+          <tr><td class="n">fwd_2026-08-31</td><td colspan="2"><span class="pill pill-flag">12 of 17 clear the bar &mdash; graded below, worse than unfiltered</span></td></tr>
+          <tr><td class="n">fwd_2026-09-07</td><td colspan="2"><span class="pill pill-pend">7 of 14 clear the bar &mdash; pending, see &sect;04b</span></td></tr>
         </tbody>
       </table></div>
     </div>
@@ -297,6 +370,8 @@ p{max-width:68ch}
         <tbody>
           <tr><td class="n">fwd_2026-08-24</td><td class="tick">ENGINERSIN</td><td class="n">100%</td></tr>
           <tr><td class="n">fwd_2026-08-31</td><td class="tick">LICHSGFIN</td><td class="n">100%</td></tr>
+          <tr><td class="n">fwd_2026-09-07</td><td class="tick">JUBLPHARMA</td><td class="n">46.1%</td></tr>
+          <tr><td class="n">fwd_2026-09-07</td><td class="tick">SPLPETRO</td><td class="n">53.9% <span class="pill pill-pend" style="margin-left:4px">pending</span></td></tr>
         </tbody>
       </table></div>
     </div>
@@ -307,6 +382,8 @@ p{max-width:68ch}
         <tbody>
           <tr><td class="n">fwd_2026-08-24</td><td class="tick">ENGINERSIN</td><td class="n">100%</td></tr>
           <tr><td class="n">fwd_2026-08-31</td><td class="tick">LICHSGFIN</td><td class="n">100%</td></tr>
+          <tr><td class="n">fwd_2026-09-07</td><td class="tick">JUBLPHARMA</td><td class="n">54.1%</td></tr>
+          <tr><td class="n">fwd_2026-09-07</td><td class="tick">SPLPETRO</td><td class="n">45.9% <span class="pill pill-pend" style="margin-left:4px">pending</span></td></tr>
         </tbody>
       </table></div>
     </div>
@@ -323,6 +400,10 @@ p{max-width:68ch}
         <tr class="out"><td class="n">fwd_2026-08-31</td><td class="tick">GRAPHITE</td><td><span class="pill pill-out">shadow &middot; risk cap, all four</span></td><td class="n">59.4</td><td class="n neg">15.70%</td><td class="n">&mdash;</td></tr>
         <tr class="out"><td class="n">fwd_2026-08-31</td><td class="tick">TEJASNET</td><td><span class="pill pill-out">shadow &middot; risk cap, all four</span></td><td class="n">61.0</td><td class="n neg">18.92%</td><td class="n">&mdash;</td></tr>
         <tr class="out"><td class="n">fwd_2026-08-31</td><td class="tick">CGCL</td><td><span class="pill pill-flag">near-miss &middot; RSI 74.5, all four</span></td><td class="n neg">74.5</td><td class="n">15.55%</td><td class="n">&mdash;</td></tr>
+        <tr><td class="n">fwd_2026-09-07</td><td class="tick">JUBLPHARMA</td><td><span class="pill pill-in">Control + T2 + T3 <span class="pill pill-pend" style="margin-left:4px">pending</span></span></td><td class="n">59.1</td><td class="n">13.21%</td><td class="n">72.8</td></tr>
+        <tr><td class="n">fwd_2026-09-07</td><td class="tick">SPLPETRO</td><td><span class="pill pill-in">Control + T2 + T3 <span class="pill pill-pend" style="margin-left:4px">pending</span></span></td><td class="n">62.3</td><td class="n">14.12%</td><td class="n">61.8</td></tr>
+        <tr class="out"><td class="n">fwd_2026-09-07</td><td class="tick">PINELABS</td><td><span class="pill pill-out">shadow &middot; risk cap, all four <span class="pill pill-pend" style="margin-left:4px">pending</span></span></td><td class="n">57.5</td><td class="n neg">19.60%</td><td class="n">&mdash;</td></tr>
+        <tr class="out"><td class="n">fwd_2026-09-07</td><td class="tick">14 more (T1 only)</td><td><span class="pill pill-flag">T1 extra &mdash; see &sect;04b <span class="pill pill-pend" style="margin-left:4px">pending</span></span></td><td class="n">&mdash;</td><td class="n">&mdash;</td><td class="n">&mdash;</td></tr>
       </tbody>
     </table></div>
   </div>
@@ -331,7 +412,7 @@ p{max-width:68ch}
 
 <!-- 04b -->
 <section>
-  <div class="step-head"><h2>T1's full catch &mdash; week of 31 Aug</h2></div>
+  <div class="step-head"><h2>T1's full catch &mdash; signal week 31 Aug&ndash;4 Sep, traded 7&ndash;11 Sep <span class="pill pill-in" style="margin-left:6px">graded, 17 names</span></h2></div>
   <p class="lede">Scanning Mon 31 Aug&ndash;Fri 4 Sep at daily resolution instead of only Friday's weekly close. Every name below flipped VStop+RSI on at least one day inside the window, was independently re-verified against <strong>all four</strong> conditions at Friday's close, then graded the same way as Control: entry at Monday's open, exit Friday's close unless the stop was hit intraweek.</p>
 
   <div class="stats" style="margin-bottom:20px">
@@ -344,28 +425,32 @@ p{max-width:68ch}
   <div class="card">
     <div class="card-head">Graded &mdash; every T1 pick, week of 7&ndash;11 Sep<span class="side">17 names</span></div>
     <div class="scroll"><table>
-      <thead><tr><th>Ticker</th><th>Entry (open)</th><th>Exit px</th><th>Exit reason</th><th>Net</th><th>R mult.</th></tr></thead>
+      <thead><tr><th>Ticker</th><th>Entry (open)</th><th>Exit px</th><th>Exit reason</th><th>Net</th><th>R mult.</th><th>Score</th></tr></thead>
       <tbody>
-        <tr><td class="tick">JUBLPHARMA</td><td class="n">928.00</td><td class="n">1,025.20</td><td>week_close</td><td class="n pos">+9.97%</td><td class="n">+1.59</td></tr>
-        <tr><td class="tick">PWL</td><td class="n">127.47</td><td class="n">136.10</td><td>week_close</td><td class="n pos">+6.27%</td><td class="n">+0.68</td></tr>
-        <tr><td class="tick">AEGISVOPAK</td><td class="n">281.65</td><td class="n">295.10</td><td>week_close</td><td class="n pos">+4.28%</td><td class="n">+0.70</td></tr>
-        <tr><td class="tick">GESHIP</td><td class="n">1,369.00</td><td class="n">1,412.20</td><td>week_close</td><td class="n pos">+2.66%</td><td class="n">+0.53</td></tr>
-        <tr><td class="tick">HBLENGINE</td><td class="n">695.70</td><td class="n">722.20</td><td>week_close</td><td class="n pos">+3.31%</td><td class="n">+0.59</td></tr>
-        <tr><td class="tick">ANGELONE</td><td class="n">303.80</td><td class="n">305.00</td><td>week_close</td><td class="n neg">&minus;0.11%</td><td class="n">+0.05</td></tr>
-        <tr><td class="tick">KIRLOSENG</td><td class="n">2,180.00</td><td class="n">2,168.60</td><td>week_close</td><td class="n neg">&minus;1.02%</td><td class="n">&minus;0.13</td></tr>
-        <tr><td class="tick">KAJARIACER</td><td class="n">1,235.00</td><td class="n">1,226.40</td><td>week_close</td><td class="n neg">&minus;1.20%</td><td class="n">&minus;0.21</td></tr>
-        <tr><td class="tick">IGL</td><td class="n">153.25</td><td class="n">151.98</td><td>week_close</td><td class="n neg">&minus;1.33%</td><td class="n">&minus;0.50</td></tr>
-        <tr><td class="tick">PFOCUS</td><td class="n">315.00</td><td class="n">310.85</td><td>week_close</td><td class="n neg">&minus;1.82%</td><td class="n">&minus;0.12</td></tr>
-        <tr><td class="tick">UPL</td><td class="n">580.10</td><td class="n">572.95</td><td>week_close</td><td class="n neg">&minus;1.73%</td><td class="n">&minus;0.42</td></tr>
-        <tr class="out"><td class="tick">USHAMART</td><td class="n">497.10</td><td class="n">488.17</td><td>stop_hit</td><td class="n neg">&minus;2.30%</td><td class="n">&minus;1.00</td></tr>
-        <tr><td class="tick">CASTROLIND</td><td class="n">191.80</td><td class="n">188.03</td><td>week_close</td><td class="n neg">&minus;2.47%</td><td class="n">&minus;0.58</td></tr>
-        <tr><td class="tick">TITAGARH</td><td class="n">878.75</td><td class="n">842.15</td><td>week_close</td><td class="n neg">&minus;4.67%</td><td class="n">&minus;0.60</td></tr>
-        <tr class="out"><td class="tick">ANANTRAJ</td><td class="n">622.00</td><td class="n">587.61</td><td>stop_hit</td><td class="n neg">&minus;6.03%</td><td class="n">&minus;1.00</td></tr>
-        <tr class="out"><td class="tick">ELGIEQUIP</td><td class="n">644.90</td><td class="n">605.34</td><td>stop_hit</td><td class="n neg">&minus;6.63%</td><td class="n">&minus;1.00</td></tr>
-        <tr class="out"><td class="tick">SAMMAANCAP</td><td class="n">159.20</td><td class="n">148.00</td><td>stop_hit</td><td class="n neg">&minus;7.54%</td><td class="n">&minus;1.00</td></tr>
-        <tr class="total"><td>Basket</td><td>equal weight, 17 names</td><td class="n">&mdash;</td><td>&mdash;</td><td class="n neg">&minus;0.61%</td><td class="n">6 / 17 up</td></tr>
+        <tr><td class="tick">JUBLPHARMA</td><td class="n">928.00</td><td class="n">1,025.20</td><td>week_close</td><td class="n pos">+9.97%</td><td class="n">+1.59</td><td class="n">13.9</td></tr>
+        <tr><td class="tick">PWL</td><td class="n">127.47</td><td class="n">136.10</td><td>week_close</td><td class="n pos">+6.27%</td><td class="n">+0.68</td><td class="n">68.1</td></tr>
+        <tr><td class="tick">AEGISVOPAK</td><td class="n">281.65</td><td class="n">295.10</td><td>week_close</td><td class="n pos">+4.28%</td><td class="n">+0.70</td><td class="n">62.5</td></tr>
+        <tr><td class="tick">GESHIP</td><td class="n">1,369.00</td><td class="n">1,412.20</td><td>week_close</td><td class="n pos">+2.66%</td><td class="n">+0.53</td><td class="n">58.5</td></tr>
+        <tr><td class="tick">HBLENGINE</td><td class="n">695.70</td><td class="n">722.20</td><td>week_close</td><td class="n pos">+3.31%</td><td class="n">+0.59</td><td class="n">58.2</td></tr>
+        <tr><td class="tick">ANGELONE</td><td class="n">303.80</td><td class="n">305.00</td><td>week_close</td><td class="n neg">&minus;0.11%</td><td class="n">+0.05</td><td class="n">66.9</td></tr>
+        <tr><td class="tick">KIRLOSENG</td><td class="n">2,180.00</td><td class="n">2,168.60</td><td>week_close</td><td class="n neg">&minus;1.02%</td><td class="n">&minus;0.13</td><td class="n">58.0</td></tr>
+        <tr><td class="tick">KAJARIACER</td><td class="n">1,235.00</td><td class="n">1,226.40</td><td>week_close</td><td class="n neg">&minus;1.20%</td><td class="n">&minus;0.21</td><td class="n">47.9</td></tr>
+        <tr><td class="tick">IGL</td><td class="n">153.25</td><td class="n">151.98</td><td>week_close</td><td class="n neg">&minus;1.33%</td><td class="n">&minus;0.50</td><td class="n">32.3</td></tr>
+        <tr><td class="tick">PFOCUS</td><td class="n">315.00</td><td class="n">310.85</td><td>week_close</td><td class="n neg">&minus;1.82%</td><td class="n">&minus;0.12</td><td class="n">61.5</td></tr>
+        <tr><td class="tick">UPL</td><td class="n">580.10</td><td class="n">572.95</td><td>week_close</td><td class="n neg">&minus;1.73%</td><td class="n">&minus;0.42</td><td class="n">4.2</td></tr>
+        <tr class="out"><td class="tick">USHAMART</td><td class="n">497.10</td><td class="n">488.17</td><td>stop_hit</td><td class="n neg">&minus;2.30%</td><td class="n">&minus;1.00</td><td class="n">31.1</td></tr>
+        <tr><td class="tick">CASTROLIND</td><td class="n">191.80</td><td class="n">188.03</td><td>week_close</td><td class="n neg">&minus;2.47%</td><td class="n">&minus;0.58</td><td class="n">56.6</td></tr>
+        <tr><td class="tick">TITAGARH</td><td class="n">878.75</td><td class="n">842.15</td><td>week_close</td><td class="n neg">&minus;4.67%</td><td class="n">&minus;0.60</td><td class="n">11.7</td></tr>
+        <tr class="out"><td class="tick">ANANTRAJ</td><td class="n">622.00</td><td class="n">587.61</td><td>stop_hit</td><td class="n neg">&minus;6.03%</td><td class="n">&minus;1.00</td><td class="n pos">68.7</td></tr>
+        <tr class="out"><td class="tick">ELGIEQUIP</td><td class="n">644.90</td><td class="n">605.34</td><td>stop_hit</td><td class="n neg">&minus;6.63%</td><td class="n">&minus;1.00</td><td class="n">52.1</td></tr>
+        <tr class="out"><td class="tick">SAMMAANCAP</td><td class="n">159.20</td><td class="n">148.00</td><td>stop_hit</td><td class="n neg">&minus;7.54%</td><td class="n">&minus;1.00</td><td class="n">59.2</td></tr>
+        <tr class="total"><td>Basket</td><td>equal weight, 17 names</td><td class="n">&mdash;</td><td>&mdash;</td><td class="n neg">&minus;0.61%</td><td class="n">6 / 17 up</td><td class="n">&mdash;</td></tr>
       </tbody>
     </table></div>
+    <div style="padding:14px 18px;font-size:13.5px;color:var(--ink-3);border-top:1px solid var(--rule)">
+      <p style="margin:0 0 10px">Score-vs-outcome rank-IC this week: <strong>+0.135</strong> (p=0.61, n=17) &mdash; weak and not significant. The week's <em>best</em> performer (JUBLPHARMA, +9.97%) scored one of the <em>lowest</em> (13.9, thin liquidity); the highest-scored name (ANANTRAJ, 68.7) was stopped out at &minus;6.03%. Score computed retroactively (didn't exist when this week traded) &mdash; one week of 17 names is one data point for rank-IC purposes, same caveat as the basket return itself. Not a reason to trust or distrust the score yet; a reason to keep accumulating before touching any weight.</p>
+      <p style="margin:0"><strong>Score&ge;40 shadow filter, applied retroactively: <span class="neg">&minus;0.86%</span> vs. the unfiltered basket's &minus;0.61%</strong> &mdash; 12 of 17 names clear the bar. Filtering out the low scorers here would have <em>removed the week's best trade</em> (JUBLPHARMA, excluded for thin liquidity despite +9.97%) while <em>keeping</em> three of the four stop-outs (ANANTRAJ, ELGIEQUIP, SAMMAANCAP, all scored &ge;40 on edge). Consistent with the rank-IC read above: on this one week, thresholding by score made the shadow basket worse, not better. Still shadow only &mdash; see &sect;04's T1-filtered card.</p>
+    </div>
   </div>
 
   <div class="card" style="margin-top:20px">
@@ -384,6 +469,58 @@ p{max-width:68ch}
   <div class="callout flag">
     <h3>17 extra trades, &minus;0.61% net &mdash; volume without an edge, so far</h3>
     <p>T1 did exactly what it was built to do &mdash; it found 17 tradeable names Control's Friday-only anchor missed entirely, a 17x jump in trade count from one week's evidence. But more trades isn't the goal by itself: the basket lost money (6 up, 11 down, 3 stopped out), while Control's single pick that same week made +1.66%. n=1 for this arm too &mdash; not a verdict either way, but the first read cuts against "more scanning = more edge," not for it. A bug was caught and fixed while building this arm &mdash; the first run wrongly kept a name whose RSI had drifted out of band by Friday &mdash; so the picks graded above are the corrected list.</p>
+  </div>
+</section>
+<div class="arrow">&darr;</div>
+
+<!-- 04c -->
+<section>
+  <div class="step-head"><h2>T1's shortlist &mdash; signal week 7&ndash;11 Sep, trades 14&ndash;18 Sep <span class="pill pill-pend" style="margin-left:6px">pending</span></h2></div>
+  <p class="lede"><strong>Not the same 17 as &sect;04b above</strong> &mdash; those were scanned over the signal week of 31 Aug&ndash;4 Sep and traded 7&ndash;11 Sep (already graded). This is the next cycle: scanning the signal week of 7&ndash;11 Sep, 14 names confirmed still valid (both VStop uptrend and RSI in [50,65]) at Friday's close, on top of Control's own 2 trades. Entry is Monday 14 Sep's open, trading through Friday 18 Sep; graded once that week closes with <code>t1grade</code>. 4 more flipped mid-week and had already reversed by Friday &mdash; never became picks, listed below for the record.</p>
+
+  <div class="card">
+    <div class="card-head">T1 extra candidates, confirmed at Friday's close<span class="side">14 names, ranked by score</span></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Ticker</th><th>RSI</th><th>R / EP</th><th>Mkt cap (&#8377;cr)</th><th>Turnover (&#8377;cr)</th><th>Score (edge &times; guard)</th><th>Score&ge;40</th></tr></thead>
+      <tbody>
+        <tr><td class="tick">BLUESTARCO</td><td class="n">56.2</td><td class="n">6.05%</td><td class="n">32,031</td><td class="n">53.7</td><td class="n pos">67.1 &times; 1.00 = <strong>67.1</strong></td><td><span class="pill pill-in">eligible</span></td></tr>
+        <tr><td class="tick">ACUTAAS</td><td class="n">56.5</td><td class="n">5.27%</td><td class="n">27,703</td><td class="n">90.7</td><td class="n pos">65.7 &times; 1.00 = <strong>65.7</strong></td><td><span class="pill pill-in">eligible</span></td></tr>
+        <tr><td class="tick">ANGELONE</td><td class="n">57.0</td><td class="n">6.85%</td><td class="n">27,868</td><td class="n">133.2</td><td class="n pos">65.0 &times; 1.00 = <strong>65.0</strong></td><td><span class="pill pill-in">eligible</span></td></tr>
+        <tr><td class="tick">PFOCUS</td><td class="n">60.2</td><td class="n">6.53%</td><td class="n">24,208</td><td class="n">19.3</td><td class="n pos">56.9 &times; 0.93 = <strong>53.0</strong></td><td><span class="pill pill-in">eligible</span></td></tr>
+        <tr><td class="tick">HFCL</td><td class="n">52.0</td><td class="n">2.20%</td><td class="n">35,761</td><td class="n">398.0</td><td class="n">50.7 &times; 1.00 = <strong>50.7</strong></td><td><span class="pill pill-in">eligible</span></td></tr>
+        <tr><td class="tick">EMCURE</td><td class="n">64.8</td><td class="n">5.15%</td><td class="n">37,542</td><td class="n">23.4</td><td class="n">49.1 &times; 1.00 = <strong>49.1</strong></td><td><span class="pill pill-in">eligible</span></td></tr>
+        <tr><td class="tick">ELGIEQUIP</td><td class="n">51.2</td><td class="n">1.74%</td><td class="n">19,473</td><td class="n">20.5</td><td class="n">42.4 &times; 0.95 = <strong>40.1</strong></td><td><span class="pill pill-in">eligible</span></td></tr>
+        <tr class="out"><td class="tick">ABDL</td><td class="n">57.9</td><td class="n">6.15%</td><td class="n">17,692</td><td class="n">17.0</td><td class="n neg">64.5 &times; 0.54 = <strong>34.9</strong></td><td><span class="pill pill-out">below bar</span></td></tr>
+        <tr class="out"><td class="tick">IGL</td><td class="n">50.5</td><td class="n">0.64%</td><td class="n">21,277</td><td class="n">15.1</td><td class="n neg">42.7 &times; 0.51 = <strong>21.9</strong></td><td><span class="pill pill-out">below bar</span></td></tr>
+        <tr class="out"><td class="tick">AEGISLOG</td><td class="n">56.1</td><td class="n">9.58%</td><td class="n">47,511</td><td class="n">107.0</td><td class="n neg">74.1 &times; 0.25 = <strong>18.4</strong></td><td><span class="pill pill-out">below bar</span></td></tr>
+        <tr class="out"><td class="tick">PCBL</td><td class="n">56.9</td><td class="n">4.97%</td><td class="n">13,026</td><td class="n">30.8</td><td class="n neg">58.5 &times; 0.30 = <strong>17.7</strong></td><td><span class="pill pill-out">below bar</span></td></tr>
+        <tr class="out"><td class="tick">SARDAEN</td><td class="n">55.1</td><td class="n">1.65%</td><td class="n">18,470</td><td class="n">14.6</td><td class="n neg">45.3 &times; 0.39 = <strong>17.5</strong></td><td><span class="pill pill-out">below bar</span></td></tr>
+        <tr class="out"><td class="tick">TEGA</td><td class="n">60.5</td><td class="n">8.21%</td><td class="n">12,990</td><td class="n">16.3</td><td class="n neg">52.6 &times; 0.19 = <strong>9.8</strong></td><td><span class="pill pill-out">below bar</span></td></tr>
+        <tr class="out"><td class="tick">SUNTV</td><td class="n">51.7</td><td class="n">5.91%</td><td class="n">18,758</td><td class="n">11.1</td><td class="n neg">63.2 &times; 0.10 = <strong>6.0</strong></td><td><span class="pill pill-out">below bar</span></td></tr>
+      </tbody>
+    </table></div>
+    <div style="padding:10px 18px;font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--rule)">
+      <p style="margin:0 0 8px">AEGISLOG is the sharpest illustration of &sect;3.8.2's point: strongest raw edge score (74.1) of the fourteen, but sits at &#8377;47,511cr &mdash; 2,489cr from the top of the &#8377;50k band &mdash; so the guardrail cuts it to 18.4, below the bar. Pending; nothing here has traded.</p>
+      <p style="margin:0">7 of 14 clear score&ge;40. Given week 2's retroactive read (&sect;04b) &mdash; filtering made that week's shadow basket <em>worse</em>, not better &mdash; this eligible set is tracked as a second shadow sub-basket for evidence, not a preview of which names "should" be traded.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <div class="card-head">Reversed before Friday &mdash; would never have been a Control trade<span class="side">4 names</span></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Ticker</th><th>Why excluded</th></tr></thead>
+      <tbody>
+        <tr class="out"><td class="tick">CEMPRO</td><td>flipped mid-week, trend reversed before Friday</td></tr>
+        <tr class="out"><td class="tick">COCHINSHIP</td><td>flipped mid-week, trend reversed before Friday</td></tr>
+        <tr class="out"><td class="tick">FINCABLES</td><td>flipped mid-week, trend reversed before Friday</td></tr>
+        <tr class="out"><td class="tick">HOMEFIRST</td><td>flipped mid-week, trend reversed before Friday</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="callout pend">
+    <h3>14 confirmed, reversal rate 4/18 &asymp; 22%</h3>
+    <p>In line with week 2's 19% reversal rate (4/21) &mdash; the mid-week noise T1 catches keeps resolving itself before Friday at roughly the same rate. Nothing graded here yet; this is the shortlist as recorded before the trading week opened, per the "record before the week opens" rule.</p>
   </div>
 </section>
 <div class="arrow">&darr;</div>
@@ -412,6 +549,7 @@ p{max-width:68ch}
         <li><span class="mk done">&check;</span><div><b>Rank-IC</b> of confidence vs. realized return, new in <code>harness.py</code>.</div></li>
         <li><span class="mk done">&check;</span><div><b>T1 shadow scan</b> now live and graded &mdash; 17 names traded shadow, &minus;0.61% net.</div></li>
         <li><span class="mk wait">&hellip;</span><div>Bootstrap CI on every series &mdash; mechanically ready, statistically silent below n=13.</div></li>
+        <li><span class="mk done">&check;</span><div><b>&sect;3.8 v1 candidate score</b> shipped (resolves open decision #9) &mdash; <code>src/screen/candidate_score.py</code>, wired into every future <code>record</code>/T1 scan. First retroactive read (week 2's 17 T1 names): rank-IC +0.135, p=0.61 &mdash; not significant at n=17.</div></li>
       </ul>
     </div>
     <div class="card">
@@ -443,7 +581,7 @@ p{max-width:68ch}
       <div class="card-head">Do not</div>
       <ul class="checklist">
         <li><span class="mk no">&times;</span><div>Loosen the RSI band or the 15% risk cap on this evidence.</div></li>
-        <li><span class="mk no">&times;</span><div>Let T1/T2/T3 touch real capital before it beats Control with a bootstrap CI that excludes zero.</div></li>
+        <li><span class="mk no">&times;</span><div>Let T1/T2/T3 (including the score&ge;40 filtered sub-basket) touch real capital before it beats Control with a bootstrap CI that excludes zero.</div></li>
         <li><span class="mk no">&times;</span><div>Widen the universe or VStop sensitivity to chase trade count &mdash; that path is the V-series, not this one.</div></li>
       </ul>
     </div>
@@ -451,8 +589,10 @@ p{max-width:68ch}
       <div class="card-head">Open, unresolved</div>
       <ul class="checklist">
         <li><span class="mk done">&check;</span><div>Daily-bar priority &mdash; resolved this session (backfilled); still sharpens V3/V4 entry timing separately.</div></li>
+        <li><span class="mk done">&check;</span><div>&sect;3.8 v1 score vs. wait for &sect;3.7 items 2&ndash;3 &mdash; resolved this session, ship v1 now.</div></li>
         <li><span class="mk wait">?</span><div>Extended history: pull 10+ years now, or keep the partly-spent window.</div></li>
         <li><span class="mk wait">?</span><div>Regime gate V6 and shorting V7 &mdash; both still parked.</div></li>
+        <li><span class="mk wait">?</span><div>&sect;3.8.2 guardrail architecture: full multiplicative discount implemented (headroom &times; liquidity &times; band position, each linearly ramped to a full-credit threshold) &mdash; thresholds themselves are v1 placeholders, not yet validated.</div></li>
       </ul>
     </div>
   </div>
