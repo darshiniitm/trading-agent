@@ -1,0 +1,59 @@
+{
+  "record_id": "flags_2025-01-20",
+  "signal_week": "2025-01-20",
+  "holding_week": "2025-01-27",
+  "recording_mode": "replay",
+  "created_utc": "2026-09-15T05:39:07+00:00",
+  "created_ist": "2026-09-15T11:09:05+05:30",
+  "monday_open_deadline_ist": "2025-01-27T09:15:00+05:30",
+  "registry_version": 1,
+  "registry_checksum": "sha256:d8164388d645879ab937757c356184153873b26d53dbe865a48474be24cd648d",
+  "data": {
+    "n_panels": 500,
+    "benchmark_ticker": "NIFTYMIDCAP150.NS"
+  },
+  "funnel": {
+    "candidate_universe": 501,
+    "universe_market_cap_band": 271,
+    "liquidity_filter": 271,
+    "vstop_flip": 0,
+    "survivors_after_rsi_band": 0
+  },
+  "counts": {
+    "rows": 271,
+    "flags_met_histogram": {
+      "1.0": 28,
+      "2.0": 49,
+      "3.0": 45,
+      "4.0": 34,
+      "5.0": 47,
+      "6.0": 14,
+      "7.0": 20,
+      "8.0": 13,
+      "9.0": 6,
+      "10.0": 2
+    },
+    "prevalence_by_flag": {
+      "A01_vstop_flip_up": 0.0,
+      "A02_vstop_uptrend": 0.2132,
+      "A03_rsi_in_band": 0.2209,
+      "A04_risk_cap_ok": 0.1938,
+      "B01_sector_rs_4w_pos": 0.5,
+      "B02_sector_top_k": 0.3372,
+      "B03_sector_rs_13w_pos": 0.7132,
+      "B04_volume_expansion": 0.1473,
+      "B05_trend_quality_strong": 0.0078,
+      "B06_rsi_sweetspot_core": 0.093,
+      "C01_risk_headroom_5pp": 0.1667,
+      "C02_liquidity_2x": 0.9922,
+      "C03_cap_band_central": 0.4225
+    }
+  },
+  "t4": {
+    "k": null,
+    "selected": []
+  },
+  "checks": [],
+  "caveats": [],
+  "replay_run_id": "replay_2026-09-15T11:08:40+05:30"
+}
