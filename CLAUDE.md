@@ -45,12 +45,15 @@ re-deriving them from code each time.
 | Daily-resolution rule spec for T1 | `src/screen/daily_scale.py` |
 | Backtest / walk-forward / bootstrap CI | `src/backtest/harness.py` |
 | Live forward-test record/grade cadence | `tests/track_forward.py` |
+| Weekly feature-flag condition matrix + T4 shadow arm registry | `config/feature_flags.yaml`, `src/flags/` (`registry.py`, `rules.py`, `matrix.py`, `grade.py`, `t4.py`, `scorecard.py`, `checks.py`, `audit.py`, `findings.py`, `timing.py`) |
+| Flag matrix CLI (record/grade/replay/scorecard/audit — chained off Control's own record, never its own schedule) | `tests/track_flags.py` |
 | Console/CSV reporting | `src/report/report.py` |
-| One-off CLI entry points | `scripts/run_screen.py`, `scripts/run_backtest.py`, `scripts/rsi_param_study.py`, `scripts/survivorship_check.py`, `scripts/common.py` (shared bootstrap) |
+| One-off CLI entry points | `scripts/run_screen.py`, `scripts/run_backtest.py`, `scripts/rsi_param_study.py`, `scripts/survivorship_check.py`, `scripts/common.py` (shared bootstrap), `scripts/weekly_selection_run.sh` (Control record → flag trigger → audit, chained) |
 
 ## Where the docs live
 
-- `docs/forward-test-response-and-volume-plan.md` (v0.7) — the live plan: Control vs. Test-arm design, graduation gates, "what not to do" guardrails, the pre-open recording deadline.
+- `docs/forward-test-response-and-volume-plan.md` (v0.7) — the live plan: Control vs. Test-arm design, graduation gates, "what not to do" guardrails, the pre-open recording deadline. §3.9 registers T4 (flag-count selection).
+- `docs/feature-flag-matrix-plan.md` (v1.0) — full spec for the weekly feature-flag condition matrix and T4: registry, pipeline stages, invariants, CLI, audit tools, phase plan.
 - `docs/forward_test_findings.md` — append-only findings log. Never edit a past entry retroactively.
 - `docs/dashboards/test-vs-control-ledger.html` — a **hand-maintained** static dashboard, meant to be rebuilt after every grade run. No generator script exists yet (see the `rebuild-test-control-dashboard` skill).
 
@@ -60,9 +63,15 @@ Native Claude Code skills under `.claude/skills/` — invoke by asking for the t
 
 - **`stock-score-lookup`** — ad-hoc scoring/checking of one or a few tickers, any time.
 - **`weekly-forward-test`** — the weekly Control(+T1) record/grade cycle.
+- **`weekly-flag-matrix`** — the weekly feature-flag condition matrix + T4 shadow arm cycle, chained off `weekly-forward-test`'s own record step.
 - **`rebuild-test-control-dashboard`** — regenerate the ledger HTML after a grade run.
 - **`run-screen-or-backtest`** — one-off live screen or walk-forward backtest.
 - **`add-test-arm`** — propose/build a new T-series shadow experiment.
+
+The `flag-run-auditor` agent (`.claude/agents/flag-run-auditor.md`) is a deterministic,
+Bash-only operator invoked by `scripts/weekly_selection_run.sh` / the `weekly-flag-matrix`
+skill after each flag record — it relays fixed tool output, it never computes or judges a
+number itself.
 
 Your own evolving, personalization-focused skills and agents (dashboard styling, insight tone,
 score-mechanism experiments) live separately under `.claude/personal-skills/` and
@@ -74,3 +83,12 @@ they only change presentation/interpretation, not the underlying computation.
 `src/screen/candidate_score.py`, `tests/test_candidate_score.py`, and modifications to
 `tests/track_forward.py`, `docs/forward-test-response-and-volume-plan.md`, and the dashboard
 HTML are **uncommitted but already on disk** — treat them as current code, not a future change.
+
+The feature-flag condition matrix + T4 (`docs/feature-flag-matrix-plan.md`, Phases 1-5) is
+implemented and **uncommitted but already on disk**: `config/feature_flags.yaml`, `src/flags/`,
+`tests/track_flags.py`, the T-01..T-16 test suite, `scripts/weekly_selection_run.sh`, the
+`weekly-flag-matrix` skill, and the `flag-run-auditor` agent. One real record exists
+(`results/feature_flags/flags_2026-09-07.csv`, mode `late_backfill`, all invariants pass). T4's
+DEV/VALIDATE calibration (104-week replay) hit kill criterion (a) — `config/feature_flags.yaml`'s
+`t4.k` stays `null`; see the 2026-09-15 entry in `docs/forward_test_findings.md`. The matrix
+itself keeps recording/grading every week regardless of T4's status.
