@@ -163,6 +163,38 @@ Flagged, not started — deliberately excluded pending a separate decision:
 
 **What this is not, yet:** a ranking formula, a set of weights, or anything that changes which T1 candidates get traded. The next step — separate from this plan — is B6's rank-IC test, run first on the existing single `confidence` score, then extended to whichever of 3.8.1's parameters are cheap enough to add before the next T1 review, with 3.8.2 wired in as a gate/discount rather than a blended input. 3.8.1's sector-RS is cheap and fine to include; the pop-size entry stays flagged, not included.
 
+### 3.9 T4 — Flag-count selection
+
+Registered 15 Sep 2026, per `docs/feature-flag-matrix-plan.md` §7 (the full spec for
+the weekly feature-flag condition matrix this Test arm is built on top of).
+Registration is recorded here **before** any replay run that produces T4
+numbers, per this section's own ordering rule and §3.5's pre-registration
+discipline.
+
+| field | value |
+|---|---|
+| **id** | T4 — Flag-count selection |
+| **Mechanism (only this changes)** | Weekly shadow basket = eligible stocks with `A02=1` AND `A04=1` AND `flags_met ≥ K`, top `max_names=10` by tie-break order (`flags_met desc, median_weekly_turnover_cr desc, ticker asc`), equal weight, EP = next-week open, SL = `vstop_line`, Control's gap-stop-aware 1-week exit, 0.5% round trip. |
+| **Identical to Control** | Universe/base gate, VStop/RSI definitions, risk cap (A04 is a hard requirement), exit rule, costs. |
+| **Different from Control (acknowledged)** | Does **not** require a flip or RSI band — it is a selection change, closer to the V-series than T1–T3 (§3.6, `.claude/HARNESS.md` §9). Registered as a Test arm by Dharmin's explicit decision (15 Sep 2026); it never touches Control's picks or capital. |
+| **Hypothesis** | Stocks meeting more registered conditions earn higher 1-week excess return than the eligible universe and than Control's basket. |
+| **Kill criteria** | (a) VALIDATE replay mean weekly net ≤ 0 → retire before forward start. (b) At 26 forward weeks, paired T4−Control CI includes or is below zero → stays shadow/retired. (c) `flags_met` rank-IC CI at 26 forward weeks includes zero → matrix is not an ordering signal; T4 retired. |
+| **Graduation** | At `REAL_READ_WEEKS = 26` **forward-mode** weeks only: T4 mean weekly net > 0 AND paired weekly `T4 − Control` bootstrap CI lower bound > 0. One decision, no second look (§3.5.4). `FIRST_LOOK_WEEKS = 13` is informational only. |
+
+**Weekly comparison rules:** a week with zero T4 names or zero Control trades
+counts as 0.0% return for that arm — never dropped (this project's own §7
+"flat weeks dropped" defect, avoided deliberately here). Pair by
+`signal_week`, never by array position. Only `forward` records count toward
+the gates above; `late_backfill` and `replay` never do.
+
+**Why A02 + A04 are hard requirements:** without an uptrend and a valid
+≤15% stop, there is no Control-comparable SL and the exit rule is undefined
+— this keeps T4 inside Control's risk envelope.
+
+**Choosing K:** one-time, pre-registered DEV/VALIDATE protocol against 104
+weeks of replay (`docs/feature-flag-matrix-plan.md` §7.3) — see
+`docs/forward_test_findings.md` for the dated entry recording the result.
+
 ---
 
 ## 4. What not to do
