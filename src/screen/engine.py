@@ -75,7 +75,7 @@ def evaluate_predicate(predicate: str, features_for_signal: dict) -> bool:
 
 def run_screen(as_of: pd.Timestamp, rule_spec: dict, adapter, universe_df: pd.DataFrame,
                 weekly_panels: dict[str, pd.DataFrame], shares_map: dict[str, float],
-                benchmark_fetch=None) -> dict:
+                benchmark_fetch=None, include_eligible_features: bool = False) -> dict:
     """
     universe_df: DataFrame[ticker, name, sector, isin] (candidate universe, pre-PIT-filter)
     weekly_panels: dict ticker -> full weekly OHLCV DataFrame (will be PIT-sliced here)
@@ -84,6 +84,14 @@ def run_screen(as_of: pd.Timestamp, rule_spec: dict, adapter, universe_df: pd.Da
                      adapter.benchmark_series(ticker, rule_spec["data"]["history_weeks"]).
                      Callers running this same funnel against daily bars (T1) pass a daily
                      fetch here instead — the default path is unchanged either way.
+    include_eligible_features: when True, also return "eligible_features" — one row
+                     per liquidity_filter-stage ticker (survivor or not) with identity,
+                     all compute_features_for_ticker() fields (or eligible_reason =
+                     insufficient_history), predicate_results, and sector-RS columns.
+                     Every other return-dict key is unchanged flag on/off
+                     (tests/test_run_screen_eligible_features.py::T-04). Feeds
+                     src/flags/matrix.py — the only sanctioned way to get features for
+                     non-survivors; do not reimplement the cap/liquidity stages elsewhere.
     """
     funnel = FunnelReport()
     funnel.log("candidate_universe", len(universe_df))
@@ -127,6 +135,7 @@ def run_screen(as_of: pd.Timestamp, rule_spec: dict, adapter, universe_df: pd.Da
     survivors = []
     near_miss = []
     drop_log = []
+    eligible_rows = [] if include_eligible_features else None
     signal_specs = rule_spec["signals"]
     combine = rule_spec.get("combine", "AND")
     flip_count = 0
@@ -135,6 +144,12 @@ def run_screen(as_of: pd.Timestamp, rule_spec: dict, adapter, universe_df: pd.Da
         feats = compute_features_for_ticker(r["panel"], rule_spec)
         if feats is None:
             drop_log.append((r["ticker"], "insufficient_history"))
+            if eligible_rows is not None:
+                eligible_rows.append({
+                    "ticker": r["ticker"], "name": r["name"], "sector": r["sector"],
+                    "mktcap_cr": r["mktcap_cr"], "median_weekly_turnover_cr": r["median_weekly_turnover_cr"],
+                    "eligible_reason": "insufficient_history",
+                })
             continue
 
         predicate_results = {}
@@ -146,6 +161,15 @@ def run_screen(as_of: pd.Timestamp, rule_spec: dict, adapter, universe_df: pd.Da
                 "uptrend": feats["uptrend"],
             }
             predicate_results[sig["id"]] = evaluate_predicate(sig["predicate"], sig_locals)
+
+        if eligible_rows is not None:
+            eligible_rows.append({
+                "ticker": r["ticker"], "name": r["name"], "sector": r["sector"],
+                "mktcap_cr": r["mktcap_cr"], "median_weekly_turnover_cr": r["median_weekly_turnover_cr"],
+                "eligible_reason": None,
+                "predicate_results": dict(predicate_results),
+                **feats,
+            })
 
         if feats["flip_up"]:
             flip_count += 1
@@ -201,7 +225,7 @@ def run_screen(as_of: pd.Timestamp, rule_spec: dict, adapter, universe_df: pd.Da
             on="sector", how="left",
         )
 
-    return {
+    result = {
         "as_of": as_of,
         "survivors": survivors_df,
         "near_miss": near_miss_df,
@@ -209,3 +233,14 @@ def run_screen(as_of: pd.Timestamp, rule_spec: dict, adapter, universe_df: pd.Da
         "funnel": funnel.as_dataframe(),
         "drop_log": drop_log,
     }
+
+    if include_eligible_features:
+        eligible_df = pd.DataFrame(eligible_rows)
+        if not eligible_df.empty and "sector" in eligible_df.columns:
+            rs_cols = [c for c in sector_rs_df.columns if c.startswith("rs_")]
+            merge_cols = ["sector", "rs_rank", "outperforming"] + rs_cols
+            merge_cols = [c for c in dict.fromkeys(merge_cols) if c in sector_rs_df.columns]
+            eligible_df = eligible_df.merge(sector_rs_df[merge_cols], on="sector", how="left")
+        result["eligible_features"] = eligible_df
+
+    return result

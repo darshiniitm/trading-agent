@@ -1,0 +1,119 @@
+# Feature-flag registry. NOT Control (config/rules.yaml is Control; this file
+# never changes what run_screen()/build_trades() select or size).
+#
+# Editing any threshold or adding/removing a countable flag REQUIRES bumping
+# registry_version (enforced by tests/test_flags_registry.py::T-01). See
+# docs/feature-flag-matrix-plan.md §3-4, §8.4.
+registry_version: 1
+frozen_on: "2026-09-15"
+base_gate: from_rules_yaml   # market_cap_cr + liquidity thresholds read from config/rules.yaml at runtime
+
+flags:
+  # --- Family A: Control signal ---
+  - id: A01_vstop_flip_up
+    family: A
+    countable: true
+    description: "VStop flip_up on the as_of weekly bar"
+    rule: {type: bool_field, field: flip_up}
+
+  - id: A02_vstop_uptrend
+    family: A
+    countable: true
+    description: "VStop uptrend state (not event)"
+    rule: {type: bool_field, field: uptrend}
+
+  - id: A03_rsi_in_band
+    family: A
+    countable: true
+    description: "RSI within the Control band [rsi_lo, rsi_hi] inclusive"
+    rule: {type: rsi_in_band}
+
+  - id: A04_risk_cap_ok
+    family: A
+    countable: true
+    description: "uptrend AND 0 < (close-vstop_line)/close <= trade.max_r_pct"
+    rule: {type: risk_cap_ok}
+
+  # --- Family B: confidence components ---
+  - id: B01_sector_rs_4w_pos
+    family: B
+    countable: true
+    description: "rs_4w > sector.outperforming.rs_gt"
+    rule: {type: sector_rs_gt, lookback: 4}
+
+  - id: B02_sector_top_k
+    family: B
+    countable: true
+    description: "outperforming == True (rs > rs_gt AND rank <= top_k)"
+    rule: {type: bool_field, field: outperforming}
+
+  - id: B03_sector_rs_13w_pos
+    family: B
+    countable: true
+    description: "rs_13w > 0"
+    rule: {type: sector_rs_gt, lookback: 13, threshold: 0.0}
+
+  - id: B04_volume_expansion
+    family: B
+    countable: true
+    description: "volume / avg_vol_8w >= 1.5 (a-priori default, chosen before any data was looked at)"
+    rule: {type: ratio_gte, num: volume, den: avg_vol_8w, threshold: 1.5}
+
+  - id: B05_trend_quality_strong
+    family: B
+    countable: true
+    description: "uptrend AND (close-vstop_line)/atr >= 2.0 (a-priori default)"
+    rule: {type: trend_quality_gte, threshold: 2.0}
+
+  - id: B06_rsi_sweetspot_core
+    family: B
+    countable: true
+    description: "triangular_kernel(rsi, rsi_lo, rsi_hi) >= 0.5 (approx 53.75-61.25)"
+    rule: {type: rsi_sweetspot_gte, threshold: 0.5}
+
+  # --- Family C: guardrail headroom (thresholds imported from candidate_score.py, not duplicated) ---
+  - id: C01_risk_headroom_5pp
+    family: C
+    countable: true
+    description: "uptrend AND risk_cap_headroom_pct >= HEADROOM_FULL_CREDIT_PCT"
+    rule: {type: guardrail_gte, field: risk_cap_headroom_pct, threshold_const: HEADROOM_FULL_CREDIT_PCT, requires_uptrend: true}
+
+  - id: C02_liquidity_2x
+    family: C
+    countable: true
+    description: "liquidity_multiple >= LIQUIDITY_FULL_CREDIT_MULTIPLE"
+    rule: {type: guardrail_gte, field: liquidity_multiple, threshold_const: LIQUIDITY_FULL_CREDIT_MULTIPLE}
+
+  - id: C03_cap_band_central
+    family: C
+    countable: true
+    description: "band_position >= BAND_POSITION_FULL_CREDIT"
+    rule: {type: guardrail_gte, field: band_position, threshold_const: BAND_POSITION_FULL_CREDIT}
+
+  # --- Diagnostics (recorded, never counted) ---
+  - id: D_rsi_above_band
+    family: D
+    countable: false
+    description: "rsi > rsi_hi"
+    rule: {type: rsi_above_band}
+
+  - id: D_rsi_below_band
+    family: D
+    countable: false
+    description: "rsi < rsi_lo"
+    rule: {type: rsi_below_band}
+
+  - id: D_vstop_flip_down
+    family: D
+    countable: false
+    description: "VStop flip_down on the as_of weekly bar"
+    rule: {type: bool_field, field: flip_down}
+
+t4:
+  k: null            # set ONCE by the DEV/VALIDATE protocol (spec §7.3), then frozen
+  k_grid: [7, 8, 9, 10, 11]
+  max_names: 10
+  tie_break: [flags_met_desc, median_weekly_turnover_cr_desc, ticker_asc]
+
+# Written by `python -m tests.track_flags registry-lock` — sha256 of the flags+t4 block above.
+checksum: null
