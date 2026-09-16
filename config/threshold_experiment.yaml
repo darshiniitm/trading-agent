@@ -1,0 +1,14 @@
+# Threshold experiment registry — risk-cap sweep (shadow only).
+# NOT Control: config/rules.yaml keeps trade.max_r_pct = 0.15 and decides the real trades.
+# Every arm is derived from Control's own weekly record (results/forward_test/picks_<wk>.json).
+#
+# Registered 2026-09-15 (docs/threshold-experiment-plan.md, plan doc §3.10). Changing caps_pct,
+# control_cap_pct or cap_inclusive after registration means a NEW experiment name, not an edit —
+# `python -m tests.track_threshold registry-lock` freezes the checksum below.
+experiment: threshold-experiment
+registered_on: '2026-09-15'
+caps_pct: [15, 17.5, 20, 22.5, 25, 30, 40, 50]
+control_cap_pct: 15            # must equal rules.yaml trade.max_r_pct * 100 (asserted at load)
+cap_inclusive: true            # a name with R/EP exactly == cap is SELECTED (build_trades rejects only R/EP > cap)
+primary_metric: equal_weight_net_pct   # per arm: selected basket and rejected basket, equal weight
+checksum: 'sha256:262b4c344c8d421b135983710b986473aeabc333b51dca0594c53bef9da43767'

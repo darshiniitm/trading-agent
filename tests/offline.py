@@ -153,3 +153,42 @@ def make_daily_panel(closes, highs=None, lows=None, opens=None, start="2021-01-0
         "close": closes,
         "volume": np.full(n, 1_000_000.0),
     })
+
+
+# ---------------------------------------------------------------------------------------------
+# Extended history (docs/open-decisions-implementation-plan.md §4, decision D1: data from 2019).
+# Weekly panels are resampled from daily bars — the preferred source is
+# data_cache/daily_ohlcv_since_2019-01-01.parquet (scripts/backfill_history.py); until that has
+# been fetched, the existing daily_ohlcv_1820d.parquet (from 2019-05-13) is used. The live and
+# forward-test path (env(), weekly_ohlcv_260w.parquet) is unchanged.
+_CACHED_EXT = {}
+
+
+class ExtendedOfflineAdapter(OfflineAdapter):
+    def __init__(self, index_lists=("midcap150", "smallcap250", "nifty500")):
+        super().__init__(index_lists)
+        from src.data.resample import daily_to_weekly
+        daily_path = CACHE / "daily_ohlcv_since_2019-01-01.parquet"
+        if not daily_path.exists():
+            daily_path = CACHE / "daily_ohlcv_1820d.parquet"
+        self.daily_source = daily_path.name
+        daily = pd.read_parquet(daily_path)
+        self._daily_panel = daily
+        self._panel = daily_to_weekly(daily)
+
+
+def env_extended(ticker_limit: int | None = None):
+    """Same tuple as env(), with weekly panels built from daily bars back to 2019."""
+    key = ticker_limit or "all"
+    if key in _CACHED_EXT:
+        return _CACHED_EXT[key]
+    rule_spec = load_rule_spec(str(ROOT / "config" / "rules.yaml"))
+    adapter = ExtendedOfflineAdapter(rule_spec["universe"]["index_lists"])
+    universe_df = adapter.nse_equities_pit(as_of=None)
+    if ticker_limit:
+        universe_df = universe_df.head(ticker_limit)
+    tickers = universe_df["ticker"].tolist()
+    panels = adapter.weekly_ohlcv(tickers, rule_spec["data"]["history_weeks"])
+    shares = adapter.shares_outstanding(list(panels.keys()))
+    _CACHED_EXT[key] = (rule_spec, adapter, universe_df, panels, shares)
+    return _CACHED_EXT[key]

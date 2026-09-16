@@ -4,6 +4,8 @@ __pycache__/
 data_cache/
 results/*
 !results/feature_flags/
+!results/threshold_experiment/
+!results/evidence/
 .DS_Store
 .pytest_cache/
 .env

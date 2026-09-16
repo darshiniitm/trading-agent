@@ -143,6 +143,7 @@ p{max-width:68ch}
     <span><b>Graded</b> 2 of 3</span>
     <span><b>Daily-bar cache</b> 500 tickers, refreshed 2026-09-14</span>
     <span><b>Live capital</b> Control only &mdash; T1/T2/T3 shadow</span>
+    <span><b>Threshold sweep</b> 8 arms, registry locked &middot; week 3 pending</span>
   </div>
 </header>
 
@@ -525,6 +526,43 @@ p{max-width:68ch}
 </section>
 <div class="arrow">&darr;</div>
 
+<!-- 04d -->
+<section>
+<!-- THRESHOLD_SECTION:BEGIN — regenerate with scripts/rebuild_threshold_dashboard_section.py, do not hand-edit below -->
+  <div class="step-head"><span class="step-n">04d</span><h2>Threshold experiment &mdash; risk-cap sweep<span class="pill pill-pend" style="margin-left:6px">pending &mdash; awaits Control's own grade</span></h2></div>
+  <p class="lede">Registered 15 Sep 2026 (<code>docs/threshold-experiment-plan.md</code>). Eight shadow arms &mdash; <code>threshold-experiment_15/17.5/20/22.5/25/30/40/50</code> &mdash; each a fixed re-split of Control's <strong>same</strong> week-3 survivors by risk-cap headroom (<code>R/EP</code>). Nothing is re-screened: membership comes only from <code>picks_2026-09-07.json</code>, and every arm grades off Control's own gap-aware exit once that record is graded &mdash; never a second price read. Registry is <code>registry-lock</code>ed; caps can't be edited without a new experiment name.</p>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-head">Selected count by cap &mdash; week of 7 Sep 2026<span class="side">3 survivors with a usable stop</span></div>
+    <div class="funnel">
+      <div class="frow"><div class="flabel">15% (= Control)</div><div class="ftrack"><div class="fbar" style="width:66.7%"></div></div><div class="fcount">2</div></div>
+      <div class="frow"><div class="flabel">17.5%</div><div class="ftrack"><div class="fbar" style="width:66.7%"></div></div><div class="fcount">2</div></div>
+      <div class="frow"><div class="flabel">20%</div><div class="ftrack"><div class="fbar final" style="width:100%"></div></div><div class="fcount">3</div></div>
+      <div class="frow"><div class="flabel">22.5% &ndash; 50%</div><div class="ftrack"><div class="fbar final" style="width:100%"></div></div><div class="fcount">3 <span class="fdrop" style="color:var(--ink-3)">identical to 20% this week</span></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">Arm membership &mdash; per survivor<span class="side">from threshold_2026-09-07.json, X1&ndash;X3 all pass</span></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Ticker</th><th>Control status</th><th>Signal close</th><th>VStop (SL)</th><th>R / EP</th><th>Conf.</th><th>Included from cap &ge;</th></tr></thead>
+      <tbody>
+        <tr><td class="tick">JUBLPHARMA</td><td><span class="pill pill-in">TRADE</span></td><td class="n">1,025.10</td><td class="n">889.72</td><td class="n">13.21%</td><td class="n">72.8</td><td class="n pos">15% <span class="pill pill-pend" style="margin-left:4px">all 8 arms</span></td></tr>
+        <tr><td class="tick">SPLPETRO</td><td><span class="pill pill-in">TRADE</span></td><td class="n">820.50</td><td class="n">704.68</td><td class="n">14.12%</td><td class="n">61.8</td><td class="n pos">15% <span class="pill pill-pend" style="margin-left:4px">all 8 arms</span></td></tr>
+        <tr class="out"><td class="tick">PINELABS</td><td><span class="pill pill-out">SHADOW &middot; risk cap</span></td><td class="n">198.85</td><td class="n">159.87</td><td class="n neg">19.60%</td><td class="n">&mdash;</td><td class="n neg">20% <span class="pill pill-flag" style="margin-left:4px">rejected by _15, _17.5 only</span></td></tr>
+      </tbody>
+    </table></div>
+    <div style="padding:10px 18px;font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--rule)">X2 (nesting) holds by construction: SELECTED<sub>15</sub> &sube; SELECTED<sub>17.5</sub> &sube; SELECTED<sub>20</sub> = &hellip; = SELECTED<sub>50</sub>. PINELABS misses the 15%/17.5% cut by headroom alone (19.60% vs. cap), same name &sect;03b already flagged as the week's only shadow rejection. <code>threshold-experiment_15</code>'s SELECTED set equals Control's own TRADE list (JUBLPHARMA, SPLPETRO) &mdash; invariant X1.</div>
+  </div>
+
+  <div class="callout pend">
+    <h3>No returns yet &mdash; blocked on Control's own grade</h3>
+    <p><code>track_threshold grade --all-pending</code> refuses to compute any arm's basket return until <code>picks_2026-09-07.json</code> itself is graded (<code>track_forward grade</code>) &mdash; by design, per HARNESS &sect;12: every arm is <em>derived</em> from Control's graded detail, never a second price read. That grade is still open (holding week closes Friday 18 Sep; the data cache also hasn't caught up to that close yet). From the 104-week replay (counts only, no returns read &mdash; plan doc &sect;2): at a VStop flip, R% is mechanical (200&middot;ATR/close), the 15% cap has historically rejected 58% of survivors, and <code>_30</code>/<code>_40</code>/<code>_50</code> have never once diverged from <code>_25</code> in 104 weeks &mdash; consistent with this week's 20%&ndash;50% tie. First look at 13 forward weeks (~mid Dec 2026), one kill/graduation decision per arm at 26 (~mid Mar 2027).</p>
+  </div>
+<!-- THRESHOLD_SECTION:END -->
+</section>
+<div class="arrow">&darr;</div>
+
 <!-- 05 -->
 <section>
   <div class="step-head"><span class="step-n">05</span><h2>What's accumulating, and what isn't yet</h2></div>
@@ -599,7 +637,7 @@ p{max-width:68ch}
 </section>
 
 <div class="foot">
-  <p style="margin:0 0 6px"><strong>Reproduce:</strong> <code>record</code> to log a week, <code>t1</code> for the shadow scan, <code>grade &lt;path&gt;</code> / <code>t1grade &lt;path&gt;</code> once the week closes, <code>summary</code> to rebuild every number above &mdash; all via <code>python3 -m tests.track_forward &lt;cmd&gt;</code>, reading/writing <code>results/forward_test/picks_*.json</code>.</p>
+  <p style="margin:0 0 6px"><strong>Reproduce:</strong> <code>record</code> to log a week, <code>t1</code> for the shadow scan, <code>grade &lt;path&gt;</code> / <code>t1grade &lt;path&gt;</code> once the week closes, <code>summary</code> to rebuild every number above &mdash; all via <code>python3 -m tests.track_forward &lt;cmd&gt;</code>, reading/writing <code>results/forward_test/picks_*.json</code>. Threshold-sweep arms (&sect;04d) via <code>python3 -m tests.track_threshold record --picks &lt;path&gt; | grade --all-pending | summary | status</code>, reading/writing <code>results/threshold_experiment/</code> &mdash; never re-screens, only re-splits Control's own graded picks.</p>
   <p style="margin:0">Source plan: <code>docs/forward-test-response-and-volume-plan.md</code>. Two documents it cites &mdash; a <code>claude/</code>-prefixed improvement plan and a standalone <code>forward-test-log.md</code> &mdash; don't exist in this checkout; every number here is instead sourced directly from <code>tests/track_forward.py</code> and the JSON records it writes.</p>
 </div>
 </div>

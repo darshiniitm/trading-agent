@@ -195,6 +195,30 @@ the gates above; `late_backfill` and `replay` never do.
 weeks of replay (`docs/feature-flag-matrix-plan.md` §7.3) — see
 `docs/forward_test_findings.md` for the dated entry recording the result.
 
+### 3.10 Threshold experiment — risk-cap sweep
+
+Registered 15 Sep 2026 by Dharmin's explicit decision. Full spec, decisions and invariants:
+`docs/threshold-experiment-plan.md`. Registration is recorded here before any forward week is
+graded; the only data looked at beforehand were survivor **counts** by R% band (no returns).
+
+| field | value |
+|---|---|
+| **id** | `threshold-experiment` — arms `threshold-experiment_15`, `_17.5`, `_20`, `_22.5`, `_25`, `_30`, `_40`, `_50` |
+| **Mechanism (only this changes)** | Per arm, Control's survivors split into SELECTED (`(signal_close − vstop_line_SL)/signal_close ≤ cap/100`) and REJECTED (above it). Equal weight; Control's own gap-stop-aware 1-week grade and 0.5% cost. |
+| **Identical to Control** | Universe, liquidity floor, VStop/RSI, exit rule, costs, sizing method. `_15` reproduces Control exactly (invariant X1/X6). |
+| **Different from Control (acknowledged)** | Loosens the 15% risk cap — the change §4 says not to make on one week's evidence. Shadow only; Control's cap and capital are untouched. |
+| **Hypothesis** | Names rejected by the 15% cap do no worse over one week than names it keeps. |
+| **Kill** | At 26 forward weeks: paired `selected − Control` CI upper bound < 0, or REJECTED-basket CI upper bound < 0 → arm retired. |
+| **Graduation** | At 26 forward weeks: paired weekly `selected − Control` bootstrap CI lower bound > 0 with BH q < 0.05 across arms that differ from Control. One decision per arm. A graduating arm is a proposal to change `rules.yaml`, decided separately. |
+
+**Comparison rules:** zero SELECTED names = 0.0% that week, never dropped; zero REJECTED names = no
+rejected basket that week. Only `forward` records (picks and threshold record both before Monday
+09:15 IST) count. Forward-only — no historical replay unless explicitly requested, and then as dev
+evidence only.
+
+**Note on the grid:** on a flip bar `R/EP = 2·ATR/close`; across 576 replay survivors it never
+exceeded 27.7%, so `_30`, `_40` and `_50` are expected to equal "no cap" almost every week.
+
 ---
 
 ## 4. What not to do
@@ -204,6 +228,8 @@ weeks of replay (`docs/feature-flag-matrix-plan.md` §7.3) — see
 - Do not widen the universe or the VStop sensitivity to chase trade count inside this plan — that path exists (the V-series), this isn't it.
 - Do not let a good (or bad) forward-test week change the phase-3/4/5 sequencing gates already agreed (dev set only, one validation pass, frozen finalists).
 - Do not judge T1 on one week in either direction — the point of §3.7 is better instrumentation, not an early verdict.
+
+*Dated note, 15 Sep 2026:* the risk-cap rule above still holds for Control. The cap is now studied in shadow only, as the registered threshold experiment in §3.10.
 
 ---
 
@@ -224,3 +250,4 @@ Standing rule 1 in `forward-test-log.md`: *"Record before the week opens. A pick
 7. §3.8 scoring architecture: implement risk-guardrail parameters (headroom, liquidity multiple, band position) as a multiplicative discount on the edge-signal score, or as a hard gate below some threshold, or just as separate ledger columns with no single blended number at all?
 8. §3.8.1 per-ticker reversal frequency: what's the minimum number of past T1 appearances before this parameter is trusted enough to include, given only one or two T1 weeks are graded so far?
 9. §3.8 v1 scope: ship a first version of the score from 3.8.1 + 3.8.2's already-computed parameters now, or wait until §3.7 items 2–3 (window-offset, days-since-flip) land so the full parameter set is available at once?
+10. Threshold experiment (§3.10): decisions D1–D5 settled 15 Sep 2026 (grid 15/17.5/20/22.5/25/30/40/50; plain arm names; `R <= 0` removal kept; equal-weight SELECTED vs REJECTED; forward-only). Open: whether to run a historical replay if forward weeks show a signal.

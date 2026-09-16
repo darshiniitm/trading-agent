@@ -18,12 +18,17 @@ known, grade once it is, never touch a past record.
    This snapshots `run_screen()` + `build_trades()` output as of the latest completed Friday into
    `results/forward_test/picks_<date>.json` (+CSV). **It will refuse to run if that file already
    exists — do not delete an existing file to force a re-run.**
+2b. **Threshold experiment record**: `python -m tests.track_threshold record --picks
+   results/forward_test/picks_<date>.json` — splits this week's survivors into SELECTED/REJECTED
+   for every risk-cap arm (see the `threshold-experiment` skill). Shadow only.
 3. **Record T1 shadow, if due**: `python -m tests.track_forward t1` (`record_t1_shadow()`) — the
    daily rolling-window scan against `src/screen/daily_scale.py:daily_rule_spec()`.
 4. **Grade the prior week's record**, once the following week's bar exists:
    `python -m tests.track_forward grade results/forward_test/picks_<date>.json`. This applies the
    gap-stop-aware exit rule and computes basket / T2 / T3 / shadow / near-miss net % into the
    `graded` field. It's idempotent — safe to re-run, it short-circuits if already graded.
+4b. **Grade the threshold experiment** once step 4 has filled Control's `graded` block:
+   `python -m tests.track_threshold grade --all-pending`.
 5. **Grade T1 similarly**: `python -m tests.track_forward t1grade
    results/forward_test/picks_<date>_t1.json`.
 6. **Periodically, run the diagnostic pack**: `python -m tests.track_forward summary` —
@@ -38,8 +43,16 @@ known, grade once it is, never touch a past record.
    has no schedule of its own, it only chains off this exact `as_of` (see the
    `weekly-flag-matrix` skill for the full procedure, and
    `docs/feature-flag-matrix-plan.md` for the spec). `scripts/weekly_selection_run.sh` already
-   runs steps 2-8 in the right order end to end if you'd rather invoke the whole chain at once.
+   runs steps 2-8 (including 2b and 4b) in the right order end to end if you'd rather invoke the whole chain at once.
 9. **After grading, hand off to `rebuild-test-control-dashboard`** to keep the ledger in sync.
+
+## Known data issue when grading (D7)
+
+If the holding week's **Monday was an NSE holiday**, yfinance's weekly bar uses the previous
+Friday's close as the week's open, so `grade` books EP = signal close instead of the first real
+session's open. Mon 14 Sep 2026 was one (holding week of the 2026-09-07 record). Until Dharmin
+decides on a fix, say this explicitly when reporting that week's grade — don't present the EP as a
+real fill.
 
 ## Guardrails (from `.claude/HARNESS.md`)
 

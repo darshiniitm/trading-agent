@@ -59,11 +59,16 @@ def main():
     fold_dates = gradeable_fridays[-walk_forward_weeks:]
     print(f"\n########## ROLLING WALK-FORWARD  ({len(fold_dates)} weeks: "
           f"{fold_dates[0].date()} -> {fold_dates[-1].date()}) ##########")
-    graded_all = rolling_walk_forward(fold_dates, rule_spec, adapter, universe_df, weekly_panels, shares_map)
+    rejections = []
+    graded_all = rolling_walk_forward(fold_dates, rule_spec, adapter, universe_df, weekly_panels, shares_map,
+                                      rejections_out=rejections)
+    rejections_df = pd.concat(rejections, ignore_index=True) if rejections else pd.DataFrame()
+    print(f"  trade-builder rejections (D5): {len(rejections_df)}"
+          + (f" — by reason: {rejections_df['reason'].value_counts().to_dict()}" if not rejections_df.empty else ""))
     rw_summary = summarize_trades(graded_all)
     print_backtest_summary(rw_summary, title="Rolling walk-forward — trade-level summary")
 
-    weekly_rets = weekly_portfolio_returns(graded_all)
+    weekly_rets = weekly_portfolio_returns(graded_all, calendar=fold_dates)  # D2: flat weeks = 0.0
     port_summary = portfolio_metrics(weekly_rets)
     print_backtest_summary(port_summary, title="Rolling walk-forward — portfolio-level summary")
 
@@ -78,6 +83,7 @@ def main():
         single_week_trades=sw["graded"],
         walk_forward_trades=graded_all,
         weekly_portfolio_returns=weekly_rets,
+        trade_builder_rejections=rejections_df,
         confidence_calibration=calib,
     )
 

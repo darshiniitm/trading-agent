@@ -29,6 +29,9 @@ backtest (that's `run-screen-or-backtest`).
    row, call `src/screen/candidate_score.py:compute_candidate_score(...)` — the same call
    `record_t1_shadow()` in `tests/track_forward.py` makes. Reuse it rather than reimplementing
    the formula (see `.claude/GLOSSARY.md` for what each field means).
+4b. **Risk-cap context**: for a survivor, report `R% = (close − vstop_line)/close × 100` and which
+   threshold-experiment arms would SELECT it (`src/experiments/threshold.py:is_selected`) — e.g.
+   19.6% is REJECTED by `_15`/`_17.5` and SELECTED from `_20` up. Informational only.
 5. **Present results with funnel context** — when relevant, show `FunnelReport` stage counts
    (`run_screen()`'s `funnel` output) so it's clear whether a ticker was excluded by cap band,
    liquidity, or a specific predicate, versus never reaching evaluation at all.

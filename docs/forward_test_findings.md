@@ -114,3 +114,86 @@ Full record: `results/feature_flags/flags_2026-09-07.csv`, audit:
 - Noteworthy reasons: check_failed, recording_mode_late_backfill, first_record_for_registry_version
 
 No graded week yet.
+
+---
+
+## 2026-09-15 — Threshold experiment registered; `build_trades()` `R <= 0` guard removed
+
+**Control-file change (Dharmin's decision, kept).** `src/trade/builder.py` no longer rejects
+`R <= 0`; it rejects only `R/EP > trade.max_r_pct`. Checked on the latest cached week (signal week
+2026-09-07): selection unchanged (JUBLPHARMA, SPLPETRO traded; PINELABS rejected by the 15% cap).
+It is a no-op in practice because EP is always the signal close and every survivor is in an
+uptrend, so `R ≥ 0`; only `R == 0` exactly would now become a trade. The flag audit's AU03 will
+report `src/trade/builder.py` drift until this is committed.
+
+**Threshold experiment registered** (`docs/threshold-experiment-plan.md`, plan doc §3.10): shadow
+arms `threshold-experiment_15/17.5/20/22.5/25/30/40/50`, each splitting Control's survivors into
+SELECTED (`R/EP ≤ cap`) and REJECTED, equal-weight, forward-only, one decision per arm at 26
+forward weeks. Before registering, only survivor **counts** by R% band were read from the 104-week
+replay — no returns:
+
+- On a flip bar, `R% of close = 200·ATR/close` exactly (576 survivors); max 27.7%.
+- Counts: ≤15%: 241 · 15–17.5: 152 · 17.5–20: 105 · 20–22.5: 51 · 22.5–25: 22 · 25–30: 5 · >30: 0.
+- The 15% cap rejects 58% of survivors; `_30/_40/_50` would have equalled "no cap" in all 104 weeks.
+
+First record: `results/threshold_experiment/threshold_2026-09-07.json` (`late_backfill` — Control's
+picks were written 14 Sep 01:06 IST, before that week's Monday open, but this threshold record
+was written 15 Sep, after it, so the week does not count toward the gate). First forward week: signal week 2026-09-14, record due before
+Mon 21 Sep 09:15 IST.
+
+---
+
+## 2026-09-16 — Open-decisions plan v1.0: defects D1/D2/D3/D5/D6 fixed, baseline restated, V2/V3/V4/V7/G registered, 2019+ holdout built, and a yfinance weekly-bar defect (D7)
+
+Plan: `docs/open-decisions-implementation-plan.md` (decisions D1–D6 settled by Dharmin 16 Sep 2026:
+data from 2019 onward; V6 out; V7 in; fix D1, D2, D3, D5, D6; add V2; guardrails validated on
+their own risk metric **and** on returns).
+
+**Harness fixes (`src/backtest/harness.py`), probe tests now pass:**
+- D1 `simulate_week_forward` exits at the open when the week opens at/below the stop (`gap_stop_at_open`), same rule as `_grade_rows`.
+- D2 `weekly_portfolio_returns(graded, calendar=fold_dates)` keeps zero-pick weeks as 0.0%.
+- D3 `simulate_trend_hold` checks week *i* against week *i−1*'s stop (plus gap-at-open).
+- D5 `trade_rejections()` lists every survivor `build_trades()` did not take; `run_backtest.py` saves `trade_builder_rejections.csv`.
+- D6 graded trades carry `R`/`target` off the actual fill; signal-time values kept as `R_signal`/`target_signal`.
+- D4 (flat-series RSI = 100) **left open** — `src/indicators/rsi.py` is a Control file.
+
+**Baseline restated on the same 104 folds (2024-09-09 → 2026-08-31, offline cache):**
+
+| | before fixes | after fixes |
+|---|---|---|
+| trades / hit rate | 241 / 36.5% | 241 / 36.5% |
+| mean net per trade (CI95) | −1.285% (−1.87, −0.71) | −1.285% (−1.87, −0.71) |
+| portfolio weeks | 74 (30 flat weeks dropped) | 104 |
+| CAGR / Sharpe / max DD | −57.7% / −2.70 / −73.5% | −45.7% / −2.24 / −73.6% |
+| exits | 238 week close, 3 stop | same — no gap-through-stop week in this window |
+| trade-builder rejections | not visible | 335, all `risk_cap` |
+
+Trade-level numbers are unchanged (D1/D6 didn't fire in this window); the portfolio series was
+wrong by the 30 dropped weeks. Still firmly negative. Trend-hold (D3) was not re-run.
+
+**New data defect D7 — yfinance weekly bars in Monday-holiday weeks.** Resampling the daily cache
+to weekly and comparing with `weekly_ohlcv_260w.parquet` over 2021-07 → 2026-09 (122,067
+ticker-weeks): 95.6% match raw. 4,519 of the 5,421 mismatches are weeks whose Monday was an NSE
+holiday, where yfinance's weekly **open is the previous Friday's close** rather than the first real
+session's open. Excluding those and the in-progress latest week, 99.66% match (the rest: the
+Saturday 18 May 2024 special session missing from daily bars). Consequence: every consumer that uses
+the weekly open as the entry price — `track_forward._grade_rows`, `simulate_week_forward`,
+`grade_matrix`, and therefore the threshold experiment — books EP = signal-week close in those weeks.
+**Mon 14 Sep 2026 was an NSE holiday (Ganesh Chaturthi), so the holding week for the 2026-09-07
+picks is affected: its grade will use Fri 11 Sep's close as EP, not Tue 15 Sep's open.** Not fixed
+here (Control's grader) — left for Dharmin to decide. New weekly history for dev/holdout is built from
+daily bars (`src/data/resample.py`), which does not have this defect.
+
+**Registered before any run** (`config/experiments.yaml`, checksum locked): V2 fixed N-week hold
+(N ∈ {2,4,8}), V3 pullback limit entry (depends on V2), V4 same-week entry on daily confirmation,
+V7a alpha decomposition and V7b short-signal mirror (diagnostics, never traded without a separate
+F&O/borrow study), G guardrail calibration (dual criterion: own risk metric + returns
+non-inferiority, CI lower bound ≥ −0.5 pp). Budget used: 3 of 7 (V2, V3, V4).
+
+**`holdout_ext` built (counts only — no returns read):** signal weeks 2019-12-02 → 2021-06-28,
+83 weeks, from `daily_ohlcv_1820d.parquet` (starts 2019-05-13; `scripts/backfill_history.py
+--start 2019-01-01` extends it once run on a networked machine). Universe per week: 369–385
+tickers with ≥ 30 bars, 133–189 in the ₹10–50k cr band (median ~155) vs 264 today — the holdout
+universe is ~40% smaller and built from today's constituents, so survivorship bias is heavier than
+in dev. Per-week counts: `results/evidence/holdout_ext_universe_counts.csv`. One pass, finalists
+only, enforced by `src/data/segments.py`.

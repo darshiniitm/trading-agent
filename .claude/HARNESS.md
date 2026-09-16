@@ -17,6 +17,10 @@ into a Test arm (T1/T2/T3-style, see `add-test-arm` skill) or a shadow score
 `rules.yaml`, treat that as a distinct, deliberate decision the user makes explicitly — not a
 side effect of "improving" something else.
 
+The **threshold experiment** (`docs/threshold-experiment-plan.md`) sweeps `trade.max_r_pct` across
+15–50% in shadow only. Control's cap stays at 15% until Dharmin explicitly decides otherwise; a
+graduating arm is a proposal, never an automatic edit to this file.
+
 ## 2. Single shared code path
 
 `src/screen/engine.py:run_screen()` is the **one** funnel used by the live screen and every
@@ -61,16 +65,23 @@ Separately, `docs/forward_test_findings.md` is **append-only**: add a new dated 
 
 ## 7. Known defects — don't build on them uncritically, don't quietly "fix" them mid-task
 
-- **Gap-through-stop mis-fill in `simulate_week_forward`** (`src/backtest/harness.py`) — the
-  *backtest* harness (unlike `track_forward.py`'s grading, which already has the honest fix) can
-  report a stop-hit exit when the true fill was a worse gapped-open price, inflating historical
-  expectancy.
-- **Flat/zero-pick weeks silently dropped** from `weekly_portfolio_returns` — should count as a
-  zero-return week, not be excluded; excluding them inflates Sharpe.
-- **Look-ahead risk in the trend-hold exit path** (`rolling_walk_forward_trend_hold`) — probed by
-  `tests/test_leakage.py`.
+- **FIXED 2026-09-16 (D1, D2, D3, D5, D6 — see findings):** backtest gap-through-stop fill,
+  dropped zero-pick weeks (pass `calendar=` to `weekly_portfolio_returns`), trend-hold using the
+  current bar's stop, invisible trade-builder rejections (`trade_rejections`), R/target not
+  recomputed off the fill. Don't reintroduce: `tests/test_backtest_engine.py` and
+  `tests/test_harness_fixes.py` now assert the fixed behaviour.
+- **D7 — yfinance weekly bars in Monday-holiday weeks use the previous Friday's close as the
+  week's open.** Every grader that takes EP from the weekly bar (`track_forward._grade_rows`,
+  `simulate_week_forward`, `flags.grade.grade_matrix`, the threshold experiment) books EP = signal
+  close in those weeks (~3.7% of ticker-weeks; the 2026-09-07 record's holding week is one).
+  Unfixed pending Dharmin's decision. For new history use `src/data/resample.py` (daily → weekly),
+  which is correct.
 - **RSI on a flat/constant price series returns 100 instead of 50** (`src/indicators/rsi.py`,
   `avg_loss == 0` edge case) — a neutral series should not read as maximally overbought.
+- **`build_trades()` no longer rejects `R <= 0`** (Dharmin's decision, 15 Sep 2026). Unreachable in
+  practice today (EP = signal close ≥ VStop line for every uptrend survivor), but if anything ever
+  passes `next_week_open` a negative-R trade would now be built. Don't pass it without restoring the
+  guard or handling negative R downstream.
 - **`KeyError` risk in sector-RS / `flag_outperforming`** on a zero-survivor week — an empty
   universe/survivor set should not crash the report.
 
@@ -88,7 +99,8 @@ live network call in a test makes it flaky and non-reproducible.
 
 Explicit v0.7 §4 rule: don't loosen the RSI band or the risk cap, don't widen the universe or
 VStop sensitivity, on the strength of one week's read (low trade count, one bad week, one good
-week). That kind of change is separately-named future work (the plan doc's "V-series" open
+week). (Registered exceptions, by Dharmin's explicit decision: T4 flag-count selection, plan doc §3.9, and the
+risk-cap threshold experiment, plan doc §3.10 — both shadow-only, neither changes Control.) That kind of change is separately-named future work (the plan doc's "V-series" open
 decisions in §6), not something to fold into a Test-arm task or a "quick tweak."
 
 ## 10. Statistical gates aren't optional
@@ -105,3 +117,22 @@ explicit "do not judge T1 on one week" rule to every Test arm, in both direction
 (survivorship bias, biases returns upward), universe is a proxy union of index CSVs rather than
 a full point-in-time NSE listing, yfinance's adjustment methodology is unverified. Any finding or
 dashboard number derived from this data should carry this caveat, not be presented as clean.
+
+## 12. Threshold experiment records are derived, never recomputed
+
+`tests/track_threshold.py` builds every arm from Control's own `picks_<wk>.json` and grades it
+from that file's own `graded.detail` — no second `run_screen()`/`build_trades()` call, no price
+reads, no re-grading. Invariant X1 (`threshold-experiment_15` SELECTED == Control's `TRADE` list)
+and X6 (its basket == Control's `basket_net_pct`) enforce that it cannot drift from Control; X4
+fingerprints the picks record. Records (`threshold_<wk>.json`) are immutable like picks files, the
+ledger is append-only, and caps are frozen by `registry-lock` — a different grid is a new
+experiment, not an edit. Zero-SELECTED weeks count as 0.0%; only `forward` weeks enter the gate.
+
+## 13. Data segments and the experiment registry
+
+`src/data/segments.py` defines `dev` (2021-07 → 2026-08, already read by several studies),
+`holdout_ext` (up to 2021-06-28, built from daily bars from 2019) and `forward` (2026-09-14 on).
+Any backtest that reads returns calls `assert_allowed()` and then `record_read()`; `holdout_ext`
+is one pass per frozen finalist and the code refuses a second read. Backtest-lane variants must be
+registered in `config/experiments.yaml` (checksum-locked) before their first run — a changed rule
+is a new id. V6 (regime gate) is out by decision; don't build it as a side effect of anything else.

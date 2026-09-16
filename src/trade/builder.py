@@ -50,7 +50,8 @@ def build_trades(survivors_df: pd.DataFrame, rule_spec: dict, next_week_open: di
         if SL is None or pd.isna(SL) or EP is None:
             continue
         R = EP - SL
-        if R <= 0 or (R / EP) > max_r_pct:
+        if (R / EP) > max_r_pct:
+        # R <= 0 or (R / EP) > max_r_pct:
             continue  # reject: SL above/at entry, or implausibly wide (design doc §6.2)
 
         target = EP + trade_cfg["target_r_multiple"] * R

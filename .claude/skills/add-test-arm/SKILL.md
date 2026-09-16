@@ -36,6 +36,23 @@ Control itself, which this skill must never do.
    CI excludes zero at the `FIRST_LOOK_WEEKS=13` / `REAL_READ_WEEKS=26` review points — never by
    discretion after a good week.
 
+## Backtest-lane variants (V-series)
+
+A variant tested on historical data rather than in forward shadow mode (V2, V3, V4, V7a/b, G) is
+registered in `config/experiments.yaml` (id, mechanism, rule, segment, kill) and locked with
+`python -c "from src.experiments import registry; registry.lock()"` before its first run. It uses
+`env_extended()` for 2019+ weekly bars, the `dev` segment only, and counts against the 7-variant
+budget if it can graduate. See `docs/open-decisions-implementation-plan.md`.
+
+## Reference example: a parameter sweep derived from Control's record
+
+The risk-cap **threshold experiment** (`docs/threshold-experiment-plan.md`, plan doc §3.10) is the
+template for sweeping a post-screen parameter: when Control's `picks_<wk>.json` already contains
+every name the variant could select (here, all survivors including risk-cap rejects), build the
+arms as a pure split of that record (`src/experiments/threshold.py`), grade from its `graded.detail`,
+freeze the grid in a checksummed registry, and assert the Control-equivalent arm reproduces
+Control exactly (X1/X6). No second screen, no price reads.
+
 ## Guardrails (from `.claude/HARNESS.md`)
 
 - **Zero impact on Control**: never modify `config/rules.yaml`, `run_screen()`, or

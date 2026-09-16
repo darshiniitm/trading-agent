@@ -47,6 +47,10 @@ re-deriving them from code each time.
 | Live forward-test record/grade cadence | `tests/track_forward.py` |
 | Weekly feature-flag condition matrix + T4 shadow arm registry | `config/feature_flags.yaml`, `src/flags/` (`registry.py`, `rules.py`, `matrix.py`, `grade.py`, `t4.py`, `scorecard.py`, `checks.py`, `audit.py`, `findings.py`, `timing.py`) |
 | Flag matrix CLI (record/grade/replay/scorecard/audit — chained off Control's own record, never its own schedule) | `tests/track_flags.py` |
+| Risk-cap threshold experiment (shadow arms `threshold-experiment_15/17.5/20/22.5/25/30/40/50`, derived only from Control's picks file) | `config/threshold_experiment.yaml`, `src/experiments/threshold.py`, `tests/track_threshold.py` (record/grade/summary/status) — spec `docs/threshold-experiment-plan.md` |
+| Experiment registry for backtest variants (V2, V3, V4, V7a, V7b, guardrail calibration G) | `config/experiments.yaml`, `src/experiments/registry.py` |
+| Data segments + read ledger (dev / holdout_ext / forward) | `src/data/segments.py`, `results/evidence/` |
+| Daily → weekly resample, 2019+ history | `src/data/resample.py`, `tests/offline.py:env_extended()`, `scripts/backfill_history.py` (needs network) |
 | Console/CSV reporting | `src/report/report.py` |
 | One-off CLI entry points | `scripts/run_screen.py`, `scripts/run_backtest.py`, `scripts/rsi_param_study.py`, `scripts/survivorship_check.py`, `scripts/common.py` (shared bootstrap), `scripts/weekly_selection_run.sh` (Control record → flag trigger → audit, chained) |
 
@@ -54,6 +58,9 @@ re-deriving them from code each time.
 
 - `docs/forward-test-response-and-volume-plan.md` (v0.7) — the live plan: Control vs. Test-arm design, graduation gates, "what not to do" guardrails, the pre-open recording deadline. §3.9 registers T4 (flag-count selection).
 - `docs/feature-flag-matrix-plan.md` (v1.0) — full spec for the weekly feature-flag condition matrix and T4: registry, pipeline stages, invariants, CLI, audit tools, phase plan.
+- `docs/threshold-experiment-plan.md` (v1.0) — risk-cap threshold experiment: decisions, registration, invariants X1–X6, rollout. Registered as plan doc §3.10.
+- `docs/open-decisions-implementation-plan.md` (v1.0) — extended history, V2/V3/V4 entry & horizon, V7 short diagnostics, guardrail validation; decisions D1–D6 settled 16 Sep 2026.
+- `docs/evidence-ledger.md` — which studies have read returns in which window.
 - `docs/forward_test_findings.md` — append-only findings log. Never edit a past entry retroactively.
 - `docs/dashboards/test-vs-control-ledger.html` — a **hand-maintained** static dashboard, meant to be rebuilt after every grade run. No generator script exists yet (see the `rebuild-test-control-dashboard` skill).
 
@@ -62,6 +69,7 @@ re-deriving them from code each time.
 Native Claude Code skills under `.claude/skills/` — invoke by asking for the task, or by name:
 
 - **`stock-score-lookup`** — ad-hoc scoring/checking of one or a few tickers, any time.
+- **`threshold-experiment`** — record/grade/summarise the weekly risk-cap sweep, chained off Control's own record and grade.
 - **`weekly-forward-test`** — the weekly Control(+T1) record/grade cycle.
 - **`weekly-flag-matrix`** — the weekly feature-flag condition matrix + T4 shadow arm cycle, chained off `weekly-forward-test`'s own record step.
 - **`rebuild-test-control-dashboard`** — regenerate the ledger HTML after a grade run.
@@ -92,3 +100,22 @@ implemented and **uncommitted but already on disk**: `config/feature_flags.yaml`
 DEV/VALIDATE calibration (104-week replay) hit kill criterion (a) — `config/feature_flags.yaml`'s
 `t4.k` stays `null`; see the 2026-09-15 entry in `docs/forward_test_findings.md`. The matrix
 itself keeps recording/grading every week regardless of T4's status.
+
+**15 Sep 2026 — `src/trade/builder.py` change (Dharmin's decision, kept):** the `R <= 0` reject was
+removed; `build_trades()` now rejects only `R/EP > trade.max_r_pct`. For live selection this is a
+no-op except when close == VStop line exactly (EP is always the signal close, and every survivor is
+in an uptrend). It is still a Control-file change: the flag audit's AU03 will flag
+`src/trade/builder.py` drift until it is committed. See the 2026-09-15 findings entry.
+
+**15 Sep 2026 — threshold experiment registered and implemented** (uncommitted, on disk):
+`config/threshold_experiment.yaml`, `src/experiments/`, `tests/track_threshold.py`,
+`tests/test_threshold_experiment.py` (TX-01..TX-09), `scripts/weekly_selection_run.sh` steps,
+`threshold-experiment` skill. `results/threshold_experiment/threshold_2026-09-07.json` is the first
+record (`late_backfill`). Forward tracking starts with signal week 2026-09-14.
+
+**16 Sep 2026 — open-decisions plan v1.0, Phases 0–2 implemented** (uncommitted, on disk): harness
+defects D1/D2/D3/D5/D6 fixed and baseline restated (findings 2026-09-16); `config/experiments.yaml`
+registered and locked; `src/data/resample.py`, `src/data/segments.py`, `env_extended()`,
+`scripts/backfill_history.py`; tests `test_harness_fixes.py`, `test_data_segments_registry.py`.
+Open: D4 (RSI flat series) and D7 (weekly holiday-open defect in graders) await Dharmin's decision.
+Not yet built: V2/V3/V4 engines, V7a/V7b, guardrail calibration (Phases 4–5).

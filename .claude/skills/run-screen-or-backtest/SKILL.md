@@ -22,8 +22,8 @@ time-sensitive; this is a repeatable, no-side-effects check.
    secondary trend-hold exit report.
 3. **Always restate the caveat before presenting backtest numbers**: the current 104-week
    walk-forward result is negative expectancy (-1.07%/trade, Sharpe -2.6), and the harness carries
-   the known defects in `.claude/HARNESS.md` §7 (gap-fill mis-pricing, dropped zero-pick weeks,
-   trend-hold look-ahead risk) — don't report a Sharpe or return number as clean without noting
+   the open defects in `.claude/HARNESS.md` §7 (D4 flat-series RSI; D7 weekly holiday-open EP;
+   D1/D2/D3/D5/D6 were fixed 2026-09-16 — the restated baseline is in the findings log) — don't report a Sharpe or return number as clean without noting
    this.
 4. **Deeper diagnostics, as needed**: `scripts/rsi_param_study.py` (RSI band sensitivity sweep),
    `scripts/survivorship_check.py` (quantifies survivorship-bias exposure from the data caveats).
@@ -31,9 +31,19 @@ time-sensitive; this is a repeatable, no-side-effects check.
    feeds into a proposed Test arm (`add-test-arm`) or a documented open decision in the plan doc
    — not a live parameter change.
 
+6. **Variants and extended history.** A backtest variant (V2/V3/V4/V7/G) must be registered in
+   `config/experiments.yaml` first. For 2019+ weekly history use `tests/offline.py:env_extended()`
+   (weekly bars resampled from daily). Call `src/data/segments.py:assert_allowed()` before reading
+   returns and `record_read()` after; `holdout_ext` is one pass for frozen finalists only. Pass
+   `calendar=fold_dates` to `weekly_portfolio_returns` so flat weeks count.
+
 ## Guardrails (from `.claude/HARNESS.md`)
 
 - **Single shared code path** — both the screen and backtest go through `run_screen()`; don't
   reimplement filtering logic for a "quick" variant.
 - **Negative-expectancy + known-defects caveat** on every backtest number presented.
 - **No writes to `config/rules.yaml`** from this skill.
+- **Don't choose a risk cap from a walk-forward run.** The cap is under test in the forward-only
+  threshold experiment (`threshold-experiment` skill); `simulate_week_forward` still has the
+  gap-through-stop defect, so backtest cap comparisons would be graded on a different exit than
+  the experiment.

@@ -34,6 +34,18 @@ treat it as generated from data, not a hand-authored page you patch numbers into
    `docs/forward_test_findings.md` for the dated DEV/VALIDATE entry that explains which) rather
    than an empty series. Same maturity rule as Control's own Test arms: don't visually imply a
    read before `FIRST_LOOK_WEEKS=13` forward weeks.
+3c. **Threshold experiment section (§04d) has its own generator** —
+   `python -m scripts.rebuild_threshold_dashboard_section` regenerates it from the latest graded
+   `results/threshold_experiment/threshold_<wk>.json` (per-arm SELECTED/REJECTED basket returns,
+   arm membership, per-survivor grade), writing only between the `THRESHOLD_SECTION:BEGIN`/`END`
+   markers around §04d. Run it after `track_threshold grade --all-pending`; it's a safe no-op if
+   the latest record isn't graded yet. **Never hand-edit §04d** — regenerate it instead, or the
+   next run overwrites the hand edit anyway. For anything the generator doesn't cover yet
+   (multi-week aggregate charts, `weeks_differing_from_control`, the 13/26-week read points),
+   source numbers from `summary_latest.md` / `summary_<date>_forward.csv`
+   (`python -m tests.track_threshold summary`) and add them by hand outside the marker block;
+   exclude `late_backfill` weeks from any cumulative line and don't imply a read before 13
+   forward weeks.
 4. **Preserve the existing visual system** — the current dashboard uses CSS custom properties
    for its light/dark theme (`--gain`/`--loss`/`--flag`-style tokens) and IBM Plex/Newsreader
    fonts. Match it rather than introducing a new style per rebuild.

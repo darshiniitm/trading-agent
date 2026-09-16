@@ -25,8 +25,11 @@ RSI band) — tracked as a real trade the strategy chose not to take, not discar
 Source: `run_screen()`'s `near_miss` output.
 
 **EP / SL / R / target** — for each survivor: `EP` (entry price) = next week's open, `SL` (stop
-loss) = the VStop line, `R = EP - SL`, `target = EP + 2*R`. A trade is rejected if `R <= 0` or
-`R/EP > 0.15` (the 15% risk cap — `trade.max_r_pct`). Source: `src/trade/builder.py:build_trades()`.
+loss) = the VStop line, `R = EP - SL`, `target = EP + 2*R`. A trade is rejected if
+`R/EP > 0.15` (the 15% risk cap — `trade.max_r_pct`); the former `R <= 0` reject was removed on
+15 Sep 2026. At record time EP is a placeholder equal to the signal close, so for a survivor on its
+flip bar `R/EP = 2·ATR/close` exactly — the risk cap is effectively a cap on weekly volatility.
+Source: `src/trade/builder.py:build_trades()`.
 
 **confidence** — a 0–1 (scaled to 0–100 internally) weighted composite of `rr` (reward:risk),
 `rsi_sweetspot` (triangular kernel peaking at the RSI band's midpoint, 57.5), `sector_rs`,
@@ -56,3 +59,26 @@ allowed to touch real capital until it clears a pre-registered bootstrap-CI gate
 at the `FIRST_LOOK_WEEKS = 13` / `REAL_READ_WEEKS = 26` review points. Source:
 `docs/forward-test-response-and-volume-plan.md` §3.1–§3.5, `tests/track_forward.py`
 (`record_t1_shadow`, `grade_t1`, `summary`).
+
+**Threshold experiment / arm `threshold-experiment_<cap>`** — shadow-only risk-cap sweep
+(caps 15, 17.5, 20, 22.5, 25, 30, 40, 50%). For each arm, Control's survivors split into
+**SELECTED** (`(signal_close − vstop_line_SL)/signal_close ≤ cap/100`, inclusive, mirroring
+`build_trades()`) and **REJECTED** (above the cap). `threshold-experiment_15` is Control's own
+split. Reported per week: equal-weight net % of each group, `selected_minus_control_pct`,
+`selected_minus_rejected_pct`; a week with no SELECTED names = 0.0%. Invariants X1–X6. Source:
+`src/experiments/threshold.py`, `tests/track_threshold.py`; spec `docs/threshold-experiment-plan.md`.
+
+**Data segments — `dev`, `holdout_ext`, `forward`** — `dev` = signal weeks 2021-07-05 → 2026-08-31
+(look freely; 2024-08 → 2026-08 already read by several studies). `holdout_ext` = up to 2021-06-28,
+weekly bars resampled from daily data starting 2019; first usable signal week after the 30-bar
+warm-up is 2019-12-02 with the current cache. One pass per frozen finalist. `forward` = 2026-09-14
+onward. Source: `src/data/segments.py`.
+
+**Experiment registry** — `config/experiments.yaml`: V2 (fixed N-week hold), V3 (pullback limit
+entry), V4 (same-week entry on daily confirmation), V7a/V7b (short-side diagnostics), G (guardrail
+threshold calibration, dual criterion). Registered rule/kill/segment fields are checksum-locked.
+Source: `src/experiments/registry.py`.
+
+**D7 (weekly holiday-open defect)** — in a week whose Monday is an NSE holiday, yfinance's weekly
+bar reports the previous Friday's close as the open. Daily → weekly resampling
+(`src/data/resample.py:daily_to_weekly`) uses the first real session's open instead.

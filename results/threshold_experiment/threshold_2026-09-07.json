@@ -1,0 +1,178 @@
+{
+  "record_id": "threshold_2026-09-07",
+  "experiment": "threshold-experiment",
+  "registry_checksum": "sha256:262b4c344c8d421b135983710b986473aeabc333b51dca0594c53bef9da43767",
+  "caps_pct": [
+    15,
+    17.5,
+    20,
+    22.5,
+    25,
+    30,
+    40,
+    50
+  ],
+  "control_arm": "threshold-experiment_15",
+  "created_utc": "2026-09-15T09:05:28+00:00",
+  "created_ist": "2026-09-15T14:35:28+05:30",
+  "signal_week": "2026-09-07",
+  "holding_week": "2026-09-14",
+  "monday_open_deadline_ist": "2026-09-14T09:15:00+05:30",
+  "recording_mode": "late_backfill",
+  "picks_file": "results/forward_test/picks_2026-09-07.json",
+  "picks_record_id": "fwd_2026-09-07",
+  "picks_created_utc": "2026-09-13T19:36:41+00:00",
+  "picks_fingerprint": "sha256:9f77585be4e3569406eadd031aefbbbb3c74753efd5576e583c282fcea910340",
+  "rule": "SELECTED iff (signal_close - vstop_line_SL) / signal_close <= cap/100 (mirrors build_trades)",
+  "n_survivors": 3,
+  "arms": {
+    "threshold-experiment_15": {
+      "cap_pct": 15.0,
+      "selected": [
+        "JUBLPHARMA.NS",
+        "SPLPETRO.NS"
+      ],
+      "rejected": [
+        "PINELABS.NS"
+      ]
+    },
+    "threshold-experiment_17.5": {
+      "cap_pct": 17.5,
+      "selected": [
+        "JUBLPHARMA.NS",
+        "SPLPETRO.NS"
+      ],
+      "rejected": [
+        "PINELABS.NS"
+      ]
+    },
+    "threshold-experiment_20": {
+      "cap_pct": 20.0,
+      "selected": [
+        "JUBLPHARMA.NS",
+        "PINELABS.NS",
+        "SPLPETRO.NS"
+      ],
+      "rejected": []
+    },
+    "threshold-experiment_22.5": {
+      "cap_pct": 22.5,
+      "selected": [
+        "JUBLPHARMA.NS",
+        "PINELABS.NS",
+        "SPLPETRO.NS"
+      ],
+      "rejected": []
+    },
+    "threshold-experiment_25": {
+      "cap_pct": 25.0,
+      "selected": [
+        "JUBLPHARMA.NS",
+        "PINELABS.NS",
+        "SPLPETRO.NS"
+      ],
+      "rejected": []
+    },
+    "threshold-experiment_30": {
+      "cap_pct": 30.0,
+      "selected": [
+        "JUBLPHARMA.NS",
+        "PINELABS.NS",
+        "SPLPETRO.NS"
+      ],
+      "rejected": []
+    },
+    "threshold-experiment_40": {
+      "cap_pct": 40.0,
+      "selected": [
+        "JUBLPHARMA.NS",
+        "PINELABS.NS",
+        "SPLPETRO.NS"
+      ],
+      "rejected": []
+    },
+    "threshold-experiment_50": {
+      "cap_pct": 50.0,
+      "selected": [
+        "JUBLPHARMA.NS",
+        "PINELABS.NS",
+        "SPLPETRO.NS"
+      ],
+      "rejected": []
+    }
+  },
+  "rows": [
+    {
+      "ticker": "JUBLPHARMA.NS",
+      "name": "Jubilant Pharmova Ltd.",
+      "sector": "Healthcare",
+      "control_status": "TRADE",
+      "signal_close": 1025.1,
+      "vstop_line_SL": 889.7214,
+      "r_pct": 13.2064,
+      "confidence": 72.8,
+      "threshold-experiment_15": "SELECTED",
+      "threshold-experiment_17.5": "SELECTED",
+      "threshold-experiment_20": "SELECTED",
+      "threshold-experiment_22.5": "SELECTED",
+      "threshold-experiment_25": "SELECTED",
+      "threshold-experiment_30": "SELECTED",
+      "threshold-experiment_40": "SELECTED",
+      "threshold-experiment_50": "SELECTED"
+    },
+    {
+      "ticker": "PINELABS.NS",
+      "name": "Pine Labs Ltd.",
+      "sector": "Financial Services",
+      "control_status": "SHADOW_rejected_by_risk_cap",
+      "signal_close": 198.85,
+      "vstop_line_SL": 159.8666,
+      "r_pct": 19.6044,
+      "confidence": null,
+      "threshold-experiment_15": "REJECTED",
+      "threshold-experiment_17.5": "REJECTED",
+      "threshold-experiment_20": "SELECTED",
+      "threshold-experiment_22.5": "SELECTED",
+      "threshold-experiment_25": "SELECTED",
+      "threshold-experiment_30": "SELECTED",
+      "threshold-experiment_40": "SELECTED",
+      "threshold-experiment_50": "SELECTED"
+    },
+    {
+      "ticker": "SPLPETRO.NS",
+      "name": "Supreme Petrochem Ltd.",
+      "sector": "Chemicals",
+      "control_status": "TRADE",
+      "signal_close": 820.5,
+      "vstop_line_SL": 704.6848,
+      "r_pct": 14.1152,
+      "confidence": 61.8,
+      "threshold-experiment_15": "SELECTED",
+      "threshold-experiment_17.5": "SELECTED",
+      "threshold-experiment_20": "SELECTED",
+      "threshold-experiment_22.5": "SELECTED",
+      "threshold-experiment_25": "SELECTED",
+      "threshold-experiment_30": "SELECTED",
+      "threshold-experiment_40": "SELECTED",
+      "threshold-experiment_50": "SELECTED"
+    }
+  ],
+  "checks": [
+    {
+      "id": "X1",
+      "status": "PASS",
+      "detail": "threshold-experiment_15 selected=['JUBLPHARMA.NS', 'SPLPETRO.NS'] vs Control TRADE=['JUBLPHARMA.NS', 'SPLPETRO.NS']"
+    },
+    {
+      "id": "X2",
+      "status": "PASS",
+      "detail": "selected sets nested by increasing cap"
+    },
+    {
+      "id": "X3",
+      "status": "PASS",
+      "detail": "every arm partitions the 3 survivors with a usable stop"
+    }
+  ],
+  "graded": null
+}

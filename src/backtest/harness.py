@@ -24,10 +24,20 @@ def _next_week_row(panel: pd.DataFrame, as_of: pd.Timestamp) -> pd.Series | None
 
 
 def simulate_week_forward(trades_df: pd.DataFrame, weekly_panels: dict[str, pd.DataFrame],
-                           as_of: pd.Timestamp, cost_pct: float) -> pd.DataFrame:
-    """For each trade, simulate the following week: SL hit (intraweek low) or close-out at week close."""
+                           as_of: pd.Timestamp, cost_pct: float, target_r_multiple: float = 2.0) -> pd.DataFrame:
+    """For each trade, simulate the following week at the actual fill (next week's open).
+
+    Exit rule (same as tests/track_forward.py:_grade_rows, the forward-test grader):
+      * open <= SL  -> gap_stop_at_open, exit at the open  (D1: the market never traded at SL)
+      * low  <= SL  -> stop_hit, exit at SL
+      * otherwise   -> week_close
+    D6: R and target are recomputed off the actual fill (EP = open). The signal-time values are
+    kept as R_signal / target_signal. r_multiple uses the fill R when positive, else the signal R
+    (a gap-through fill has no positive fill R), so a stop-out is never reported better than 0R.
+    """
     if trades_df.empty:
-        return trades_df.assign(exit_price=[], exit_reason=[], ret_pct=[], ret_pct_net=[], r_multiple=[])
+        return trades_df.assign(exit_price=[], exit_reason=[], ret_pct=[], ret_pct_net=[], r_multiple=[],
+                                gap_flag=[])
 
     rows = []
     for _, t in trades_df.iterrows():
@@ -39,16 +49,27 @@ def simulate_week_forward(trades_df: pd.DataFrame, weekly_panels: dict[str, pd.D
             continue  # no forward data yet (e.g. this week's live screen) -> can't grade
 
         EP = float(nxt["open"])  # actual fill at next week's open
-        SL = t["SL"]
-        stopped = nxt["low"] <= SL
-        exit_price = SL if stopped else float(nxt["close"])
-        exit_reason = "stop_hit" if stopped else "week_close"
+        SL = float(t["SL"])
+        if EP <= SL:
+            exit_price, exit_reason = EP, "gap_stop_at_open"
+        elif float(nxt["low"]) <= SL:
+            exit_price, exit_reason = SL, "stop_hit"
+        else:
+            exit_price, exit_reason = float(nxt["close"]), "week_close"
 
         ret_pct = (exit_price - EP) / EP
         ret_pct_net = ret_pct - cost_pct
-        r_multiple = (exit_price - EP) / (EP - SL) if (EP - SL) > 0 else np.nan
+        R_signal = float(t["R"]) if "R" in t and pd.notna(t["R"]) else np.nan
+        R_fill = EP - SL
+        r_basis = R_fill if R_fill > 0 else R_signal
+        r_multiple = (exit_price - EP) / r_basis if r_basis and r_basis > 0 else np.nan
+        rr = float(t["RR"]) if "RR" in t and pd.notna(t.get("RR")) else target_r_multiple
 
-        rows.append({**t.to_dict(), "EP": EP, "exit_price": exit_price, "exit_reason": exit_reason,
+        rows.append({**t.to_dict(),
+                     "R_signal": R_signal, "target_signal": t.get("target"),
+                     "EP": EP, "R": R_fill, "target": EP + rr * R_fill if R_fill > 0 else np.nan,
+                     "exit_price": exit_price, "exit_reason": exit_reason,
+                     "gap_flag": bool(EP <= SL),
                      "ret_pct": ret_pct, "ret_pct_net": ret_pct_net, "r_multiple": r_multiple,
                      "week_start": as_of, "week_end": nxt["date"]})
 
@@ -58,18 +79,17 @@ def simulate_week_forward(trades_df: pd.DataFrame, weekly_panels: dict[str, pd.D
 def simulate_trend_hold(trades_df: pd.DataFrame, weekly_panels: dict[str, pd.DataFrame], rule_spec: dict,
                          as_of: pd.Timestamp, cost_pct: float, max_hold_weeks: int = DEFAULT_MAX_HOLD_WEEKS) -> pd.DataFrame:
     """
-    Secondary exit horizon (design doc §8.5, "B"): hold the position, trailing the
-    VStop line, until either an intraweek low pierces the current trailing stop
-    (stop_hit, filled at that week's stop level) or the indicator flips down on a
-    weekly close (trend_flip_down, filled at that week's close). Capped at
-    `max_hold_weeks` (horizon_cap) so aggregation stays finite.
+    Secondary exit horizon (design doc §8.5, "B"): hold the position, trailing the VStop line.
 
-    Recomputing VStop over the FULL historical panel (not re-sliced per week) is
-    safe here: the recurrence only ever depends on bars at or before each index,
-    so the value at week w is identical whether you slice-then-compute up to w or
-    compute once over the whole panel and read off index w. This is a backtest
-    grading step over already-realized future prices, not a live decision — no
-    look-ahead is introduced.
+    D3: the stop that can actually be resting in the market during week i is the VStop level
+    known at the CLOSE of week i-1 (`prev_stop`), never week i's own line (which only exists
+    after week i closes). Each week, in order:
+      * open <= prev_stop -> gap_stop_at_open, exit at the open (D1)
+      * low  <= prev_stop -> stop_hit, exit at prev_stop
+      * flip_down on week i's close -> trend_flip_down, exit at the close
+    Capped at `max_hold_weeks` (horizon_cap). Recomputing VStop over the full panel is safe:
+    the recurrence at index i depends only on bars <= i, and we only ever read index i-1's
+    stop for week i's intraweek decision.
     """
     if trades_df.empty:
         return trades_df.assign(exit_price=[], exit_reason=[], hold_weeks=[], ret_pct=[],
@@ -96,10 +116,17 @@ def simulate_trend_hold(trades_df: pd.DataFrame, weekly_panels: dict[str, pd.Dat
 
         for i in range(entry_idx, last_possible + 1):
             row = vdf.loc[i]
-            trailing_stop = row["vstop_line"]
-            if pd.notna(trailing_stop) and row["low"] <= trailing_stop:
-                exit_idx, exit_reason, exit_price = i, "stop_hit", float(trailing_stop)
-                break
+            prev_stop = vdf.loc[i - 1, "vstop_line"]
+            if i == entry_idx:
+                prev_stop = t["SL"]  # the signal-week stop is the one placed at entry
+            if pd.notna(prev_stop):
+                prev_stop = float(prev_stop)
+                if float(row["open"]) <= prev_stop:
+                    exit_idx, exit_reason, exit_price = i, "gap_stop_at_open", float(row["open"])
+                    break
+                if float(row["low"]) <= prev_stop:
+                    exit_idx, exit_reason, exit_price = i, "stop_hit", prev_stop
+                    break
             if bool(row["flip_down"]):
                 exit_idx, exit_reason, exit_price = i, "trend_flip_down", float(row["close"])
                 break
@@ -107,11 +134,13 @@ def simulate_trend_hold(trades_df: pd.DataFrame, weekly_panels: dict[str, pd.Dat
         if exit_idx is None:
             exit_idx, exit_reason, exit_price = last_possible, "horizon_cap", float(vdf.loc[last_possible, "close"])
 
-        initial_SL = t["SL"]
+        initial_SL = float(t["SL"])
         hold_weeks = exit_idx - entry_idx + 1
         ret_pct = (exit_price - EP) / EP
         ret_pct_net = ret_pct - cost_pct
-        r_multiple = (exit_price - EP) / (EP - initial_SL) if (EP - initial_SL) > 0 else np.nan
+        R_fill = EP - initial_SL
+        r_basis = R_fill if R_fill > 0 else (float(t["R"]) if "R" in t and pd.notna(t["R"]) else np.nan)
+        r_multiple = (exit_price - EP) / r_basis if r_basis and r_basis > 0 else np.nan
         path = vdf.loc[entry_idx:exit_idx]
         mae_pct = (path["low"].min() - EP) / EP  # max adverse excursion vs EP over the hold
 
@@ -142,23 +171,56 @@ def rolling_walk_forward_trend_hold(as_of_dates: list[pd.Timestamp], rule_spec: 
     return pd.concat(all_graded, ignore_index=True)
 
 
+def trade_rejections(survivors_df: pd.DataFrame, trades_df: pd.DataFrame, rule_spec: dict,
+                     as_of: pd.Timestamp) -> pd.DataFrame:
+    """D5: every survivor build_trades() did not turn into a trade, with the values that decided it.
+    Reads build_trades()'s output rather than re-implementing its rule (HARNESS §2); `reason` is a
+    diagnostic label derived from those values, not a second filter."""
+    cols = ["week_start", "ticker", "close", "vstop_line", "R_pct_of_close", "max_r_pct", "reason"]
+    if survivors_df is None or survivors_df.empty:
+        return pd.DataFrame(columns=cols)
+    taken = set(trades_df["ticker"]) if trades_df is not None and not trades_df.empty else set()
+    cap = float(rule_spec["trade"]["max_r_pct"])
+    rows = []
+    for _, s in survivors_df.iterrows():
+        if s["ticker"] in taken:
+            continue
+        sl = s.get("vstop_line")
+        close = float(s["close"])
+        if sl is None or pd.isna(sl):
+            reason, r_pct = "no_stop", np.nan
+        else:
+            r_pct = (close - float(sl)) / close * 100
+            reason = "risk_cap" if r_pct / 100 > cap else "other"
+        rows.append({"week_start": as_of, "ticker": s["ticker"], "close": close, "vstop_line": sl,
+                     "R_pct_of_close": r_pct, "max_r_pct": cap, "reason": reason})
+    return pd.DataFrame(rows, columns=cols)
+
+
 def single_week_check(as_of: pd.Timestamp, rule_spec: dict, adapter, universe_df: pd.DataFrame,
                        weekly_panels: dict, shares_map: dict) -> dict:
     screen_result = run_screen(as_of, rule_spec, adapter, universe_df, weekly_panels, shares_map)
     trades = build_trades(screen_result["survivors"], rule_spec)
     cost_pct = rule_spec["validation"]["costs_pct_round_trip"] / 100
-    graded = simulate_week_forward(trades, weekly_panels, as_of, cost_pct)
-    return {"as_of": as_of, "screen": screen_result, "trades": trades, "graded": graded}
+    graded = simulate_week_forward(trades, weekly_panels, as_of, cost_pct, rule_spec["trade"]["target_r_multiple"])
+    return {"as_of": as_of, "screen": screen_result, "trades": trades, "graded": graded,
+            "rejections": trade_rejections(screen_result["survivors"], trades, rule_spec, as_of)}
 
 
 def rolling_walk_forward(as_of_dates: list[pd.Timestamp], rule_spec: dict, adapter, universe_df: pd.DataFrame,
-                          weekly_panels: dict, shares_map: dict, progress_every: int = 10) -> pd.DataFrame:
+                          weekly_panels: dict, shares_map: dict, progress_every: int = 10,
+                          rejections_out: list | None = None) -> pd.DataFrame:
+    """Fold loop over as_of_dates. Pass a list as `rejections_out` to collect D5 trade-builder
+    rejections (one DataFrame per fold is appended)."""
     cost_pct = rule_spec["validation"]["costs_pct_round_trip"] / 100
+    rr = rule_spec["trade"]["target_r_multiple"]
     all_graded = []
     for i, as_of in enumerate(as_of_dates):
         screen_result = run_screen(as_of, rule_spec, adapter, universe_df, weekly_panels, shares_map)
         trades = build_trades(screen_result["survivors"], rule_spec)
-        graded = simulate_week_forward(trades, weekly_panels, as_of, cost_pct)
+        if rejections_out is not None:
+            rejections_out.append(trade_rejections(screen_result["survivors"], trades, rule_spec, as_of))
+        graded = simulate_week_forward(trades, weekly_panels, as_of, cost_pct, rr)
         if not graded.empty:
             all_graded.append(graded)
         if progress_every and (i + 1) % progress_every == 0:
@@ -204,13 +266,31 @@ def summarize_trades(graded: pd.DataFrame) -> dict:
     }
 
 
-def weekly_portfolio_returns(graded: pd.DataFrame) -> pd.DataFrame:
-    """Equal-weight all of a week's picks into one portfolio return per week (design doc §8.2)."""
+def weekly_portfolio_returns(graded: pd.DataFrame, calendar: list[pd.Timestamp] | None = None) -> pd.DataFrame:
+    """Equal-weight all of a week's picks into one portfolio return per week (design doc §8.2).
+
+    D2: a week with no picks is a flat week (0.0%), not a missing one. Pass `calendar` = the
+    fold dates actually run; without it the series is reindexed onto every 7-day step between
+    the first and last graded week, which cannot recover empty weeks at either end.
+    """
+    if calendar is not None:
+        cal = pd.DatetimeIndex(sorted({pd.Timestamp(d) for d in calendar}), name="week_start")
+    elif not graded.empty:
+        ws = pd.to_datetime(graded["week_start"])
+        cal = pd.date_range(ws.min(), ws.max(), freq="7D", name="week_start")
+    else:
+        return pd.DataFrame(columns=["week_start", "portfolio_ret_net", "n_trades"])
+
     if graded.empty:
-        return pd.DataFrame(columns=["week_start", "portfolio_ret_net"])
-    g = graded.groupby("week_start")["ret_pct_net"].mean().reset_index()
-    g = g.rename(columns={"ret_pct_net": "portfolio_ret_net"})
-    return g.sort_values("week_start")
+        g = pd.DataFrame(index=cal, data={"portfolio_ret_net": 0.0, "n_trades": 0})
+    else:
+        grp = graded.assign(week_start=pd.to_datetime(graded["week_start"])).groupby("week_start")["ret_pct_net"]
+        g = pd.DataFrame({"portfolio_ret_net": grp.mean(), "n_trades": grp.size()})
+        g = g.reindex(cal.union(g.index))
+        g["portfolio_ret_net"] = g["portfolio_ret_net"].fillna(0.0)
+        g["n_trades"] = g["n_trades"].fillna(0).astype(int)
+    g.index.name = "week_start"
+    return g.reset_index().sort_values("week_start").reset_index(drop=True)
 
 
 def portfolio_metrics(weekly_rets: pd.DataFrame, benchmark_weekly_rets: pd.Series | None = None) -> dict:

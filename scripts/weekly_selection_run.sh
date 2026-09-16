@@ -15,6 +15,8 @@ for f in results/forward_test/picks_*.json; do
                *)         python -m tests.track_forward grade   "$f" || true ;; esac
 done
 python -m tests.track_flags grade --all-pending || true
+python -m tests.track_threshold grade --all-pending || true   # threshold experiment: reads Control's graded picks only
+python -m scripts.rebuild_threshold_dashboard_section || true  # no-op if the latest record isn't graded yet
 
 # 2. Select this week (Control + T1). record() refuses to overwrite -- that is fine.
 python -m tests.track_forward record
@@ -22,6 +24,9 @@ python -m tests.track_forward t1 || true
 
 # 3. FLAG TRIGGER -- same week as the picks file just written/found
 PICKS=$(ls -1 results/forward_test/picks_*.json | grep -v '_t1\.json$' | sort | tail -1)
+# 3a. THRESHOLD EXPERIMENT -- arm membership derived from the same picks file (shadow only, never re-screens)
+python -m tests.track_threshold record --picks "$PICKS" || true
+
 STATUS=0
 python -m tests.track_flags on-selection --picks "$PICKS" || STATUS=$?
 
