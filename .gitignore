@@ -2,10 +2,15 @@
 __pycache__/
 *.pyc
 data_cache/
+data_cache_literal/
+/data_cache
+/data_cache_literal
 results/*
 !results/feature_flags/
 !results/threshold_experiment/
 !results/evidence/
+!results/prompt_arms/
 .DS_Store
 .pytest_cache/
 .env
+.superpowers/

@@ -23,18 +23,26 @@ CACHE = ROOT / "data_cache"
 
 
 class OfflineAdapter(SourceAdapter):
-    """Same interface as OpenSourceAdapter, served entirely from the local cache."""
+    """Same interface as OpenSourceAdapter, served entirely from the local cache.
 
-    def __init__(self, index_lists=("midcap150", "smallcap250", "nifty500")):
+    cache_dir defaults to Control's data_cache/; the Literal spec passes
+    data_cache_literal/ (rules_literal.yaml's own cache_dir) via env_literal()
+    below — same class, a different pre-populated cache, per the reuse-vs-modify
+    audit in docs/literal-spec-plan.md."""
+
+    def __init__(self, index_lists=("midcap150", "smallcap250", "nifty500"),
+                 cache_dir: Path | None = None, universe_source: str = "index_lists"):
         self.index_lists = list(index_lists)
-        self._panel = pd.read_parquet(CACHE / "weekly_ohlcv_260w.parquet")
-        self._shares = json.loads((CACHE / "shares_outstanding.json").read_text())
+        self.cache_dir = Path(cache_dir) if cache_dir is not None else CACHE
+        self.universe_source = universe_source
+        self._panel = pd.read_parquet(self.cache_dir / "weekly_ohlcv_260w.parquet")
+        self._shares = json.loads((self.cache_dir / "shares_outstanding.json").read_text())
         self._daily_panel = None  # lazy: no daily cache exists until the T1 backfill runs
 
     def _load_universe_raw(self) -> pd.DataFrame:
         frames = []
         for key in self.index_lists:
-            df = pd.read_csv(CACHE / f"universe_{key}.csv")
+            df = pd.read_csv(self.cache_dir / f"universe_{key}.csv")
             df = df.rename(columns={
                 "Company Name": "name", "Industry": "sector",
                 "Symbol": "symbol", "Series": "series", "ISIN Code": "isin",
@@ -44,11 +52,27 @@ class OfflineAdapter(SourceAdapter):
         out["ticker"] = out["symbol"].astype(str).str.strip() + ".NS"
         return out.reset_index(drop=True)
 
+    def _load_universe_full(self) -> pd.DataFrame:
+        """Literal spec only — mirrors OpenSourceAdapter._load_universe_full()."""
+        full = pd.read_csv(self.cache_dir / "universe_full_equity_list.csv")
+        full.columns = [c.strip() for c in full.columns]
+        full = full[full["SERIES"].astype(str).str.strip() == "EQ"]
+        full = full.rename(columns={"SYMBOL": "symbol", "NAME OF COMPANY": "name", "ISIN NUMBER": "isin"})
+        full = full[["symbol", "name", "isin"]].copy()
+        full["symbol"] = full["symbol"].astype(str).str.strip()
+        sector_map = self._load_universe_raw()[["symbol", "sector"]].drop_duplicates(subset="symbol")
+        out = full.merge(sector_map, on="symbol", how="left")
+        out["sector"] = out["sector"].fillna("Unknown")
+        out["ticker"] = out["symbol"] + ".NS"
+        return out.drop_duplicates(subset="symbol").reset_index(drop=True)
+
     def nse_equities_pit(self, as_of) -> pd.DataFrame:
+        if self.universe_source == "full_nse_equity_list":
+            return self._load_universe_full()
         return self._load_universe_raw()
 
     def sector_map_pit(self, as_of) -> pd.DataFrame:
-        u = self._load_universe_raw()
+        u = self._load_universe_full() if self.universe_source == "full_nse_equity_list" else self._load_universe_raw()
         return u[["ticker", "symbol", "sector"]]
 
     def weekly_ohlcv(self, tickers, history_weeks) -> dict[str, pd.DataFrame]:
@@ -68,7 +92,15 @@ class OfflineAdapter(SourceAdapter):
     def _load_daily_panel(self) -> pd.DataFrame | None:
         if self._daily_panel is not None:
             return self._daily_panel
-        candidates = sorted(CACHE.glob("daily_ohlcv_*d.parquet"))
+        # Prefer a scripts/backfill_history.py output (`daily_ohlcv_since_<start>.parquet`,
+        # a deliberate long-history pull) over a live-path cache file (`daily_ohlcv_<N>d.parquet`,
+        # written by SourceAdapter.daily_ohlcv()'s own rolling-window fetch) when both exist --
+        # same preference ExtendedOfflineAdapter already applies for Control's cache_dir, made
+        # generic here so it also covers data_cache_literal/ (env_literal_with_daily()) without
+        # a cache-dir-specific subclass (HARNESS §2: config-driven, not a fork).
+        candidates = sorted(self.cache_dir.glob("daily_ohlcv_since_*.parquet"))
+        if not candidates:
+            candidates = sorted(self.cache_dir.glob("daily_ohlcv_*d.parquet"))
         if not candidates:
             return None
         self._daily_panel = pd.read_parquet(candidates[-1])
@@ -95,13 +127,18 @@ class OfflineAdapter(SourceAdapter):
 _CACHED_ENV = {}
 
 
-def env(ticker_limit: int | None = None):
-    """Bootstrap the full pipeline offline. Cached across tests for speed."""
-    key = ticker_limit or "all"
+def _bootstrap_offline_env(rule_spec_path: str, ticker_limit: int | None, cache_key: str):
+    """Shared by env() and env_literal() (HARNESS §2 spirit: one function, config-driven,
+    not two hand-copied bootstraps)."""
+    key = (cache_key, ticker_limit or "all")
     if key in _CACHED_ENV:
         return _CACHED_ENV[key]
-    rule_spec = load_rule_spec(str(ROOT / "config" / "rules.yaml"))
-    adapter = OfflineAdapter(rule_spec["universe"]["index_lists"])
+    rule_spec = load_rule_spec(str(ROOT / rule_spec_path))
+    adapter = OfflineAdapter(
+        rule_spec["universe"].get("index_lists", []),
+        cache_dir=ROOT / rule_spec["data"]["cache_dir"],
+        universe_source=rule_spec["universe"].get("source", "index_lists"),
+    )
     universe_df = adapter.nse_equities_pit(as_of=None)
     if ticker_limit:
         universe_df = universe_df.head(ticker_limit)
@@ -112,10 +149,36 @@ def env(ticker_limit: int | None = None):
     return _CACHED_ENV[key]
 
 
+def env(ticker_limit: int | None = None):
+    """Bootstrap Control's pipeline offline. Cached across tests for speed."""
+    return _bootstrap_offline_env("config/rules.yaml", ticker_limit, cache_key="control")
+
+
+def env_literal(ticker_limit: int | None = None):
+    """Bootstrap the Literal spec's pipeline offline, from data_cache_literal/.
+
+    Requires a prior live bootstrap (scripts/common.py:bootstrap('config/rules_literal.yaml'))
+    to have populated that cache — the full-NSE-from-2024 universe is a real, one-time
+    network-heavy pull (~2000 tickers) that does not happen inside this call, and never
+    inside a test (HARNESS §8). Raises FileNotFoundError with a clear cause if it hasn't
+    run yet."""
+    return _bootstrap_offline_env("config/rules_literal.yaml", ticker_limit, cache_key="literal")
+
+
 def env_with_daily(ticker_limit: int | None = None):
     """Same as env(), plus daily panels attached (empty dict per ticker if the
     real daily-bar backfill hasn't been run yet — callers must handle that)."""
     rule_spec, adapter, universe_df, panels, shares = env(ticker_limit)
+    tickers = universe_df["ticker"].tolist()
+    daily_panels = adapter.daily_ohlcv(tickers, rule_spec["data"]["history_weeks"] * 7)
+    return rule_spec, adapter, universe_df, panels, shares, daily_panels
+
+
+def env_literal_with_daily(ticker_limit: int | None = None):
+    """Same as env_literal(), plus daily panels attached from data_cache_literal/ (empty
+    dict per ticker if scripts/backfill_history.py --config config/rules_literal.yaml
+    hasn't been run yet — callers must handle that, same discipline as env_with_daily())."""
+    rule_spec, adapter, universe_df, panels, shares = env_literal(ticker_limit)
     tickers = universe_df["ticker"].tolist()
     daily_panels = adapter.daily_ohlcv(tickers, rule_spec["data"]["history_weeks"] * 7)
     return rule_spec, adapter, universe_df, panels, shares, daily_panels

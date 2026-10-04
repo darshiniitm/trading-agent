@@ -22,6 +22,12 @@ NSE_ARCHIVE_URLS = {
     "nifty500": "https://archives.nseindia.com/content/indices/ind_nifty500list.csv",
 }
 
+# Literal spec (step 1: "all stocks", not an index-constituent proxy) — NSE's public
+# master equity list, no API key. Unlike the index CSVs above it has no sector column;
+# sector_map_pit() falls back to the index-CSV union for names it covers and "Unknown"
+# for the rest (see literal-spec-plan.md — a documented caveat, not a silent gap).
+FULL_EQUITY_LIST_URL = "https://archives.nseindia.com/content/equities/EQUITY_L.csv"
+
 UA = {
     "User-Agent": (
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -38,6 +44,15 @@ KNOWN_CAVEATS = [
     "backtest returns are likely biased upward",
     "sector map is NSE index-classification 'Industry' field as of the CSV "
     "snapshot date, not strictly point-in-time historically",
+]
+
+FULL_LIST_KNOWN_CAVEATS = KNOWN_CAVEATS + [
+    "universe.source=full_nse_equity_list (Literal spec): the same shares-outstanding "
+    "and survivorship caveats above now apply across ~4x more tickers than the "
+    "index-constituent proxy — a larger surface for the same unresolved limitations, "
+    "not a fix for them",
+    "the full equity master list carries no sector field; sector_map_pit() reports "
+    "'Unknown' for any ticker outside the midcap150/smallcap250/nifty500 union",
 ]
 
 
@@ -70,6 +85,7 @@ class SourceAdapter:
 class OpenSourceAdapter(SourceAdapter):
     cache_dir: Path
     index_lists: list[str]
+    universe_source: str = "index_lists"  # "index_lists" (Control) | "full_nse_equity_list" (Literal)
 
     def __post_init__(self):
         self.cache_dir = Path(self.cache_dir)
@@ -105,15 +121,50 @@ class OpenSourceAdapter(SourceAdapter):
         out["ticker"] = out["symbol"].astype(str).str.strip() + ".NS"
         return out.reset_index(drop=True)
 
+    def _fetch_full_equity_list(self) -> pd.DataFrame:
+        """NSE's public EQ-series master list (Literal spec, step 1). No sector column."""
+        cache_path = self.cache_dir / "universe_full_equity_list.csv"
+        if cache_path.exists() and (time.time() - cache_path.stat().st_mtime) < 24 * 3600:
+            df = pd.read_csv(cache_path)
+        else:
+            r = requests.get(FULL_EQUITY_LIST_URL, headers=UA, timeout=30)
+            r.raise_for_status()
+            df = pd.read_csv(io.StringIO(r.text))
+            df.to_csv(cache_path, index=False)
+        df.columns = [c.strip() for c in df.columns]
+        df = df[df["SERIES"].astype(str).str.strip() == "EQ"]
+        df = df.rename(columns={
+            "SYMBOL": "symbol",
+            "NAME OF COMPANY": "name",
+            "ISIN NUMBER": "isin",
+        })
+        return df[["symbol", "name", "isin"]].reset_index(drop=True)
+
+    def _load_universe_full(self) -> pd.DataFrame:
+        full = self._fetch_full_equity_list()
+        full["symbol"] = full["symbol"].astype(str).str.strip()
+        # Sector coverage: NSE's full equity list has no sector field. Backfill from the
+        # index-constituent CSVs' 'Industry' field where available; the rest are "Unknown"
+        # (a documented caveat — see FULL_LIST_KNOWN_CAVEATS — not a silent gap).
+        sector_map = self._load_universe_raw()[["symbol", "sector"]].drop_duplicates(subset="symbol")
+        out = full.merge(sector_map, on="symbol", how="left")
+        out["sector"] = out["sector"].fillna("Unknown")
+        out["ticker"] = out["symbol"] + ".NS"
+        return out.drop_duplicates(subset="symbol").reset_index(drop=True)
+
     def nse_equities_pit(self, as_of) -> pd.DataFrame:
-        # NOTE: index constituent CSVs are the CURRENT list, not the constituent
-        # list as of `as_of` historically. This is a known open-source limitation
-        # (see caveats()); intraday-index-reconstitution drift is out of scope for
-        # the POC. The union across 3 broad indices mitigates most of the drift.
+        # NOTE: both paths return the CURRENT list, not the constituent/listing list as
+        # of `as_of` historically. This is a known open-source limitation (see caveats());
+        # intraday-index-reconstitution / delisting drift is out of scope for the POC.
+        if self.universe_source == "full_nse_equity_list":
+            return self._load_universe_full()
         return self._load_universe_raw()
 
     def sector_map_pit(self, as_of) -> pd.DataFrame:
-        u = self._load_universe_raw()
+        if self.universe_source == "full_nse_equity_list":
+            u = self._load_universe_full()
+        else:
+            u = self._load_universe_raw()
         return u[["ticker", "symbol", "sector"]]
 
     # ---- OHLCV ------------------------------------------------------------
@@ -247,14 +298,19 @@ class OpenSourceAdapter(SourceAdapter):
         return d.get(ticker, pd.DataFrame())
 
     def caveats(self) -> list[str]:
+        if self.universe_source == "full_nse_equity_list":
+            return FULL_LIST_KNOWN_CAVEATS
         return KNOWN_CAVEATS
 
 
 def build_adapter(rule_spec: dict) -> SourceAdapter:
     source = rule_spec.get("data_source", "opensource")
     if source == "opensource":
+        universe_cfg = rule_spec["universe"]
+        universe_source = universe_cfg.get("source", "index_lists")
         return OpenSourceAdapter(
             cache_dir=rule_spec["data"]["cache_dir"],
-            index_lists=rule_spec["universe"]["index_lists"],
+            index_lists=universe_cfg.get("index_lists", []),
+            universe_source=universe_source,
         )
     raise NotImplementedError(f"data_source={source!r} not implemented (POC is opensource-only)")

@@ -117,3 +117,12 @@ t4:
 
 # Written by `python -m tests.track_flags registry-lock` — sha256 of the flags+t4 block above.
 checksum: null
+
+# Decided 26 Sep 2026 (docs/literal-spec-plan.md decision 2; not part of the flags+t4
+# checksum above): Control's forward recording is winding down in favor of the new Literal
+# spec (config/rules_literal.yaml). T4 is chained off Control's own weekly record and needs
+# 26 forward weeks to reach its graduation gate (t4.k already stayed null after its
+# DEV/VALIDATE calibration hit a kill criterion, 2026-09-15); it cannot reach that gate
+# before Control's recording ends. Orphaned as a deliberate, logged consequence -- see
+# docs/forward_test_findings.md, 2026-09-26 entry.
+status: orphaned_insufficient_forward_weeks

@@ -84,32 +84,59 @@ to the validation weeks.
 Do not trade on this without re-validating on a paid, corporate-action-clean
 feed (design doc's `data_source: paid` swap point in `config/rules.yaml`).
 
-## Findings so far (52-week rolling walk-forward, as of 2026-08-29)
+## Findings so far (104-week rolling walk-forward, as of 2026-09-21)
 
-**Fixed 1-week exit (primary, RSI [50,65] default):** 162 trades / 45 weeks,
-35.8% hit rate, expectancy -1.07%/trade, portfolio Sharpe -2.6, max drawdown
--50%. Confidence calibration is genuinely monotonic (bottom bucket 17.1% hit
-rate → top bucket 51.5%, mean net return -1.9% → +0.1%) — the confidence
-score is doing real work, but even the top bucket barely breaks even.
+**Restated 2026-09-29** after fixing `src/indicators/rsi.py:compute_rsi()`'s
+seeding (was `ewm(...)` applied from bar 1 with no separate seed step; now a
+textbook Wilder seed — simple average of the first 14 gains/losses, then RMA
+recursion — validated to match TradingView's RSI to within 0.003 on a real
+reference bar; see `docs/forward_test_findings.md`'s 2026-09-29 entry). This
+also finally reconciles the window length with `CLAUDE.md` (104 weeks, not the
+52-week figure previously quoted here, which was already stale before this
+fix). This restatement supersedes both the original -1.07%/-2.6/-50% figures
+below-this-note's history and the 2026-09-16 D1–D6 defect-fix restatement
+(-1.285%/trade, Sharpe -2.24).
+
+**Fixed 1-week exit (primary, RSI [50,65] default):** 239 trades / 73 weeks
+(out of 104 folds), 36.8% hit rate, expectancy -1.24%/trade, portfolio CAGR
+-43.15%, Sharpe -2.07, max drawdown -70.57%. Confidence calibration remains
+directionally monotonic (bottom bucket 25.0% hit rate / -1.81% mean net return
+→ top bucket 44.4% / -0.05%) — the confidence score is still doing real work,
+but even the top bucket doesn't reach breakeven.
 
 **Trend-hold exit (secondary, §8.5 "B" — trail the VStop until it flips
-down):** same 162 trades, held ~9.6 weeks on average. Hit rate improves to
-45.7%, mean per-trade return +2.9%, but the **median** per-trade annualized
-return is **negative** (-4.9%) against a **positive mean** (+17.0%) with huge
-dispersion (std 104%) — a few large winners are carrying the average while
-most trades still lose. 72.8% of trades exit via stop, not via a friendly
-trend-down flip. Read "trend-hold looks better" with real caution: it is not
-directly comparable to the fixed-week numbers (different risk profile, no
-apples-to-apples portfolio Sharpe — see `trend_hold_return_stats` docstring
-for why a portfolio CAGR/Sharpe isn't reported here).
+down), re-run 2026-09-29 with the fixed RSI and the 104-week window (was
+52-week, 162 trades):** same 239 trades as the primary exit, held 11.09 weeks
+on average (median 9.0). Hit rate **28.9%** (was 45.7%), mean per-trade return
+**-1.45%** (was +2.9%). Unlike the pre-fix run, the mean per-trade
+**annualized** return is now also negative: **-16.4%** (was +17.0%), median
+**-31.3%** (was -4.9%), std 86.5% (was 104%) — still hugely dispersed, but the
+"a few large winners carry a positive mean" story from the pre-fix run does
+**not** hold here; both mean and median are now negative. 82.0% of trades
+exit via stop (was 72.8%), 0.8% via a friendly trend-down flip. This is a
+materially different result from the pre-fix number, not just a refresh —
+worth being direct about that rather than treating it as noise. Two things
+changed at once (the RSI fix and the window: 52→104 weeks), so this restated
+figure isn't a clean isolation of the RSI fix's effect alone; still, read
+"trend-hold looks better than the fixed-week exit" with real caution now more
+than before — it plainly doesn't, on this window. Not directly comparable to
+the fixed-week numbers either way (different risk profile, no apples-to-apples
+portfolio Sharpe — see `trend_hold_return_stats` docstring for why a portfolio
+CAGR/Sharpe isn't reported here).
 
-**RSI band sensitivity study (§9.3):** swept 9 candidate bands on a 52-week
-TRAIN window (all a-priori, none looked at validate first). **Every single
-band had negative expectancy on train.** The least-bad band, [35,50], is a
-thin sample (9 trades/6 weeks) and *underperformed* the a-priori [50,65]
-default when run once on the untouched VALIDATE window (-1.91% vs -1.07%
-expectancy). Conclusion: this isn't an RSI-band-tuning problem — no band in
-a reasonable range rescues the strategy.
+**RSI band sensitivity study (§9.3), re-run 2026-09-29 with the fixed RSI**
+(TRAIN 2024-09-30→2025-09-22, VALIDATE 2025-09-29→2026-09-21, both 52 weeks):
+swept the same 9 candidate bands on TRAIN (all a-priori, none looked at
+validate first). **Every single band still had negative expectancy on
+train.** The band selection itself changed under the fixed RSI — robustness
+now picks **[60,75]** (was [35,50] pre-fix) — but the conclusion doesn't: on
+VALIDATE, the selected band's expectancy (-0.958%, n=38, hit rate 34.2%) is
+now roughly *in line with*, not worse than, the a-priori [50,65] default
+(-0.950%, n=151, hit rate 35.1%) — both negative, nearly identical. Pre-fix,
+the selected band had clearly *underperformed* the default (-1.91% vs
+-1.07%); post-fix that gap has closed to noise. Either way: no band in a
+reasonable range rescues the strategy — this isn't an RSI-band-tuning
+problem, before or after the fix.
 
 **Survivorship bias (§3.3, §9):** the only open-source NSE delisted-companies
 list is **stale since 2020-11-09** — it cannot even give a lower-bound count
@@ -120,8 +147,11 @@ figure above as biased upward by an unknown, unquantified amount.
 
 **Bottom line:** under the locked a-priori parameters, with the fixed
 1-week exit the strategy the brief describes has a negative edge over the
-last year, and a parameter sweep shows this isn't fixable by moving the RSI
-band. The trend-hold variant shows a mean-positive but median-negative,
-highly dispersed outcome — more research (position sizing / risk of ruin
-under that dispersion) is needed before calling it an edge. None of this
-should be traded on the open-source data feed regardless of the numbers.
+104-week window, and the RSI-band sweep (re-run post-fix, same conclusion
+either way) confirms this isn't fixable by moving the RSI band. The
+trend-hold variant, re-run 2026-09-29, is **not** the "mean-positive but
+median-negative" story it used to be — both mean and median per-trade
+annualized return are now negative, on top of still being highly dispersed —
+so it no longer offers even the qualified silver lining the pre-fix numbers
+suggested. None of this should be traded on the open-source data feed
+regardless of the numbers.

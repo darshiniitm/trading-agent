@@ -98,19 +98,29 @@ def _band_position(mktcap_cr: float, band: tuple[float, float] = MARKET_CAP_BAND
 
 
 def guardrails(r_pct_of_close: float, turnover_cr: float, mktcap_cr: float,
-               risk_cap_pct: float, liquidity_floor_cr: float) -> dict:
+               risk_cap_pct: float | None, liquidity_floor_cr: float) -> dict:
     """§3.8.2 risk-guardrail parameters: raw values plus a multiplicative discount.
-    Never blended additively into edge_score — see module docstring."""
-    headroom_pct = risk_cap_pct * 100 - r_pct_of_close  # e.g. 15.0 - 13.2 = 1.8pp
+    Never blended additively into edge_score — see module docstring.
+
+    risk_cap_pct is None when the rule_spec has no risk cap at all (Literal's
+    `trade.max_r_pct: null`, decided 26 Sep 2026 — "a trade for every qualified
+    stock"). There is then no cap to have headroom against, so this dimension isn't
+    applicable and contributes no discount (full credit), rather than crashing on
+    `None * 100` or penalizing a candidate for a constraint that doesn't exist."""
+    if risk_cap_pct is not None:
+        headroom_pct = risk_cap_pct * 100 - r_pct_of_close  # e.g. 15.0 - 13.2 = 1.8pp
+        headroom_factor = clip01(headroom_pct / HEADROOM_FULL_CREDIT_PCT)
+    else:
+        headroom_pct = None
+        headroom_factor = 1.0
     liquidity_multiple = turnover_cr / liquidity_floor_cr if liquidity_floor_cr else float("inf")
     band_position = _band_position(mktcap_cr)
 
-    headroom_factor = clip01(headroom_pct / HEADROOM_FULL_CREDIT_PCT)
     liquidity_factor = clip01((liquidity_multiple - 1.0) / (LIQUIDITY_FULL_CREDIT_MULTIPLE - 1.0))
     band_factor = clip01(band_position / BAND_POSITION_FULL_CREDIT)
 
     return {
-        "risk_cap_headroom_pct": round(headroom_pct, 3),
+        "risk_cap_headroom_pct": round(headroom_pct, 3) if headroom_pct is not None else None,
         "liquidity_multiple": round(liquidity_multiple, 3),
         "band_position": round(band_position, 3),
         "guardrail_multiplier": round(headroom_factor * liquidity_factor * band_factor, 4),
@@ -143,3 +153,24 @@ def compute_candidate_score(
         **g,
         "candidate_score": round(full_edge_score * g["guardrail_multiplier"], 1),
     }
+
+
+def score_row(row: dict, rule_spec: dict, rsi_band: tuple[float, float], rs_primary: float | None) -> dict:
+    """Row-dict wrapper around compute_candidate_score(), shared by Control's own
+    near-miss scoring (tests/track_forward.py) and the T1 scan (src/screen/t1_scan.py).
+    row must carry rsi, atr, signal_close, vstop_line_SL, volume, avg_vol_8w,
+    turnover_cr, mktcap_cr, R_pct_of_close. Returns {} if a required input is
+    missing (e.g. a near-miss with no vstop_line) rather than guessing."""
+    required = (row.get("rsi"), row.get("atr"), row.get("signal_close"), row.get("vstop_line_SL"),
+                row.get("volume"), row.get("avg_vol_8w"), row.get("turnover_cr"), row.get("R_pct_of_close"))
+    if any(v is None for v in required):
+        return {}
+    tc = rule_spec["trade"]
+    return compute_candidate_score(
+        rsi=row["rsi"], atr=row["atr"], close=row["signal_close"], sl=row["vstop_line_SL"],
+        volume=row["volume"], avg_vol_8w=row["avg_vol_8w"], rs_primary=rs_primary,
+        turnover_cr=row["turnover_cr"], mktcap_cr=row["mktcap_cr"],
+        r_pct_of_close=row["R_pct_of_close"], target_r_multiple=tc["target_r_multiple"],
+        rsi_band=rsi_band, risk_cap_pct=tc["max_r_pct"],
+        liquidity_floor_cr=rule_spec["universe"]["liquidity"]["min"],
+    )

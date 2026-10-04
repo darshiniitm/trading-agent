@@ -16,6 +16,7 @@ import pandas as pd
 import pytest
 
 import src.screen.engine as engine_mod
+import src.screen.t1_scan as t1_scan_mod
 import tests.track_forward as tf
 from tests.offline import make_daily_panel, make_panel
 
@@ -43,7 +44,11 @@ def _relaxed_predicate(predicate, locals_):
 
 
 def _flat_weekly_panel(ticker_count_days=40):
-    return make_panel(np.full(ticker_count_days, 500.0), start="2023-01-02")
+    # Last bar (as_of) must land on the SAME week as the daily panels' own last 5
+    # trading days (2023-02-27 Mon - 2023-03-03 Fri, for the 40+5-day daily panels
+    # used below) -- scan_t1_week()'s window is as_of's own week (Mon-Sun), not
+    # "whatever the daily cache's last 5 dates happen to be".
+    return make_panel(np.full(ticker_count_days, 500.0), start="2022-05-30")
 
 
 def _rule_spec():
@@ -61,10 +66,13 @@ def _universe_and_shares(tickers):
 @pytest.fixture
 def patch_predicate(monkeypatch):
     monkeypatch.setattr(engine_mod, "evaluate_predicate", _relaxed_predicate)
-    # record_t1_shadow()'s own Friday re-check reads the real RSI value directly
+    # scan_t1_week()'s own Friday re-check reads the real RSI value directly
     # (not through evaluate_predicate), so relax the band the same way here —
     # this test is about the extra/reversed set logic, not RSI precision.
-    monkeypatch.setattr(tf, "_rsi_band_bounds", lambda rule_spec: (0.0, 100.0))
+    # (src/screen/t1_scan.py holds its own reference to _rsi_band_bounds, imported
+    # directly from src.trade.builder — patch it there, not on tests.track_forward,
+    # which only re-exports it for its own near-miss scoring now.)
+    monkeypatch.setattr(t1_scan_mod, "_rsi_band_bounds", lambda rule_spec: (0.0, 100.0))
 
 
 def test_extra_flip_that_holds_through_friday_is_confirmed(monkeypatch, patch_predicate, tmp_path):
@@ -125,10 +133,14 @@ def test_ticker_already_in_control_is_not_double_counted(monkeypatch, patch_pred
     # Weekly panel also flips, landing the flip exactly on the CURRENT (last)
     # weekly bar -- that's what Control's own single-as_of screen actually
     # checks, unlike the multi-day T1 window above. Needs >= min_bars_required
-    # (30) weekly bars.
+    # (30) weekly bars. Start date is chosen so the weekly panel's last bar
+    # (as_of) lands on the SAME week as the daily panel's own last 5 trading
+    # days (2023-02-27 Mon - 2023-03-03 Fri) -- scan_t1_week()'s window is
+    # as_of's own week, so the synthetic weekly and daily panels must agree on
+    # which week is "current", same as real production data would.
     down_w = np.linspace(600, 500, 30)
     ramp_w = np.linspace(500, 524, 2)
-    weekly = make_panel(np.concatenate([down_w, ramp_w]), start="2022-04-04")
+    weekly = make_panel(np.concatenate([down_w, ramp_w]), start="2022-07-25")
 
     uni, shares = _universe_and_shares(tickers)
     weekly_panels = {t: weekly for t in tickers}
