@@ -39,6 +39,12 @@ def test_applied_steps_with_event_and_selection_point_and_stop():
     assert steps["risk_cap_rejection"] is False
 
 
+def test_applied_steps_with_risk_cap_pct():
+    spec = _spec(risk_cap_pct=15.0)
+    steps = {s["step"]: s["applied"] for s in applied_steps(spec)}
+    assert steps["risk_cap_rejection"] is True
+
+
 def test_get_structures_endpoint(client):
     resp = client.get("/structures")
     assert resp.status_code == 200
