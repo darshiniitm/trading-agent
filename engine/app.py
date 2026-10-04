@@ -83,9 +83,9 @@ def create_app(offline: bool = False) -> FastAPI:
     def quotes(symbols: list[str] = Body(embed=True)):
         return fetch_quotes(symbols)
 
-    @app.get("/series/{symbol}")
-    def series(symbol: str, structure: str = "literal"):
+    @app.post("/series/{symbol}")
+    def series(symbol: str, structure: str = "literal", spec: ScreenSpec | None = Body(default=None, embed=True)):
         env = load_environment(structure, offline=offline)
-        return series_payload(symbol, env)
+        return series_payload(symbol, env, spec)
 
     return app
