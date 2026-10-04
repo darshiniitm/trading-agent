@@ -10,7 +10,7 @@ def _literal_spec():
         conditions=[
             Condition(id="C1", role="filter", kind="field", name="mcap_cr", op="between", value=[10000, 50000]),
             Condition(id="C2", role="filter", kind="field", name="traded_value_cr",
-                      params={"window": "1W"}, op=">=", value=10),
+                      params={"window": "8W"}, op=">=", value=10),
             Condition(id="C3", role="event", kind="indicator", name="vstop",
                       params={"length": 10, "mult": 2.0, "source": "close"}, op="flip", dir="long"),
             Condition(id="C4", role="filter", kind="indicator", name="rsi",
