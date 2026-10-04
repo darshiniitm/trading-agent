@@ -12,6 +12,7 @@ from engine.schemas import ScreenSpec
 from engine.screen import ScreenSpecError, run_screen_spec
 from engine.selection import select_candidates
 from engine.structures import structures_payload
+from engine.validation import ValidationSpecError, validate_arm
 
 
 def create_app(offline: bool = False) -> FastAPI:
@@ -63,5 +64,18 @@ def create_app(offline: bool = False) -> FastAPI:
     def arms_retire(prompt_id: int):
         retire_arm(prompt_id)
         return {"prompt_id": prompt_id, "status": "retired"}
+
+    @app.post("/validate")
+    def validate(prompt_id: int = Body(embed=True), spec: ScreenSpec = Body(embed=True),
+                  as_of: str = Body(embed=True), picks: list[dict] = Body(embed=True),
+                  graded_weeks_so_far: int = Body(embed=True)):
+        env = load_environment(spec.structure, offline=offline)
+        vstop_cond = next((c for c in spec.conditions if spec.stop and c.id == spec.stop.from_), None)
+        vstop_params = vstop_cond.params if vstop_cond else None
+        try:
+            return validate_arm(prompt_id, env, picks, as_of, graded_weeks_so_far,
+                                 vstop_params=vstop_params)
+        except ValidationSpecError as exc:
+            raise HTTPException(status_code=422, detail=str(exc))
 
     return app
