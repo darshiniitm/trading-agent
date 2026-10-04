@@ -8,6 +8,7 @@ from engine.conditions.catalog import catalog_payload
 from engine.env import load_environment
 from engine.forward_record import write_record
 from engine.health import health_payload
+from engine.quotes import fetch_quotes, series_payload
 from engine.schemas import ScreenSpec
 from engine.screen import ScreenSpecError, run_screen_spec
 from engine.selection import select_candidates
@@ -77,5 +78,14 @@ def create_app(offline: bool = False) -> FastAPI:
                                  vstop_params=vstop_params)
         except ValidationSpecError as exc:
             raise HTTPException(status_code=422, detail=str(exc))
+
+    @app.post("/quotes")
+    def quotes(symbols: list[str] = Body(embed=True)):
+        return fetch_quotes(symbols)
+
+    @app.get("/series/{symbol}")
+    def series(symbol: str, structure: str = "literal"):
+        env = load_environment(structure, offline=offline)
+        return series_payload(symbol, env)
 
     return app
