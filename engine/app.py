@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import pandas as pd
 from fastapi import Body, FastAPI, HTTPException
 
+from engine.arms import is_active, register_arm, retire_arm
 from engine.conditions.catalog import catalog_payload
 from engine.env import load_environment
+from engine.forward_record import write_record
 from engine.health import health_payload
 from engine.schemas import ScreenSpec
 from engine.screen import ScreenSpecError, run_screen_spec
@@ -37,7 +40,8 @@ def create_app(offline: bool = False) -> FastAPI:
             ])
 
     @app.post("/select")
-    def select(spec: ScreenSpec = Body(embed=True), as_of: str = Body(embed=True)):
+    def select(spec: ScreenSpec = Body(embed=True), as_of: str = Body(embed=True),
+               prompt_id: int | None = Body(default=None), run_kind: str = Body(default="dry_run")):
         env = load_environment(spec.structure, offline=offline)
         try:
             screen_result = run_screen_spec(spec, as_of, env)
@@ -45,6 +49,19 @@ def create_app(offline: bool = False) -> FastAPI:
             raise HTTPException(status_code=422, detail=[
                 {"condition_id": e.condition_id, "message": e.message} for e in exc.errors
             ])
-        return select_candidates(spec, as_of, env, screen_result)
+        result = select_candidates(spec, as_of, env, screen_result)
+        if run_kind != "dry_run" and prompt_id is not None and is_active(prompt_id):
+            write_record(prompt_id, pd.Timestamp(as_of), result["entered"], spec)
+        return result
+
+    @app.post("/arms/register")
+    def arms_register(prompt_id: int = Body(embed=True), spec: ScreenSpec = Body(embed=True)):
+        register_arm(prompt_id, spec)
+        return {"prompt_id": prompt_id, "status": "active"}
+
+    @app.post("/arms/{prompt_id}/retire")
+    def arms_retire(prompt_id: int):
+        retire_arm(prompt_id)
+        return {"prompt_id": prompt_id, "status": "retired"}
 
     return app
