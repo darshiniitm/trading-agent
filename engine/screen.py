@@ -21,6 +21,53 @@ def _bars_per_week(spec: ScreenSpec) -> int:
     return 5 if spec.structure == "t1_literal" and spec.t1_window is not None else 1
 
 
+def _t1_window_days(daily_panel: pd.DataFrame, as_of: pd.Timestamp, window) -> list[pd.Timestamp]:
+    all_days = sorted(pd.Timestamp(d) for d in daily_panel["date"])
+    in_week = [d for d in all_days if as_of <= d <= as_of + pd.Timedelta(days=6)]
+    return [in_week[o] for o in window.offsets if o < len(in_week)]
+
+
+def _evaluate_t1_ticker(ticker: str, daily_panel: pd.DataFrame, shares, spec: ScreenSpec,
+                         as_of: pd.Timestamp):
+    days = _t1_window_days(daily_panel, as_of, spec.t1_window)
+    if len(days) < 2:
+        return None
+
+    event_conds = [c for c in spec.conditions if c.role == "event"]
+    event_fired_on = None
+    for d in days:
+        r = evaluate_ticker(daily_panel, shares, event_conds, d, bars_per_week=5)
+        if r is not None and all(r.passed.get(c.id, False) for c in event_conds):
+            event_fired_on = d
+            break
+    if event_fired_on is None:
+        return None
+
+    last_day = days[-1]
+    full_result = evaluate_ticker(daily_panel, shares, spec.conditions, last_day, bars_per_week=5)
+    if full_result is None:
+        return None
+    # The event condition's own "still valid" check is re-run at window end, not just
+    # whether it literally re-fires (flip_up is a one-bar event; see t1_scan.py comment).
+    #
+    # Deviation from the brief: evaluate_ticker() at `last_day` already scored C3 via the
+    # raw flip_up flag (True only on the exact bar the flip happens) and, since flip_up is
+    # almost always False by the window's last day, already appended C3 to failed_ids. The
+    # brief's fixup only ever *appended* to failed_ids on a renewed failure and never
+    # *removed* an earlier false-failure on a renewed pass -- so a window whose flip bar
+    # wasn't literally the last day (the common case) was wrongly excluded from full_match
+    # even though uptrend held through window end. Fixed by removing the id on a pass too.
+    for c in event_conds:
+        full_result.passed[c.id] = full_result.values[c.id]["uptrend"]
+        if full_result.passed[c.id]:
+            if c.id in full_result.failed_ids:
+                full_result.failed_ids.remove(c.id)
+        elif c.id not in full_result.failed_ids:
+            full_result.failed_ids.append(c.id)
+    full_result.all_passed = len(full_result.failed_ids) == 0
+    return full_result
+
+
 def run_screen_spec(spec: ScreenSpec, as_of: pd.Timestamp, env: Environment) -> dict:
     errors = validate_spec(spec)
     if errors:
@@ -34,10 +81,16 @@ def run_screen_spec(spec: ScreenSpec, as_of: pd.Timestamp, env: Environment) -> 
     candidates = []
     for _, row in env.universe_df.iterrows():
         ticker = row["ticker"]
-        panel = panels.get(ticker) if panels else None
-        if panel is None or panel.empty:
-            continue
-        result = evaluate_ticker(panel, env.shares.get(ticker), spec.conditions, as_of, bars_per_week)
+        if bars_per_week == 5:
+            panel = (env.daily_panels or {}).get(ticker)
+            if panel is None or panel.empty:
+                continue
+            result = _evaluate_t1_ticker(ticker, panel, env.shares.get(ticker), spec, as_of)
+        else:
+            panel = panels.get(ticker) if panels else None
+            if panel is None or panel.empty:
+                continue
+            result = evaluate_ticker(panel, env.shares.get(ticker), spec.conditions, as_of, bars_per_week)
         if result is None:
             continue
 
