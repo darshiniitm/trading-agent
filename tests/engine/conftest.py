@@ -10,8 +10,14 @@ import pytest
 from fastapi.testclient import TestClient
 
 from engine.app import create_app
+from engine.env import load_environment
 
 
 @pytest.fixture
 def client() -> TestClient:
-    return TestClient(create_app())
+    return TestClient(create_app(offline=True))
+
+
+@pytest.fixture
+def literal_env():
+    return load_environment("literal", offline=True)

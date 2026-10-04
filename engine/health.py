@@ -3,6 +3,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
+from engine.env import load_environment, last_bar_date
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -17,10 +19,15 @@ def engine_git_sha() -> str:
         return "unknown"
 
 
-def health_payload(last_bar_date: str | None = None, data_snapshot_hash: str | None = None) -> dict:
+def health_payload(offline: bool = False) -> dict:
+    try:
+        env = load_environment("literal", offline=offline)
+        bar_date = last_bar_date(env)
+    except Exception:
+        bar_date = None
     return {
         "status": "ok",
         "engine_git_sha": engine_git_sha(),
-        "last_bar_date": last_bar_date,
-        "data_snapshot_hash": data_snapshot_hash,
+        "last_bar_date": bar_date,
+        "data_snapshot_hash": None,
     }

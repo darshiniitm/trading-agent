@@ -7,12 +7,12 @@ from engine.health import health_payload
 from engine.structures import structures_payload
 
 
-def create_app() -> FastAPI:
+def create_app(offline: bool = False) -> FastAPI:
     app = FastAPI(title="prompt-screener-engine")
 
     @app.get("/health")
     def health():
-        return health_payload()
+        return health_payload(offline=offline)
 
     @app.get("/conditions")
     def conditions():
