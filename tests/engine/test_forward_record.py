@@ -24,12 +24,18 @@ def test_writes_a_record_with_entered_picks_only(tmp_path, monkeypatch):
 
 def test_refuses_to_overwrite_an_existing_record(tmp_path, monkeypatch):
     monkeypatch.setattr("engine.forward_record.OUT_DIR", tmp_path)
-    entered = [{"ticker": "AAA.NS", "entry_price": 105.0, "sl": 95.0}]
-    first = write_record(prompt_id=12, as_of=pd.Timestamp("2026-01-05"), entered=entered, spec=_spec())
-    second = write_record(prompt_id=12, as_of=pd.Timestamp("2026-01-05"), entered=entered, spec=_spec())
+    entered_first = [{"ticker": "AAA.NS", "entry_price": 105.0, "sl": 95.0}]
+    entered_second = [{"ticker": "BBB.NS", "entry_price": 200.0, "sl": 180.0}]  # Different data
+
+    first = write_record(prompt_id=12, as_of=pd.Timestamp("2026-01-05"), entered=entered_first, spec=_spec())
+    second = write_record(prompt_id=12, as_of=pd.Timestamp("2026-01-05"), entered=entered_second, spec=_spec())
+
     assert first is not None
     assert second is None
-    assert json.loads(first.read_text())["picks"] == entered  # untouched
+    # Prove byte-for-byte immutability: file contains first call's data, not second
+    body = json.loads(first.read_text())
+    assert body["picks"] == entered_first
+    assert body["picks"] != entered_second
 
 
 def test_rejects_a_row_without_entry_price(tmp_path, monkeypatch):
