@@ -1,5 +1,4 @@
 from engine.quotes import fetch_quotes, series_payload
-from engine.schemas import Condition, ScreenSpec, Stop
 
 
 class _FakeFastInfo(dict):
@@ -14,21 +13,6 @@ class _FakeTicker:
         self.fast_info = _FakeFastInfo(last_price=123.45)
 
 
-def _literal_spec():
-    """Minimal spec with vstop and rsi indicators."""
-    return ScreenSpec(
-        spec_version=4, structure="literal", timeframe="1W", selection_point=None,
-        conditions=[
-            Condition(id="C1", role="filter", kind="field", name="mcap_cr", op="between", value=[10000, 50000]),
-            Condition(id="C3", role="event", kind="indicator", name="vstop",
-                      params={"length": 10, "mult": 2.0, "source": "close"}, op="flip", dir="long"),
-            Condition(id="C4", role="filter", kind="indicator", name="rsi",
-                      params={"length": 14}, op="between", value=[50, 65]),
-        ],
-        stop=Stop(**{"from": "C3"}), risk_cap_pct=None, near_miss=None,
-    )
-
-
 def test_fetch_quotes_returns_price_per_symbol():
     result = fetch_quotes(["AAA.NS"], yf_ticker_factory=_FakeTicker)
     assert result["AAA.NS"]["price"] == 123.45
@@ -41,10 +25,10 @@ def test_fetch_quotes_isolates_a_failing_symbol():
     assert "error" in result["BAD.NS"]
 
 
-def test_series_endpoint_without_spec(client, literal_env):
-    """POST /series/{symbol} without spec returns plain OHLCV bars."""
+def test_series_endpoint_without_params(client, literal_env):
+    """GET /series/{symbol} without indicator params returns plain OHLCV bars."""
     ticker = next(iter(literal_env.panels))
-    resp = client.post(f"/series/{ticker}", params={"structure": "literal"})
+    resp = client.get(f"/series/{ticker}", params={"structure": "literal"})
     assert resp.status_code == 200
     body = resp.json()
     assert "bars" in body and len(body["bars"]) > 0
@@ -56,34 +40,62 @@ def test_series_endpoint_without_spec(client, literal_env):
     assert "low" in bar
     assert "close" in bar
     assert "volume" in bar
+    # Verify no indicator columns
+    assert "vstop_line" not in bar
+    assert "rsi" not in bar
 
 
-def test_series_endpoint_with_spec(client, literal_env):
-    """POST /series/{symbol} with spec returns OHLCV + indicator values per bar."""
+def test_series_endpoint_with_vstop(client, literal_env):
+    """GET /series/{symbol} with vstop params returns OHLCV + vstop indicator values."""
     ticker = next(iter(literal_env.panels))
-    spec = _literal_spec()
-    resp = client.post(
+    resp = client.get(
         f"/series/{ticker}",
-        params={"structure": "literal"},
-        json={"spec": spec.model_dump(by_alias=True)}
+        params={
+            "structure": "literal",
+            "vstop_length": 10,
+            "vstop_mult": 2.0,
+            "vstop_source": "close"
+        }
     )
     assert resp.status_code == 200
     body = resp.json()
     assert "bars" in body and len(body["bars"]) > 0
-    bar = body["bars"][0]
     # Verify base columns exist
-    assert "date" in bar
-    assert "close" in bar
-    # Verify indicator values are present for both conditions
-    assert "C3_vstop_line" in bar
-    assert "C3_uptrend" in bar
-    assert "C4_rsi" in bar
+    assert "date" in body["bars"][0]
+    assert "close" in body["bars"][0]
+    # Verify vstop indicator keys exist on all bars
+    assert all("vstop_line" in bar for bar in body["bars"])
+    assert all("uptrend" in bar for bar in body["bars"])
+    # Verify at least one bar past warmup (index 15+) has non-None vstop_line value
+    assert any(bar["vstop_line"] is not None for bar in body["bars"][15:])
 
 
-def test_series_payload_without_spec(literal_env):
-    """series_payload with spec=None returns plain OHLCV bars."""
+def test_series_endpoint_with_rsi(client, literal_env):
+    """GET /series/{symbol} with rsi params returns OHLCV + rsi indicator values."""
     ticker = next(iter(literal_env.panels))
-    result = series_payload(ticker, literal_env, spec=None)
+    resp = client.get(
+        f"/series/{ticker}",
+        params={
+            "structure": "literal",
+            "rsi_length": 14
+        }
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "bars" in body and len(body["bars"]) > 0
+    # Verify base columns exist
+    assert "date" in body["bars"][0]
+    assert "close" in body["bars"][0]
+    # Verify rsi indicator key exists on all bars
+    assert all("rsi" in bar for bar in body["bars"])
+    # Verify at least one bar past warmup (index 15+) has non-None rsi value
+    assert any(bar["rsi"] is not None for bar in body["bars"][15:])
+
+
+def test_series_payload_without_params(literal_env):
+    """series_payload without params returns plain OHLCV bars."""
+    ticker = next(iter(literal_env.panels))
+    result = series_payload(ticker, literal_env)
     assert "bars" in result
     assert len(result["bars"]) > 0
     bar = result["bars"][0]
@@ -94,18 +106,32 @@ def test_series_payload_without_spec(literal_env):
     assert "close" in bar
     assert "volume" in bar
     # Verify no indicator columns
-    assert not any(k.startswith("C") and "_" in k for k in bar.keys())
+    assert "vstop_line" not in bar
+    assert "rsi" not in bar
 
 
-def test_series_payload_with_spec(literal_env):
-    """series_payload with spec returns indicator values per bar."""
+def test_series_payload_with_vstop(literal_env):
+    """series_payload with vstop params returns indicator values per bar."""
     ticker = next(iter(literal_env.panels))
-    spec = _literal_spec()
-    result = series_payload(ticker, literal_env, spec)
+    vstop_params = {"length": 10, "mult": 2.0, "source": "close"}
+    result = series_payload(ticker, literal_env, vstop_params=vstop_params)
     assert "bars" in result
     assert len(result["bars"]) > 0
-    bar = result["bars"][0]
-    # Verify indicator columns exist
-    assert "C3_vstop_line" in bar
-    assert "C3_uptrend" in bar
-    assert "C4_rsi" in bar
+    # Verify indicator columns exist on all bars
+    assert all("vstop_line" in bar for bar in result["bars"])
+    assert all("uptrend" in bar for bar in result["bars"])
+    # Verify at least one bar past warmup has non-None vstop_line value
+    assert any(bar["vstop_line"] is not None for bar in result["bars"][15:])
+
+
+def test_series_payload_with_rsi(literal_env):
+    """series_payload with rsi params returns RSI values per bar."""
+    ticker = next(iter(literal_env.panels))
+    rsi_params = {"length": 14}
+    result = series_payload(ticker, literal_env, rsi_params=rsi_params)
+    assert "bars" in result
+    assert len(result["bars"]) > 0
+    # Verify indicator column exists on all bars
+    assert all("rsi" in bar for bar in result["bars"])
+    # Verify at least one bar past warmup has non-None rsi value
+    assert any(bar["rsi"] is not None for bar in result["bars"][15:])

@@ -22,7 +22,7 @@ def fetch_quotes(symbols: list[str], yf_ticker_factory=None) -> dict[str, dict]:
     return out
 
 
-def series_payload(symbol: str, env: Environment, spec=None) -> dict:
+def series_payload(symbol: str, env: Environment, vstop_params=None, rsi_params=None) -> dict:
     import pandas as pd
 
     panel = env.panels.get(symbol)
@@ -33,34 +33,26 @@ def series_payload(symbol: str, env: Environment, spec=None) -> dict:
     bars_df = panel[["date", "open", "high", "low", "close", "volume"]].copy()
     bars_df["date"] = bars_df["date"].astype(str)
 
-    # If a spec is provided, compute and attach indicator values
-    if spec is not None:
+    # Compute and attach indicator values if params are provided
+    if vstop_params is not None:
         from src.indicators.vstop import compute_vstop
+
+        vstop_result = compute_vstop(
+            panel,
+            length=vstop_params.get("length", 10),
+            mult=vstop_params.get("mult", 2.0),
+            source=vstop_params.get("source", "close")
+        )
+        # Attach vstop_line and uptrend with fixed keys (no condition id needed)
+        bars_df["vstop_line"] = vstop_result["vstop_line"]
+        bars_df["uptrend"] = vstop_result["uptrend"]
+
+    if rsi_params is not None:
         from src.indicators.rsi import compute_rsi
 
-        for cond in spec.conditions:
-            if cond.kind != "indicator":
-                continue
-
-            if cond.name == "vstop":
-                # Compute vstop for this symbol's panel
-                params = cond.params
-                vstop_result = compute_vstop(
-                    panel,
-                    length=params.get("length", 10),
-                    mult=params.get("mult", 2.0),
-                    source=params.get("source", "close")
-                )
-                # Attach vstop_line and uptrend with condition id as key
-                bars_df[f"{cond.id}_vstop_line"] = vstop_result["vstop_line"]
-                bars_df[f"{cond.id}_uptrend"] = vstop_result["uptrend"]
-
-            elif cond.name == "rsi":
-                # Compute RSI for this symbol's close
-                params = cond.params
-                rsi_values = compute_rsi(panel["close"], period=params.get("length", 14))
-                # Attach RSI values with condition id as key
-                bars_df[f"{cond.id}_rsi"] = rsi_values
+        rsi_values = compute_rsi(panel["close"], period=rsi_params.get("length", 14))
+        # Attach RSI values with fixed key
+        bars_df["rsi"] = rsi_values
 
     # Convert to dict records and handle NaN/None serialization
     records = bars_df.to_dict("records")
