@@ -7,6 +7,7 @@ from engine.env import load_environment
 from engine.health import health_payload
 from engine.schemas import ScreenSpec
 from engine.screen import ScreenSpecError, run_screen_spec
+from engine.selection import select_candidates
 from engine.structures import structures_payload
 
 
@@ -34,5 +35,16 @@ def create_app(offline: bool = False) -> FastAPI:
             raise HTTPException(status_code=422, detail=[
                 {"condition_id": e.condition_id, "message": e.message} for e in exc.errors
             ])
+
+    @app.post("/select")
+    def select(spec: ScreenSpec = Body(embed=True), as_of: str = Body(embed=True)):
+        env = load_environment(spec.structure, offline=offline)
+        try:
+            screen_result = run_screen_spec(spec, as_of, env)
+        except ScreenSpecError as exc:
+            raise HTTPException(status_code=422, detail=[
+                {"condition_id": e.condition_id, "message": e.message} for e in exc.errors
+            ])
+        return select_candidates(spec, as_of, env, screen_result)
 
     return app
