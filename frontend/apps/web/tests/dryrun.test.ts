@@ -52,7 +52,8 @@ describe("dryRunDraft", () => {
   it("propagates an EngineError from a 422 unchanged", async () => {
     const { raw, draftId } = draftWithSpec(SPEC);
     const fetchFn = vi.fn().mockResolvedValue({
-      ok: false, status: 422, text: async () => JSON.stringify({ errors: [{ condition_id: "C1", message: "bad" }] }),
+      // engine/app.py's HTTPException(422, detail=[...]) serializes to {"detail": [...]}, not {"errors": [...]}.
+      ok: false, status: 422, text: async () => JSON.stringify({ detail: [{ condition_id: "C1", message: "bad" }] }),
     });
     await expect(dryRunDraft(raw, draftId, "2026-10-02", fetchFn as any)).rejects.toBeInstanceOf(EngineError);
   });

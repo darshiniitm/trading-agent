@@ -111,7 +111,8 @@ describe("confirmDraft", () => {
   it("propagates a 422 from the engine without writing anything", async () => {
     const raw = createTestDb();
     const draftId = readyDraft(raw);
-    const fetchFn = vi.fn().mockResolvedValue({ ok: false, status: 422, text: async () => JSON.stringify({ errors: [{ condition_id: "C2", message: "unsupported" }] }) });
+    // engine/app.py's HTTPException(422, detail=[...]) serializes to {"detail": [...]}, not {"errors": [...]}.
+    const fetchFn = vi.fn().mockResolvedValue({ ok: false, status: 422, text: async () => JSON.stringify({ detail: [{ condition_id: "C2", message: "unsupported" }] }) });
     await expect(confirmDraft(raw, draftId, "2026-10-02", fetchFn as any)).rejects.toBeInstanceOf(EngineError);
     const count = raw.prepare("SELECT COUNT(*) AS n FROM prompts").get() as any;
     expect(count.n).toBe(0);

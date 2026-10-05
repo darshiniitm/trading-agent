@@ -42,11 +42,11 @@ describe("screen", () => {
     expect(JSON.parse(init.body)).toEqual({ spec, as_of: "2026-10-02" });
   });
 
-  it("throws EngineError with the status and body on 422", async () => {
-    const fetchFn = fakeFetch(422, JSON.stringify({ errors: [{ condition_id: "C9", message: "unsupported" }] }));
+  it("throws EngineError with the status and body on 422 (engine's own {detail: [...]} shape, from HTTPException)", async () => {
+    const fetchFn = fakeFetch(422, JSON.stringify({ detail: [{ condition_id: "C9", message: "unsupported" }] }));
     await expect(screen(spec, "2026-10-02", fetchFn as any)).rejects.toMatchObject({
       status: 422,
-      body: { errors: [{ condition_id: "C9", message: "unsupported" }] },
+      body: { detail: [{ condition_id: "C9", message: "unsupported" }] },
     });
   });
 
