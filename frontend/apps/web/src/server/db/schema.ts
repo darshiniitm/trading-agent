@@ -1,0 +1,115 @@
+import { sqliteTable, integer, text, real } from "drizzle-orm/sqlite-core";
+
+export const users = sqliteTable("users", {
+  userId: integer("user_id").primaryKey({ autoIncrement: true }),
+  displayName: text("display_name").notNull(),
+  email: text("email"),
+  role: text("role").notNull(),
+  status: text("status").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+export const promptDrafts = sqliteTable("prompt_drafts", {
+  draftId: integer("draft_id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  parentPromptId: integer("parent_prompt_id"),
+  title: text("title"),
+  promptText: text("prompt_text").notNull(),
+  structure: text("structure"),
+  specJson: text("spec_json"),
+  needsInputJson: text("needs_input_json"),
+  answersJson: text("answers_json"),
+  hypothesis: text("hypothesis"),
+  killCriterion: text("kill_criterion"),
+  status: text("status").notNull(),
+  confirmedPromptId: integer("confirmed_prompt_id"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export const prompts = sqliteTable("prompts", {
+  promptId: integer("prompt_id").primaryKey({ autoIncrement: true }),
+  ownerUserId: integer("owner_user_id").notNull(),
+  draftId: integer("draft_id").notNull(),
+  title: text("title").notNull(),
+  promptText: text("prompt_text").notNull(),
+  structure: text("structure").notNull(),
+  specJson: text("spec_json").notNull(),
+  specHash: text("spec_hash").notNull(),
+  status: text("status").notNull(),
+  parentPromptId: integer("parent_prompt_id"),
+  version: integer("version").notNull(),
+  hypothesis: text("hypothesis").notNull(),
+  killCriterion: text("kill_criterion").notNull(),
+  trackStockArm: text("tracks_stock_arm"),
+  reviewWeek: integer("review_week"),
+  confirmedAt: text("confirmed_at").notNull(),
+  closedAt: text("closed_at"),
+});
+
+export const watchlists = sqliteTable("watchlists", {
+  watchlistId: integer("watchlist_id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  promptId: integer("prompt_id").notNull(),
+  name: text("name").notNull(),
+  createdAt: text("created_at").notNull(),
+  archivedAt: text("archived_at"),
+});
+
+export const runs = sqliteTable("runs", {
+  runId: integer("run_id").primaryKey({ autoIncrement: true }),
+  promptId: integer("prompt_id").notNull(),
+  asOf: text("as_of").notNull(),
+  kind: text("kind").notNull(),
+  status: text("status").notNull(),
+  appliedStepsJson: text("applied_steps_json"),
+  funnelJson: text("funnel_json"),
+  dataSnapshotHash: text("data_snapshot_hash"),
+  engineVersion: text("engine_version"),
+  forwardRecordRef: text("forward_record_ref"),
+  startedAt: text("started_at"),
+  finishedAt: text("finished_at"),
+  error: text("error"),
+});
+
+export const symbols = sqliteTable("symbols", {
+  symbol: text("symbol").primaryKey(),
+  name: text("name"),
+  sector: text("sector"),
+  isin: text("isin"),
+  active: integer("active").notNull(),
+});
+
+export const runResults = sqliteTable("run_results", {
+  runId: integer("run_id").notNull(),
+  symbol: text("symbol").notNull(),
+  membership: text("membership").notNull(),
+  inForwardRecord: integer("in_forward_record").notNull(),
+  failedCondsJson: text("failed_conds_json"),
+  condJson: text("cond_json").notNull(),
+  metricsJson: text("metrics_json"),
+  ep: real("ep"),
+  sl: real("sl"),
+  refPrice: real("ref_price"),
+  confidence: real("confidence"),
+  windowOffset: integer("window_offset"),
+  daysSinceFlip: integer("days_since_flip"),
+  entryStatus: text("entry_status"),
+});
+
+export const watchlistEntries = sqliteTable("watchlist_entries", {
+  entryId: integer("entry_id").primaryKey({ autoIncrement: true }),
+  watchlistId: integer("watchlist_id").notNull(),
+  symbol: text("symbol").notNull(),
+  firstRunId: integer("first_run_id").notNull(),
+  lastRunId: integer("last_run_id").notNull(),
+  membership: text("membership").notNull(),
+  status: text("status").notNull(),
+  entryDate: text("entry_date"),
+  entryPrice: real("entry_price"),
+  stop: real("stop"),
+  refPrice: real("ref_price"),
+  userNote: text("user_note"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
