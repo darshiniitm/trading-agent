@@ -75,7 +75,7 @@ def create_app(offline: bool = False) -> FastAPI:
         vstop_params = vstop_cond.params if vstop_cond else None
         try:
             return validate_arm(prompt_id, env, picks, as_of, graded_weeks_so_far,
-                                 vstop_params=vstop_params)
+                                 vstop_params=vstop_params, structure=spec.structure)
         except ValidationSpecError as exc:
             raise HTTPException(status_code=422, detail=str(exc))
 
