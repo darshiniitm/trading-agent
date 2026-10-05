@@ -68,6 +68,23 @@ def test_screen_rejects_spec_with_missing_required_param():
         run_screen_spec(bad, pd.Timestamp("2026-01-05"), None)
 
 
+def test_screen_sector_view_never_carries_raw_nan(literal_env):
+    # compute_sector_rs legitimately returns float("nan") for a sector/lookback
+    # it can't compute (insufficient constituent history, or no benchmark
+    # return for that lookback) -- that's fine inside pandas, but raw NaN isn't
+    # valid JSON and crashes json.dumps on the real HTTP response. sector_view
+    # must sanitize it to None, the same way engine/quotes.py:series_payload
+    # already does for indicator series.
+    import json
+    as_of = sorted({pd.Timestamp(d) for p in literal_env.panels.values() for d in p["date"]})[-1]
+    result = run_screen_spec(_literal_spec(), as_of, literal_env)
+    assert len(result["sector_view"]) > 0, "fixture should produce at least one sector row"
+    for row in result["sector_view"]:
+        for key, value in row.items():
+            assert not (isinstance(value, float) and value != value), f"{key} is NaN, not None"
+    json.dumps(result)  # must not raise ValueError("Out of range float values are not JSON compliant: nan")
+
+
 def test_screen_endpoint(client):
     body = {
         "spec": _literal_spec().model_dump(by_alias=True),

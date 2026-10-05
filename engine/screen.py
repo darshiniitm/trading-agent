@@ -130,6 +130,16 @@ def run_screen_spec(spec: ScreenSpec, as_of: pd.Timestamp, env: Environment) -> 
                                            env.rule_spec["sector"]["outperforming"]["rs_gt"],
                                            env.rule_spec["sector"]["outperforming"]["top_k"])
         sector_view = sector_rs_df.to_dict("records")
+        # compute_sector_rs returns float("nan") for a sector/lookback it can't
+        # compute (not enough constituent history, or no benchmark return for
+        # that lookback) -- a legitimate "can't compute this" signal, same as
+        # VStop/RSI during warmup, but raw NaN isn't valid JSON and crashes the
+        # response (json.dumps raises ValueError). Sanitize the same way
+        # engine/quotes.py:series_payload already does for indicator series.
+        for row in sector_view:
+            for key, value in row.items():
+                if isinstance(value, float) and pd.isna(value):
+                    row[key] = None
 
     return {
         "funnel": funnel,
