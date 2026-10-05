@@ -23,12 +23,16 @@ export function getWatchlistView(raw: Database.Database, watchlistId: number) {
     ? { runId: lastRunRow.run_id, asOf: lastRunRow.as_of, appliedSteps: JSON.parse(lastRunRow.applied_steps_json ?? "[]") }
     : null;
 
+  // Prepared once and reused for every row below, never inside the .map()
+  // callback: see the identical fix (and its comment) in confirm.ts — the
+  // same native crash reproduced here against a real 93-entry watchlist.
+  const selectRunResult = raw.prepare(
+    "SELECT cond_json, failed_conds_json FROM run_results WHERE run_id = ? AND symbol = ?"
+  );
   const entries = (raw
     .prepare("SELECT * FROM watchlist_entries WHERE watchlist_id = ? ORDER BY symbol")
     .all(watchlistId) as any[]).map((e) => {
-    const result = raw
-      .prepare("SELECT cond_json, failed_conds_json FROM run_results WHERE run_id = ? AND symbol = ?")
-      .get(e.last_run_id, e.symbol) as any;
+    const result = selectRunResult.get(e.last_run_id, e.symbol) as any;
     return {
       entryId: e.entry_id, symbol: e.symbol, membership: e.membership, status: e.status,
       entryPrice: e.entry_price, stop: e.stop, refPrice: e.ref_price,

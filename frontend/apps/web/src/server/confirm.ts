@@ -87,13 +87,20 @@ export async function confirmDraft(
     }
     const promptId = Number(promptInfo.lastInsertRowid);
 
+    // Prepared once and reused below, never inside a per-candidate/per-condition
+    // loop: better-sqlite3 Statement objects are native (N-API) handles finalized
+    // by GC, and preparing a fresh one on every iteration of a large screen
+    // (hundreds of candidates is the normal case, not an edge case) creates
+    // hundreds of short-lived native objects in one synchronous transaction.
+    // That reproducibly crashed the whole Next.js dev server (native assertion
+    // in node::RemoveEnvironmentCleanupHook, inside better-sqlite3's Statement
+    // destructor) under a real screen result — see the end-to-end smoke test.
+    const insertCondition = raw.prepare(
+      `INSERT INTO prompt_conditions (prompt_id, cond_no, role, kind, name, params_json, op, value_json, value_origin)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'user_answer')`
+    );
     draft.spec!.conditions.forEach((cond, i) => {
-      raw
-        .prepare(
-          `INSERT INTO prompt_conditions (prompt_id, cond_no, role, kind, name, params_json, op, value_json, value_origin)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'user_answer')`
-        )
-        .run(promptId, i + 1, cond.role, cond.kind, cond.name, JSON.stringify(cond.params ?? {}), cond.op, JSON.stringify(cond.value ?? null));
+      insertCondition.run(promptId, i + 1, cond.role, cond.kind, cond.name, JSON.stringify(cond.params ?? {}), cond.op, JSON.stringify(cond.value ?? null));
     });
 
     const watchlistInfo = raw
@@ -109,40 +116,38 @@ export async function confirmDraft(
       .run(promptId, asOf, JSON.stringify(screenResult.applied_steps), JSON.stringify(screenResult.funnel), now);
     const runId = Number(runInfo.lastInsertRowid);
 
+    const insertSymbol = raw.prepare(`INSERT OR IGNORE INTO symbols (symbol, active) VALUES (?, 1)`);
+    const insertRunResult = raw.prepare(
+      `INSERT INTO run_results
+         (run_id, symbol, membership, in_forward_record, failed_conds_json, cond_json, metrics_json,
+          ep, sl, ref_price, confidence, entry_status)
+       VALUES (?, ?, ?, 0, ?, ?, NULL, ?, ?, ?, NULL, ?)`
+    );
+    const insertWatchlistEntry = raw.prepare(
+      `INSERT INTO watchlist_entries
+         (watchlist_id, symbol, first_run_id, last_run_id, membership, status, ref_price, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+
     for (const candidate of screenResult.candidates) {
-      raw
-        .prepare(`INSERT OR IGNORE INTO symbols (symbol, active) VALUES (?, 1)`)
-        .run(candidate.ticker);
+      insertSymbol.run(candidate.ticker);
 
       const entryStatus = statusFor(candidate.membership);
       const condJson = remapKeysToCondNo(candidate.values, idToCondNo);
       const failedCondsJson = remapIdsToCondNo(candidate.failed_ids, idToCondNo);
 
-      raw
-        .prepare(
-          `INSERT INTO run_results
-             (run_id, symbol, membership, in_forward_record, failed_conds_json, cond_json, metrics_json,
-              ep, sl, ref_price, confidence, entry_status)
-           VALUES (?, ?, ?, 0, ?, ?, NULL, ?, ?, ?, NULL, ?)`
-        )
-        .run(
-          runId, candidate.ticker, candidate.membership, JSON.stringify(failedCondsJson), JSON.stringify(condJson),
-          candidate.membership === "full_match" ? candidate.ep : null,
-          candidate.membership === "full_match" ? candidate.sl : null,
-          candidate.membership === "full_match" ? null : candidate.ep,
-          entryStatus
-        );
+      insertRunResult.run(
+        runId, candidate.ticker, candidate.membership, JSON.stringify(failedCondsJson), JSON.stringify(condJson),
+        candidate.membership === "full_match" ? candidate.ep : null,
+        candidate.membership === "full_match" ? candidate.sl : null,
+        candidate.membership === "full_match" ? null : candidate.ep,
+        entryStatus
+      );
 
-      raw
-        .prepare(
-          `INSERT INTO watchlist_entries
-             (watchlist_id, symbol, first_run_id, last_run_id, membership, status, ref_price, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-        )
-        .run(
-          watchlistId, candidate.ticker, runId, runId, candidate.membership, entryStatus,
-          candidate.membership === "full_match" ? null : candidate.ep, now, now
-        );
+      insertWatchlistEntry.run(
+        watchlistId, candidate.ticker, runId, runId, candidate.membership, entryStatus,
+        candidate.membership === "full_match" ? null : candidate.ep, now, now
+      );
     }
 
     raw

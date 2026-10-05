@@ -125,6 +125,31 @@ describe("confirmDraft", () => {
     await expect(confirmDraft(raw, draftId, "2026-10-09", fakeScreenFetch([]) as any)).rejects.toThrow(/already confirmed/);
   });
 
+  it("writes every candidate correctly at real-world scale (hundreds of candidates in one screen)", async () => {
+    // Regression for a crash found live: preparing a fresh SQL statement
+    // inside the per-candidate loop created hundreds of short-lived native
+    // better-sqlite3 Statement objects in one synchronous transaction, which
+    // crashed the whole process (native assertion in
+    // node::RemoveEnvironmentCleanupHook, inside Statement's destructor) the
+    // first time a real screen result (93 candidates) went through confirm.
+    // This pins the fix (statements prepared once, reused via .run() in the
+    // loop) at a candidate count well past what any toy fixture would catch.
+    const raw = createTestDb();
+    const draftId = readyDraft(raw);
+    const CANDIDATE_COUNT = 300;
+    const candidates = Array.from({ length: CANDIDATE_COUNT }, (_, i) => ({
+      ticker: `TICK${i}`, membership: i % 3 === 0 ? "full_match" : i % 3 === 1 ? "near_miss" : "rejected_risk_cap",
+      values: { idMcap: 20000 + i }, failed_ids: i % 3 === 0 ? [] : ["idMcap"],
+      ep: 100 + i, sl: 90 + i, r: 10,
+    }));
+    const { watchlistId } = await confirmDraft(raw, draftId, "2026-10-02", fakeScreenFetch(candidates) as any);
+
+    const count = raw.prepare("SELECT COUNT(*) AS n FROM watchlist_entries WHERE watchlist_id = ?").get(watchlistId) as any;
+    expect(count.n).toBe(CANDIDATE_COUNT);
+    const fullMatchCount = raw.prepare("SELECT COUNT(*) AS n FROM watchlist_entries WHERE watchlist_id = ? AND membership = 'full_match'").get(watchlistId) as any;
+    expect(fullMatchCount.n).toBe(100);
+  });
+
   it("rejects a second draft confirming the exact same spec as an already-confirmed prompt, naming it, instead of a raw SQLite constraint error", async () => {
     const raw = createTestDb();
     const userId = ensureOwnerUser(raw);

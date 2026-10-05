@@ -64,4 +64,18 @@ describe("getWatchlistView", () => {
     const view = getWatchlistView(raw, watchlistId)!;
     expect(view.entries).toEqual([]);
   });
+
+  it("assembles every entry correctly at real-world scale (same statement-per-row crash class as confirm.ts)", async () => {
+    const CANDIDATE_COUNT = 300;
+    const candidates = Array.from({ length: CANDIDATE_COUNT }, (_, i) => ({
+      ticker: `TICK${i}`, membership: "full_match", values: { C1: 20000 + i }, failed_ids: [], ep: 100 + i, sl: 90 + i, r: 10,
+    }));
+    const fetchFn = vi.fn().mockResolvedValue({
+      ok: true, text: async () => JSON.stringify({ candidates, applied_steps: [], funnel: [], sector_view: [] }),
+    });
+    const { raw, watchlistId } = await confirmedWatchlist(fetchFn);
+    const view = getWatchlistView(raw, watchlistId)!;
+    expect(view.entries).toHaveLength(CANDIDATE_COUNT);
+    expect(view.entries.every((e) => e.condValues.C1 !== undefined)).toBe(true);
+  });
 });
