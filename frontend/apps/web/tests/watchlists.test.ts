@@ -33,7 +33,7 @@ describe("getWatchlistView", () => {
   it("assembles header, conditions, and entries across membership types", async () => {
     const fetchFn = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({
+      text: async () => JSON.stringify({
         candidates: [
           { ticker: "FULL1", membership: "full_match", values: { C1: 25000 }, failed_ids: [], ep: 101.5, sl: 95.0, r: 0.064 },
           { ticker: "NEAR1", membership: "near_miss", values: { C1: 9000 }, failed_ids: ["C1"], ep: 50.0, sl: null, r: null },
@@ -59,7 +59,7 @@ describe("getWatchlistView", () => {
   });
 
   it("handles a watchlist whose latest run had zero candidates", async () => {
-    const fetchFn = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ candidates: [], applied_steps: [], funnel: [], sector_view: [] }) });
+    const fetchFn = vi.fn().mockResolvedValue({ ok: true, text: async () => JSON.stringify({ candidates: [], applied_steps: [], funnel: [], sector_view: [] }) });
     const { raw, watchlistId } = await confirmedWatchlist(fetchFn);
     const view = getWatchlistView(raw, watchlistId)!;
     expect(view.entries).toEqual([]);

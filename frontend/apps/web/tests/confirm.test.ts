@@ -30,7 +30,7 @@ function readyDraft(raw: ReturnType<typeof createTestDb>, overrides: Record<stri
 function fakeScreenFetch(candidates: any[]) {
   return vi.fn().mockResolvedValue({
     ok: true,
-    json: async () => ({ candidates, applied_steps: [{ step: "x", applied: true, reason: null }], funnel: [], sector_view: [] }),
+    text: async () => JSON.stringify({ candidates, applied_steps: [{ step: "x", applied: true, reason: null }], funnel: [], sector_view: [] }),
   });
 }
 
@@ -111,7 +111,7 @@ describe("confirmDraft", () => {
   it("propagates a 422 from the engine without writing anything", async () => {
     const raw = createTestDb();
     const draftId = readyDraft(raw);
-    const fetchFn = vi.fn().mockResolvedValue({ ok: false, status: 422, json: async () => ({ errors: [{ condition_id: "C2", message: "unsupported" }] }) });
+    const fetchFn = vi.fn().mockResolvedValue({ ok: false, status: 422, text: async () => JSON.stringify({ errors: [{ condition_id: "C2", message: "unsupported" }] }) });
     await expect(confirmDraft(raw, draftId, "2026-10-02", fetchFn as any)).rejects.toBeInstanceOf(EngineError);
     const count = raw.prepare("SELECT COUNT(*) AS n FROM prompts").get() as any;
     expect(count.n).toBe(0);

@@ -25,7 +25,7 @@ describe("dryRunDraft", () => {
     const { raw, draftId } = draftWithSpec(SPEC);
     const fetchFn = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ candidates: [{ ticker: "ABC" }], applied_steps: [], funnel: [], sector_view: [] }),
+      text: async () => JSON.stringify({ candidates: [{ ticker: "ABC" }], applied_steps: [], funnel: [], sector_view: [] }),
     });
     const result = await dryRunDraft(raw, draftId, "2026-10-02", fetchFn as any);
     expect(result.candidates).toEqual([{ ticker: "ABC" }]);
@@ -35,7 +35,7 @@ describe("dryRunDraft", () => {
 
   it("writes nothing to runs/run_results/prompts/watchlists", async () => {
     const { raw, draftId } = draftWithSpec(SPEC);
-    const fetchFn = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ candidates: [], applied_steps: [], funnel: [], sector_view: [] }) });
+    const fetchFn = vi.fn().mockResolvedValue({ ok: true, text: async () => JSON.stringify({ candidates: [], applied_steps: [], funnel: [], sector_view: [] }) });
     await dryRunDraft(raw, draftId, "2026-10-02", fetchFn as any);
     await dryRunDraft(raw, draftId, "2026-10-02", fetchFn as any);
     for (const table of ["runs", "run_results", "prompts", "watchlists"]) {
@@ -52,7 +52,7 @@ describe("dryRunDraft", () => {
   it("propagates an EngineError from a 422 unchanged", async () => {
     const { raw, draftId } = draftWithSpec(SPEC);
     const fetchFn = vi.fn().mockResolvedValue({
-      ok: false, status: 422, json: async () => ({ errors: [{ condition_id: "C1", message: "bad" }] }),
+      ok: false, status: 422, text: async () => JSON.stringify({ errors: [{ condition_id: "C1", message: "bad" }] }),
     });
     await expect(dryRunDraft(raw, draftId, "2026-10-02", fetchFn as any)).rejects.toBeInstanceOf(EngineError);
   });

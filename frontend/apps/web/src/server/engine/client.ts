@@ -16,7 +16,19 @@ type FetchFn = typeof fetch;
 
 async function call(path: string, init: Parameters<FetchFn>[1], fetchFn: FetchFn) {
   const res = await fetchFn(`${ENGINE_BASE_URL}${path}`, init);
-  const body = await res.json();
+  // A Response body can only be consumed once, so read it as text exactly
+  // once and try to parse that — never call both res.json() and res.text()
+  // on the same response (the second read throws "Body has already been
+  // read" against a real fetch Response, even though a hand-rolled test
+  // double with independent json()/text() stubs won't catch that).
+  const text = await res.text();
+  let body: unknown;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    if (!res.ok) throw new EngineError(res.status, text);
+    throw new Error(`engine returned a non-JSON 2xx response: ${text}`);
+  }
   if (!res.ok) throw new EngineError(res.status, body);
   return body;
 }
