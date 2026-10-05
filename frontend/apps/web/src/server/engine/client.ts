@@ -14,7 +14,7 @@ export class EngineError extends Error {
 
 type FetchFn = typeof fetch;
 
-async function call(path: string, init: Parameters<FetchFn>[1], fetchFn: FetchFn) {
+export async function call(path: string, init: Parameters<FetchFn>[1], fetchFn: FetchFn) {
   const res = await fetchFn(`${ENGINE_BASE_URL}${path}`, init);
   // A Response body can only be consumed once, so read it as text exactly
   // once and try to parse that — never call both res.json() and res.text()
@@ -43,6 +43,22 @@ export function getStructures(fetchFn: FetchFn = fetch) {
 
 export function getHealth(fetchFn: FetchFn = fetch) {
   return call("/health", { method: "GET" }, fetchFn);
+}
+
+// engine/quotes.py's fetch_quotes: a success entry is {price, source, source_ts};
+// a failure entry is only {error} — there is no as_of/error:null on success.
+type RawQuote = { price: number; source: string; source_ts: string } | { error: string };
+
+export async function postQuotes(symbols: string[], fetchFn: FetchFn = fetch) {
+  return call(
+    "/quotes",
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ symbols }),
+    },
+    fetchFn
+  ) as Promise<Record<string, RawQuote>>;
 }
 
 export async function screen(spec: ScreenSpec, asOf: string, fetchFn: FetchFn = fetch) {
