@@ -25,4 +25,20 @@ describe("WatchlistTable", () => {
     render(<WatchlistTable entries={[]} conditionNames={["C1"]} />);
     expect(screen.getByRole("table")).toBeInTheDocument();
   });
+
+  it("renders a quote's price when one is available for the row's symbol", () => {
+    render(<WatchlistTable entries={ENTRIES} conditionNames={["C1"]} quotes={{ FULL1: { price: 101.5, asOf: "2026-10-02T09:15:00Z", error: null } }} />);
+    expect(screen.getByText("101.5")).toBeInTheDocument();
+  });
+
+  it("renders a dash, not a crash, when no quote has been fetched yet for a symbol", () => {
+    render(<WatchlistTable entries={ENTRIES} conditionNames={["C1"]} />);
+    const dashes = screen.getAllByText("—");
+    expect(dashes.length).toBeGreaterThan(0);
+  });
+
+  it("renders the quote's own error instead of a price when the engine couldn't fetch one", () => {
+    render(<WatchlistTable entries={ENTRIES} conditionNames={["C1"]} quotes={{ FULL1: { price: null, asOf: null, error: "possibly delisted" } }} />);
+    expect(screen.getByText("possibly delisted")).toBeInTheDocument();
+  });
 });
