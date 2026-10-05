@@ -124,4 +124,23 @@ describe("confirmDraft", () => {
     await confirmDraft(raw, draftId, "2026-10-02", fakeScreenFetch([]) as any);
     await expect(confirmDraft(raw, draftId, "2026-10-09", fakeScreenFetch([]) as any)).rejects.toThrow(/already confirmed/);
   });
+
+  it("rejects a second draft confirming the exact same spec as an already-confirmed prompt, naming it, instead of a raw SQLite constraint error", async () => {
+    const raw = createTestDb();
+    const userId = ensureOwnerUser(raw);
+    const firstDraftId = readyDraft(raw);
+    const { promptId: firstPromptId } = await confirmDraft(raw, firstDraftId, "2026-10-02", fakeScreenFetch([]) as any);
+
+    const { draftId: secondDraftId } = createDraft(raw, { userId });
+    updateDraft(raw, secondDraftId, {
+      title: "Same brief again", structure: "literal", specJson: JSON.stringify(SPEC),
+      hypothesis: "same hypothesis", killCriterion: "same kill criterion",
+    });
+    await expect(confirmDraft(raw, secondDraftId, "2026-10-09", fakeScreenFetch([]) as any)).rejects.toThrow(
+      new RegExp(`Prompt ${firstPromptId}`)
+    );
+
+    const count = raw.prepare("SELECT COUNT(*) AS n FROM prompts").get() as any;
+    expect(count.n).toBe(1);
+  });
 });

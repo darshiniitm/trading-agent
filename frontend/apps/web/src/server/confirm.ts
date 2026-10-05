@@ -41,6 +41,15 @@ export async function confirmDraft(
   const specJson = JSON.stringify(draft.spec);
   const specHash = createHash("sha256").update(specJson).digest("hex");
 
+  const existingPrompt = raw
+    .prepare("SELECT prompt_id FROM prompts WHERE owner_user_id = ? AND spec_hash = ? AND status = 'confirmed'")
+    .get(draft.userId, specHash) as { prompt_id: number } | undefined;
+  if (existingPrompt) {
+    throw new Error(
+      `you already have a confirmed prompt with these exact conditions (Prompt ${existingPrompt.prompt_id})`
+    );
+  }
+
   const screenResult = await screen(draft.spec!, asOf, fetchFn);
 
   const idToCondNo: Record<string, number> = {};
@@ -50,17 +59,32 @@ export async function confirmDraft(
 
   const now = new Date().toISOString();
   const run = raw.transaction(() => {
-    const promptInfo = raw
-      .prepare(
-        `INSERT INTO prompts
-           (owner_user_id, draft_id, title, prompt_text, structure, spec_json, spec_hash,
-            status, version, hypothesis, kill_criterion, confirmed_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'confirmed', 1, ?, ?, ?)`
-      )
-      .run(
-        draft.userId, draftId, draft.title ?? `Prompt from draft ${draftId}`, draft.promptText,
-        draft.structure, specJson, specHash, draft.hypothesis, draft.killCriterion, now
-      );
+    let promptInfo;
+    try {
+      promptInfo = raw
+        .prepare(
+          `INSERT INTO prompts
+             (owner_user_id, draft_id, title, prompt_text, structure, spec_json, spec_hash,
+              status, version, hypothesis, kill_criterion, confirmed_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'confirmed', 1, ?, ?, ?)`
+        )
+        .run(
+          draft.userId, draftId, draft.title ?? `Prompt from draft ${draftId}`, draft.promptText,
+          draft.structure, specJson, specHash, draft.hypothesis, draft.killCriterion, now
+        );
+    } catch (err: any) {
+      // Closes the gap between the pre-check above and this transaction: two
+      // concurrent confirms of the same (user, spec) can both pass that
+      // SELECT before either writes. The unique index is still the real
+      // guard against a double-write; this only re-translates its error.
+      if (String(err.message).includes("UNIQUE constraint failed: prompts.owner_user_id, prompts.spec_hash")) {
+        const winner = raw
+          .prepare("SELECT prompt_id FROM prompts WHERE owner_user_id = ? AND spec_hash = ? AND status = 'confirmed'")
+          .get(draft.userId, specHash) as { prompt_id: number };
+        throw new Error(`you already have a confirmed prompt with these exact conditions (Prompt ${winner.prompt_id})`);
+      }
+      throw err;
+    }
     const promptId = Number(promptInfo.lastInsertRowid);
 
     draft.spec!.conditions.forEach((cond, i) => {

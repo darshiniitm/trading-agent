@@ -53,4 +53,28 @@ describe("updateDraft", () => {
     const { draftId } = createDraft(raw, { userId });
     expect(() => updateDraft(raw, draftId, { promptText: "x".repeat(2001) })).toThrow(/2000/);
   });
+
+  it("rejects a specJson that isn't a valid ScreenSpec (e.g. a structure the schema doesn't allow)", () => {
+    const { raw, userId } = setup();
+    const { draftId } = createDraft(raw, { userId });
+    const badSpec = {
+      spec_version: 4, structure: "control", timeframe: "1W", selection_point: null,
+      conditions: [], stop: null, risk_cap_pct: null, near_miss: null,
+    };
+    expect(() => updateDraft(raw, draftId, { specJson: JSON.stringify(badSpec) })).toThrow(/invalid spec/i);
+  });
+
+  it("rejects a specJson with duplicate condition ids", () => {
+    const { raw, userId } = setup();
+    const { draftId } = createDraft(raw, { userId });
+    const badSpec = {
+      spec_version: 4, structure: "literal", timeframe: "1W", selection_point: null,
+      conditions: [
+        { id: "C1", role: "filter", kind: "field", name: "mcap_cr", params: {}, op: "between", value: [1, 2] },
+        { id: "C1", role: "filter", kind: "field", name: "mcap_cr", params: {}, op: "between", value: [1, 2] },
+      ],
+      stop: null, risk_cap_pct: null, near_miss: null,
+    };
+    expect(() => updateDraft(raw, draftId, { specJson: JSON.stringify(badSpec) })).toThrow(/invalid spec/i);
+  });
 });

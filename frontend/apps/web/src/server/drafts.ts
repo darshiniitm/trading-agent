@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import type { ScreenSpec } from "spec";
+import { ScreenSpecSchema, type ScreenSpec } from "spec";
 
 export type DraftRow = {
   draftId: number;
@@ -70,6 +70,13 @@ const COLUMN_BY_KEY: Record<keyof DraftPatch, string> = {
 export function updateDraft(raw: Database.Database, draftId: number, patch: DraftPatch): DraftRow {
   const existing = raw.prepare("SELECT draft_id FROM prompt_drafts WHERE draft_id = ?").get(draftId);
   if (!existing) throw new Error(`draft ${draftId} not found`);
+
+  if (patch.specJson !== undefined) {
+    const result = ScreenSpecSchema.safeParse(JSON.parse(patch.specJson));
+    if (!result.success) {
+      throw new Error(`invalid spec: ${result.error.issues.map((i) => i.message).join("; ")}`);
+    }
+  }
 
   const keys = Object.keys(patch) as (keyof DraftPatch)[];
   if (keys.length > 0) {
