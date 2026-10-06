@@ -20,6 +20,28 @@ function remapIdsToCondNo(ids: string[], idToCondNo: Record<string, number>): st
 
 const OPEN_STATUSES = ["pending_selection", "entered", "not_confirmed", "no_point_data", "watching"];
 
+// Once an entry reaches one of these, it is a resolved historical fact (the
+// selection point was priced and `entry_price`/`stop` are written): no later
+// weekly screen may touch its membership/status/last_run_id/prices again.
+// Two reasons, both load-bearing:
+//  - `watchlist_entries`' CHECK (membership = 'full_match' OR entry_price IS
+//    NULL): flipping a priced entry's membership to near_miss /
+//    rejected_risk_cap would violate it, abort the whole weekly transaction,
+//    and make runCatchUp retry (and fail on) that same week forever.
+//  - `last_run_id` of a frozen entry is the run it was resolved in — the
+//    "signal run" runValidatePrior grades it under. Bumping it would move the
+//    pick to a run whose as_of it was never bought at.
+// Frozen entries still count as "open" for ux_entries_open (they hold the
+// (watchlist, symbol) slot), so they must stay findable by selectOpenEntry —
+// otherwise a re-seen symbol would fall into the insert branch and violate
+// that unique index. They are simply skipped once found, and they are never
+// marked dropped_from_screen either (a live position doesn't end because the
+// screen stopped matching it). A new entry for the same symbol can only be
+// created after the frozen one reaches a terminal status (backend plan §8.3:
+// a symbol that leaves and later re-qualifies gets a NEW entry).
+export const FROZEN_STATUSES = ["entered", "not_confirmed"];
+const DROPPABLE_STATUSES = OPEN_STATUSES.filter((s) => !FROZEN_STATUSES.includes(s));
+
 export async function runWeeklyScreen(
   raw: Database.Database,
   { promptId, asOf, kind }: { promptId: number; asOf: string; kind: "scheduled" | "catch_up" },
@@ -98,6 +120,9 @@ export async function runWeeklyScreen(
         if (!existing) {
           insertEntry.run(watchlistId, candidate.ticker, runId, runId, candidate.membership, entryStatus,
             candidate.membership === "full_match" ? null : candidate.ep, now, now);
+        } else if (FROZEN_STATUSES.includes(existing.status)) {
+          // Resolved position — leave it exactly as it is (see FROZEN_STATUSES).
+          continue;
         } else {
           if (existing.membership !== candidate.membership) {
             insertEvent.run(existing.entry_id, runId, "membership_changed", existing.membership, candidate.membership, now);
@@ -107,11 +132,14 @@ export async function runWeeklyScreen(
       }
     }
 
-    // Open entries not re-seen this run: dropped, per watchlist.
+    // Open, not-yet-resolved entries not re-seen this run: dropped, per
+    // watchlist. Frozen (entered/not_confirmed) entries are excluded whether
+    // or not their symbol was re-seen.
+    const selectDroppable = raw.prepare(
+      `SELECT entry_id, symbol, status FROM watchlist_entries WHERE watchlist_id = ? AND status IN (${DROPPABLE_STATUSES.map(() => "?").join(",")})`
+    );
     for (const watchlistId of watchlistIds) {
-      const openEntries = raw
-        .prepare(`SELECT entry_id, symbol, status FROM watchlist_entries WHERE watchlist_id = ? AND status IN (${OPEN_STATUSES.map(() => "?").join(",")})`)
-        .all(watchlistId, ...OPEN_STATUSES) as { entry_id: number; symbol: string; status: string }[];
+      const openEntries = selectDroppable.all(watchlistId, ...DROPPABLE_STATUSES) as { entry_id: number; symbol: string; status: string }[];
       for (const entry of openEntries) {
         if (!seenSymbols.has(entry.symbol)) {
           dropEntry.run(runId, now, entry.entry_id);

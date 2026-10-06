@@ -1,5 +1,11 @@
 import type Database from "better-sqlite3";
 import { selectCandidates, type SelectCandidate } from "@/server/engine/client";
+import { FROZEN_STATUSES } from "@/server/weeklyScreen";
+
+// Entry statuses a /select outcome may still be applied to: open, and not yet
+// resolved (FROZEN_STATUSES are open-but-resolved; every other status is
+// terminal).
+const SELECTABLE_STATUSES = ["pending_selection", "no_point_data", "watching"];
 
 type Outcome = { status: "entered" | "not_confirmed" | "no_point_data" | "watching"; entryPrice: number | null; stop: number | null; refPrice: number | null };
 
@@ -40,26 +46,44 @@ export async function runSelectEntry(
      SET status = ?, entry_price = ?, stop = ?, ref_price = COALESCE(?, ref_price),
          entry_date = CASE WHEN ? = 'entered' THEN COALESCE(entry_date, ?) ELSE entry_date END,
          updated_at = ?
-     WHERE last_run_id = ? AND symbol = ?`
+     WHERE entry_id = ?`
   );
   const insertEvent = raw.prepare("INSERT INTO entry_events (entry_id, run_id, type, from_value, to_value, at) VALUES (?, ?, 'status_changed', ?, ?, ?)");
 
   const txn = raw.transaction(() => {
     const entriesBefore = selectEntriesForRun.all(runId) as { entry_id: number; symbol: string; status: string }[];
-
-    for (const [ticker, outcome] of byTicker) {
-      updateRunResult.run(outcome.status, runId, ticker);
-      updateEntry.run(outcome.status, outcome.entryPrice, outcome.stop, outcome.refPrice, outcome.status, run.as_of, now, runId, ticker);
-    }
-
+    const entriesByTicker = new Map<string, { entry_id: number; symbol: string; status: string }[]>();
     for (const entry of entriesBefore) {
-      const outcome = byTicker.get(entry.symbol);
-      if (outcome && outcome.status !== entry.status) {
-        insertEvent.run(entry.entry_id, runId, entry.status, outcome.status, now);
-      }
+      const list = entriesByTicker.get(entry.symbol) ?? [];
+      list.push(entry);
+      entriesByTicker.set(entry.symbol, list);
     }
 
-    return byTicker.size;
+    let applied = 0;
+    for (const [ticker, outcome] of byTicker) {
+      const entries = entriesByTicker.get(ticker) ?? [];
+      // A pick already resolved in this run (entered / not_confirmed — the
+      // same FROZEN_STATUSES weeklyScreen honours) is a historical fact:
+      // re-running /select for the same run (a catch-up retry, a manual
+      // re-run) must not re-price it, re-date it, or rewrite this run's
+      // recorded outcome for it.
+      if (entries.some((e) => FROZEN_STATUSES.includes(e.status))) continue;
+
+      updateRunResult.run(outcome.status, runId, ticker);
+      for (const entry of entries) {
+        // Only entries still awaiting a selection outcome are updated; a
+        // terminal entry (e.g. dropped_from_screen, which also carries this
+        // run as its last_run_id) is never revived by a /select result.
+        if (!SELECTABLE_STATUSES.includes(entry.status)) continue;
+        updateEntry.run(outcome.status, outcome.entryPrice, outcome.stop, outcome.refPrice, outcome.status, run.as_of, now, entry.entry_id);
+        if (outcome.status !== entry.status) {
+          insertEvent.run(entry.entry_id, runId, entry.status, outcome.status, now);
+        }
+      }
+      applied++;
+    }
+
+    return applied;
   });
 
   return { updated: txn() };

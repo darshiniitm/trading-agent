@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createTestDb } from "@/server/db/test-db";
 import { ensureOwnerUser } from "@/server/db/seed";
 import { runWeeklyScreen } from "@/server/weeklyScreen";
+import { runSelectEntry } from "@/server/selectEntry";
 
 const SPEC = {
   spec_version: 4, structure: "literal" as const, timeframe: "1W" as const,
@@ -84,5 +85,83 @@ describe("runWeeklyScreen", () => {
     ).run(ownerId, JSON.stringify(SPEC), now);
     const { runId } = await runWeeklyScreen(raw, { promptId: 1, asOf: "2026-10-02", kind: "scheduled" }, fakeScreenFetch([]) as any);
     expect(runId).toBeGreaterThan(0);
+  });
+
+  // --- Freeze regression (final-review C1/C2): once an entry is entered or
+  // not_confirmed it is a resolved fact; later weekly screens leave it alone.
+
+  async function enterFull1(raw: ReturnType<typeof createTestDb>, status: "entered" | "not_confirmed" = "entered") {
+    const { runId } = await runWeeklyScreen(
+      raw, { promptId: 1, asOf: "2026-10-02", kind: "scheduled" },
+      fakeScreenFetch([{ ticker: "FULL1", membership: "full_match", values: { idMcap: 25000 }, failed_ids: [], ep: 100, sl: 95, r: 0.05 }]) as any
+    );
+    const pick = { ticker: "FULL1", membership: "full_match", values: {}, failed_ids: [], ep: 100, sl: 95, r: 0.05, entry_price: 101 };
+    const selectBody = { entered: status === "entered" ? [pick] : [], not_confirmed: status === "not_confirmed" ? [pick] : [], no_point_data: [], watching: [] };
+    await runSelectEntry(raw, { promptId: 1, runId }, vi.fn().mockResolvedValue({ ok: true, text: async () => JSON.stringify(selectBody) }) as any);
+    return { firstRunId: runId };
+  }
+
+  function frozenSnapshot(raw: ReturnType<typeof createTestDb>) {
+    return raw
+      .prepare("SELECT entry_id, watchlist_id, membership, status, entry_price, stop, entry_date, last_run_id FROM watchlist_entries WHERE symbol = 'FULL1' ORDER BY watchlist_id")
+      .all();
+  }
+
+  for (const nextMembership of ["near_miss", "rejected_risk_cap"] as const) {
+    it(`leaves an entered entry untouched when next week's screen returns it as ${nextMembership} (no CHECK violation, no event)`, async () => {
+      const raw = createTestDb();
+      seedPromptWithTwoWatchlists(raw);
+      const { firstRunId } = await enterFull1(raw);
+      const before = frozenSnapshot(raw) as any[];
+      expect(before.map((e) => e.status)).toEqual(["entered", "entered"]);
+      expect(before.every((e) => e.entry_price === 101 && e.last_run_id === firstRunId)).toBe(true);
+      const eventsBefore = (raw.prepare("SELECT COUNT(*) AS n FROM entry_events").get() as any).n;
+
+      const { runId: secondRunId } = await runWeeklyScreen(
+        raw, { promptId: 1, asOf: "2026-10-09", kind: "scheduled" },
+        fakeScreenFetch([{ ticker: "FULL1", membership: nextMembership, values: {}, failed_ids: ["idMcap"], ep: 90, sl: null, r: null }]) as any
+      );
+
+      expect(frozenSnapshot(raw)).toEqual(before);
+      expect((raw.prepare("SELECT COUNT(*) AS n FROM entry_events").get() as any).n).toBe(eventsBefore);
+      expect(raw.prepare("SELECT COUNT(*) AS n FROM entry_events WHERE type = 'membership_changed'").get()).toEqual({ n: 0 });
+      // The week's own run_results row still records what the screen said.
+      expect(raw.prepare("SELECT membership FROM run_results WHERE run_id = ? AND symbol = 'FULL1'").get(secondRunId)).toEqual({ membership: nextMembership });
+      // And no duplicate entry was created for the re-seen symbol.
+      expect((raw.prepare("SELECT COUNT(*) AS n FROM watchlist_entries WHERE symbol = 'FULL1'").get() as any).n).toBe(2);
+    });
+  }
+
+  it("leaves a not_confirmed entry untouched when next week's screen returns it as near_miss", async () => {
+    const raw = createTestDb();
+    seedPromptWithTwoWatchlists(raw);
+    await enterFull1(raw, "not_confirmed");
+    const before = frozenSnapshot(raw) as any[];
+    expect(before.map((e) => e.status)).toEqual(["not_confirmed", "not_confirmed"]);
+
+    await runWeeklyScreen(
+      raw, { promptId: 1, asOf: "2026-10-09", kind: "scheduled" },
+      fakeScreenFetch([{ ticker: "FULL1", membership: "near_miss", values: {}, failed_ids: ["idMcap"], ep: 90, sl: null, r: null }]) as any
+    );
+    expect(frozenSnapshot(raw)).toEqual(before);
+  });
+
+  it("never marks a frozen entry dropped_from_screen, whether its symbol is re-seen or absent", async () => {
+    const raw = createTestDb();
+    seedPromptWithTwoWatchlists(raw);
+    await enterFull1(raw);
+    const before = frozenSnapshot(raw);
+
+    // Re-seen as full_match: untouched.
+    await runWeeklyScreen(
+      raw, { promptId: 1, asOf: "2026-10-09", kind: "scheduled" },
+      fakeScreenFetch([{ ticker: "FULL1", membership: "full_match", values: {}, failed_ids: [], ep: 120, sl: 110, r: 0.08 }]) as any
+    );
+    expect(frozenSnapshot(raw)).toEqual(before);
+
+    // Absent entirely: still untouched (a live position, not an abandoned candidate).
+    await runWeeklyScreen(raw, { promptId: 1, asOf: "2026-10-16", kind: "scheduled" }, fakeScreenFetch([]) as any);
+    expect(frozenSnapshot(raw)).toEqual(before);
+    expect(raw.prepare("SELECT COUNT(*) AS n FROM entry_events WHERE type = 'dropped_from_screen'").get()).toEqual({ n: 0 });
   });
 });
