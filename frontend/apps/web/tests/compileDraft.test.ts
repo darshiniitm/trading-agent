@@ -47,12 +47,16 @@ describe("compileDraft", () => {
     const draftId = draftWithText(raw, "something vague");
     const callModel = vi.fn().mockResolvedValue(JSON.stringify({
       structure: null, conditions: [], selection_point: null, stop: null, risk_cap_pct: null, near_miss: null, t1_window: null,
-      source_phrases: [], needs_input: [], unsupported: [],
+      source_phrases: [], needs_input: [], unsupported: [{ text: "MACD crossover", reason: "MACD is not in the catalog" }],
     }));
 
     const draft = await compileDraft(raw, draftId, { fetchFn: fakeEngineFetch() as any, callModel });
     expect(draft.spec).toBeNull();
     expect(draft.needsInput!.some((n) => n.path === "structure")).toBe(true);
+    // Structure being unresolved doesn't stop the model from flagging an
+    // independently-unsupported condition in the same prompt — both facts
+    // should reach the draft.
+    expect(draft.unsupported).toEqual([{ text: "MACD crossover", reason: "MACD is not in the catalog" }]);
   });
 
   it("on CompileError, writes nothing to the draft's structure/specJson and logs errors_json", async () => {
