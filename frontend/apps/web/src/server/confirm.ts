@@ -2,7 +2,7 @@ import type Database from "better-sqlite3";
 import { createHash } from "node:crypto";
 import { getDraft } from "@/server/drafts";
 import { runWeeklyScreen } from "@/server/weeklyScreen";
-import { registerArm } from "@/server/engine/client";
+import { registerArm, retireArm } from "@/server/engine/client";
 import { runSelectEntry } from "@/server/selectEntry";
 
 export async function confirmDraft(
@@ -26,9 +26,13 @@ export async function confirmDraft(
   const specJson = JSON.stringify(draft.spec);
   const specHash = createHash("sha256").update(specJson).digest("hex");
 
+  // Excludes the draft's own parent (if any) from the duplicate-spec check:
+  // an unedited version bump reuses the parent's exact spec_hash on purpose,
+  // and that is not "you already have a confirmed prompt with these exact
+  // conditions" — it is the new version superseding that very prompt.
   const existingPrompt = raw
-    .prepare("SELECT prompt_id FROM prompts WHERE owner_user_id = ? AND spec_hash = ? AND status = 'confirmed'")
-    .get(draft.userId, specHash) as { prompt_id: number } | undefined;
+    .prepare("SELECT prompt_id FROM prompts WHERE owner_user_id = ? AND spec_hash = ? AND status = 'confirmed' AND prompt_id IS NOT ?")
+    .get(draft.userId, specHash, draft.parentPromptId ?? null) as { prompt_id: number } | undefined;
   if (existingPrompt) {
     throw new Error(
       `you already have a confirmed prompt with these exact conditions (Prompt ${existingPrompt.prompt_id})`
@@ -37,18 +41,37 @@ export async function confirmDraft(
 
   const now = new Date().toISOString();
   const createPromptAndWatchlist = raw.transaction(() => {
+    const parent: { prompt_id: number; version: number; status: string } | null = draft.parentPromptId
+      ? ((raw.prepare("SELECT prompt_id, version, status FROM prompts WHERE prompt_id = ?").get(draft.parentPromptId) as
+          | { prompt_id: number; version: number; status: string }
+          | undefined) ?? null)
+      : null;
+    if (draft.parentPromptId && !parent) throw new Error(`parent prompt ${draft.parentPromptId} not found`);
+    if (parent && parent.status !== "confirmed") throw new Error(`parent prompt ${parent.prompt_id} is already ${parent.status}`);
+
+    // Flip the parent out of 'confirmed' before inserting the new version,
+    // in the same transaction: ux_prompts_owner_spec is a UNIQUE index on
+    // (owner_user_id, spec_hash) WHERE status = 'confirmed', and an unedited
+    // version bump reuses the parent's exact spec_hash, so both rows cannot
+    // hold status='confirmed' at once. If runWeeklyScreen fails below, the
+    // outer rollback reverts this alongside everything else it undoes.
+    if (parent) {
+      raw.prepare("UPDATE prompts SET status = 'superseded', closed_at = ? WHERE prompt_id = ?").run(now, parent.prompt_id);
+    }
+
     let promptInfo;
     try {
       promptInfo = raw
         .prepare(
           `INSERT INTO prompts
              (owner_user_id, draft_id, title, prompt_text, structure, spec_json, spec_hash,
-              status, version, hypothesis, kill_criterion, confirmed_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 'confirmed', 1, ?, ?, ?)`
+              status, parent_prompt_id, version, hypothesis, kill_criterion, confirmed_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'confirmed', ?, ?, ?, ?, ?)`
         )
         .run(
           draft.userId, draftId, draft.title ?? `Prompt from draft ${draftId}`, draft.promptText,
-          draft.structure, specJson, specHash, draft.hypothesis, draft.killCriterion, now
+          draft.structure, specJson, specHash, parent ? parent.prompt_id : null, parent ? parent.version + 1 : 1,
+          draft.hypothesis, draft.killCriterion, now
         );
     } catch (err: any) {
       // Closes the gap between the pre-check above and this transaction: two
@@ -90,10 +113,10 @@ export async function confirmDraft(
       .prepare(`UPDATE prompt_drafts SET status = 'confirmed', confirmed_prompt_id = ?, updated_at = ? WHERE draft_id = ?`)
       .run(promptId, now, draftId);
 
-    return { promptId, watchlistId };
+    return { promptId, watchlistId, parent };
   });
 
-  const { promptId, watchlistId } = createPromptAndWatchlist();
+  const { promptId, watchlistId, parent } = createPromptAndWatchlist();
 
   // runWeeklyScreen does its own HTTP round-trip, so it can't live inside the
   // synchronous better-sqlite3 transaction above. A 422 from the engine must
@@ -114,6 +137,12 @@ export async function confirmDraft(
       raw.prepare("DELETE FROM watchlists WHERE watchlist_id = ?").run(watchlistId);
       raw.prepare("DELETE FROM prompt_conditions WHERE prompt_id = ?").run(promptId);
       raw.prepare("DELETE FROM prompts WHERE prompt_id = ?").run(promptId);
+      // Undo the parent's premature supersede from inside createPromptAndWatchlist
+      // too — a failed version-mint must leave the parent exactly as it was,
+      // same "as if nothing had been written" contract as everything else here.
+      if (parent) {
+        raw.prepare("UPDATE prompts SET status = 'confirmed', closed_at = NULL WHERE prompt_id = ?").run(parent.prompt_id);
+      }
     })();
     throw err;
   }
@@ -128,6 +157,22 @@ export async function confirmDraft(
     // means entries stay at their weekly-screen default status until the
     // next select_entry job (manual retry, or the next weekly catch-up) runs.
     selectionWarning = `prompt confirmed, but selection could not run yet: ${(err as Error).message}`;
+  }
+
+  // The parent's status was already flipped to 'superseded' inside the
+  // transaction above (required there to satisfy ux_prompts_owner_spec).
+  // All that's left here is telling the engine — best-effort, same
+  // tolerance as the registerArm/runSelectEntry block above: a transient
+  // engine problem must not undo prompt/watchlist/run data that is already
+  // committed and real.
+  if (parent) {
+    try {
+      await retireArm(parent.prompt_id, fetchFn);
+    } catch (err) {
+      selectionWarning = selectionWarning
+        ? `${selectionWarning}; also failed to notify the engine that prompt ${parent.prompt_id} was retired: ${(err as Error).message}`
+        : `prompt confirmed as version ${parent.version + 1}, but notifying the engine that prompt ${parent.prompt_id} was retired failed: ${(err as Error).message}`;
+    }
   }
 
   return { promptId, watchlistId, selectionWarning };

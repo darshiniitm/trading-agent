@@ -3,6 +3,7 @@ import { createTestDb } from "@/server/db/test-db";
 import { ensureOwnerUser } from "@/server/db/seed";
 import { createDraft, updateDraft } from "@/server/drafts";
 import { confirmDraft } from "@/server/confirm";
+import { createEditDraft } from "@/server/prompts";
 
 const SPEC = {
   spec_version: 4, structure: "literal" as const, timeframe: "1W" as const,
@@ -38,5 +39,41 @@ describe("confirmDraft — selection failure tolerance", () => {
 
     const prompt = raw.prepare("SELECT status FROM prompts WHERE prompt_id = ?").get(promptId) as any;
     expect(prompt.status).toBe("confirmed");
+  });
+});
+
+describe("confirmDraft — versioning", () => {
+  it("confirming an edit draft mints a new prompt_id, parent_prompt_id, version 2, and supersedes the old prompt", async () => {
+    const raw = createTestDb();
+    const draftId = readyDraft(raw);
+    const fetchFn = vi.fn().mockResolvedValue({ ok: true, text: async () => JSON.stringify({ candidates: [], applied_steps: [], funnel: [], sector_view: [], entered: [], not_confirmed: [], no_point_data: [], watching: [], prompt_id: 1, status: "active" }) });
+    const { promptId: v1Id } = await confirmDraft(raw, draftId, "2026-10-02", fetchFn as any);
+
+    const { draftId: editDraftId } = createEditDraft(raw, { promptId: v1Id, userId: ensureOwnerUser(raw) });
+    const { promptId: v2Id } = await confirmDraft(raw, editDraftId, "2026-10-09", fetchFn as any);
+
+    expect(v2Id).not.toBe(v1Id);
+    const v2 = raw.prepare("SELECT parent_prompt_id, version, status FROM prompts WHERE prompt_id = ?").get(v2Id) as any;
+    expect(v2).toEqual({ parent_prompt_id: v1Id, version: 2, status: "confirmed" });
+    const v1 = raw.prepare("SELECT status FROM prompts WHERE prompt_id = ?").get(v1Id) as any;
+    expect(v1.status).toBe("superseded");
+  });
+
+  it("reverts the parent back to confirmed (not stuck superseded) if the version-mint's weekly screen fails", async () => {
+    const raw = createTestDb();
+    const draftId = readyDraft(raw);
+    const okFetch = vi.fn().mockResolvedValue({ ok: true, text: async () => JSON.stringify({ candidates: [], applied_steps: [], funnel: [], sector_view: [], entered: [], not_confirmed: [], no_point_data: [], watching: [], prompt_id: 1, status: "active" }) });
+    const { promptId: v1Id } = await confirmDraft(raw, draftId, "2026-10-02", okFetch as any);
+
+    const { draftId: editDraftId } = createEditDraft(raw, { promptId: v1Id, userId: ensureOwnerUser(raw) });
+    const failingFetch = vi.fn().mockResolvedValue({ ok: false, status: 500, text: async () => JSON.stringify({ error: "engine down" }) });
+    await expect(confirmDraft(raw, editDraftId, "2026-10-09", failingFetch as any)).rejects.toThrow();
+
+    const v1 = raw.prepare("SELECT status, closed_at FROM prompts WHERE prompt_id = ?").get(v1Id) as any;
+    expect(v1.status).toBe("confirmed");
+    expect(v1.closed_at).toBeNull();
+
+    const v2Count = (raw.prepare("SELECT COUNT(*) as c FROM prompts WHERE parent_prompt_id = ?").get(v1Id) as any).c;
+    expect(v2Count).toBe(0);
   });
 });

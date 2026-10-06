@@ -4,6 +4,7 @@ import { ScreenSpecSchema, type ScreenSpec } from "spec";
 export type DraftRow = {
   draftId: number;
   userId: number;
+  parentPromptId: number | null;
   title: string | null;
   promptText: string;
   structure: "literal" | "t1_literal" | null;
@@ -20,6 +21,7 @@ function rowToDraft(row: any): DraftRow {
   return {
     draftId: row.draft_id,
     userId: row.user_id,
+    parentPromptId: row.parent_prompt_id,
     title: row.title,
     promptText: row.prompt_text,
     structure: row.structure,
