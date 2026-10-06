@@ -22,7 +22,7 @@ export async function runValidatePrior(
   raw: Database.Database,
   { promptId, runId }: { promptId: number; runId: number },
   fetchFn?: typeof fetch
-): Promise<{ maturity: string; gradedWeeks: number }> {
+): Promise<{ maturity: string; gradedWeeks: number; complete: boolean }> {
   const prompt = raw.prepare("SELECT * FROM prompts WHERE prompt_id = ?").get(promptId) as any;
   if (!prompt) throw new Error(`prompt ${promptId} not found`);
   const run = raw.prepare("SELECT * FROM runs WHERE run_id = ? AND prompt_id = ?").get(runId, promptId) as any;
@@ -36,9 +36,13 @@ export async function runValidatePrior(
   ).n;
 
   const owner = raw.prepare("SELECT watchlist_id FROM watchlists WHERE prompt_id = ? AND user_id = ?").get(promptId, prompt.owner_user_id) as { watchlist_id: number } | undefined;
+  // last_run_id, not first_run_id: an entry can be first seen as a near-miss
+  // in an earlier run and only enter in a later one. Entries are frozen once
+  // entered (weeklyScreen.ts FROZEN_STATUSES), so last_run_id is exactly the
+  // run whose as_of the pick was bought at — its signal run.
   const picks = owner
     ? (raw
-        .prepare("SELECT symbol, entry_price, stop FROM watchlist_entries WHERE watchlist_id = ? AND first_run_id = ? AND status = 'entered'")
+        .prepare("SELECT symbol, entry_price, stop FROM watchlist_entries WHERE watchlist_id = ? AND last_run_id = ? AND status = 'entered'")
         .all(owner.watchlist_id, runId) as { symbol: string; entry_price: number | null; stop: number | null }[])
     : [];
 
@@ -61,5 +65,11 @@ export async function runValidatePrior(
     }
   }
 
-  return { maturity: result.maturity, gradedWeeks: result.graded_weeks };
+  // Complete = nothing left to grade for this run, ever: either the engine's
+  // maturity gate returned no rows (gradedWeeksSoFar is fixed per run — it
+  // counts runs up to this run's own as_of — so a retry would get the same
+  // answer), or no row is still "pending" (every horizon has its bar).
+  // An incomplete result keeps the validate_prior job retryable.
+  const complete = result.maturity === "not_first_look" || !result.rows.some((r) => r.status === "pending");
+  return { maturity: result.maturity, gradedWeeks: result.graded_weeks, complete };
 }

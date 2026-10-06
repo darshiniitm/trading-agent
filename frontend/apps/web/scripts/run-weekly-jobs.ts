@@ -7,12 +7,15 @@ async function main() {
 
   for (const prompt of prompts) {
     try {
-      const { weeksRun } = await runCatchUp(raw, { promptId: prompt.prompt_id });
+      const { weeksRun, gradingFailures } = await runCatchUp(raw, { promptId: prompt.prompt_id });
       console.log(
         weeksRun.length > 0
           ? `Prompt ${prompt.prompt_id} (${prompt.title}): caught up ${weeksRun.join(", ")}`
           : `Prompt ${prompt.prompt_id} (${prompt.title}): up to date`
       );
+      for (const failure of gradingFailures) {
+        console.warn(`Prompt ${prompt.prompt_id} (${prompt.title}): grading failed for run ${failure} (will retry next catch-up)`);
+      }
     } catch (err) {
       console.error(`Prompt ${prompt.prompt_id} (${prompt.title}): FAILED — ${(err as Error).message}`);
     }

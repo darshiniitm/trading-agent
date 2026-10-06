@@ -59,4 +59,19 @@ describe("withJob", () => {
     const row = raw.prepare("SELECT status FROM jobs WHERE type = 'catch_up' AND prompt_id = ? AND as_of IS NULL").get(promptId) as any;
     expect(row.status).toBe("done");
   });
+
+  it("leaves the job queued (not done) when isComplete says the work isn't finished, so the next call runs fn again", async () => {
+    const raw = createTestDb();
+    const promptId = setupTestPrompt(raw);
+    const fn = vi.fn().mockResolvedValueOnce({ complete: false }).mockResolvedValueOnce({ complete: true });
+    const key = { type: "validate_prior", promptId, asOf: "2026-10-02" };
+    await withJob(raw, key, fn, { isComplete: (r) => r.complete });
+    expect(raw.prepare("SELECT status, attempts FROM jobs WHERE type = 'validate_prior'").get()).toEqual({ status: "queued", attempts: 1 });
+    const second = await withJob(raw, key, fn, { isComplete: (r) => r.complete });
+    expect(second.skipped).toBe(false);
+    expect(raw.prepare("SELECT status, attempts FROM jobs WHERE type = 'validate_prior'").get()).toEqual({ status: "done", attempts: 2 });
+    const third = await withJob(raw, key, fn, { isComplete: (r) => r.complete });
+    expect(third.skipped).toBe(true);
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
 });

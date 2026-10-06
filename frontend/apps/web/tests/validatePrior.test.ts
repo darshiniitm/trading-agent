@@ -109,4 +109,35 @@ describe("runValidatePrior", () => {
     const h1 = raw.prepare("SELECT n, ew_return, hit_rate FROM validations WHERE run_id = ? AND horizon_w = 1").get(runId) as any;
     expect(h1).toEqual({ n: 2, ew_return: 1.0, hit_rate: 0.5 }); // (-3 + 5) / 2; one of two > 0
   });
+
+  it("grades a pick under the run it was entered in (last_run_id), even when it was first seen in an earlier run", async () => {
+    const raw = createTestDb();
+    const { runId: enteredRunId } = seedGradableRun(raw, { gradedRunsBefore: 12 });
+    // Re-point FULL1's first_run_id at an earlier run (first seen as a near-miss there).
+    const earlierRunId = (raw.prepare("SELECT run_id FROM runs WHERE as_of = '2026-01-01'").get() as { run_id: number }).run_id;
+    raw.prepare("UPDATE watchlist_entries SET first_run_id = ? WHERE symbol = 'FULL1'").run(earlierRunId);
+
+    const atEntered = fakeValidateFetch({ graded_weeks: 13, maturity: "first_look", rows: [] });
+    await runValidatePrior(raw, { promptId: 1, runId: enteredRunId }, atEntered as any);
+    expect(JSON.parse(atEntered.mock.calls[0][1].body).picks).toEqual([{ ticker: "FULL1", entry_price: 101, sl: 95 }]);
+
+    const atEarlier = fakeValidateFetch({ graded_weeks: 1, maturity: "not_first_look", rows: [] });
+    await runValidatePrior(raw, { promptId: 1, runId: earlierRunId }, atEarlier as any);
+    expect(JSON.parse(atEarlier.mock.calls[0][1].body).picks).toEqual([]);
+  });
+
+  it("reports complete=false while any horizon is still pending, true once none are", async () => {
+    const raw = createTestDb();
+    const { runId } = seedGradableRun(raw, { gradedRunsBefore: 12 });
+    const pending = await runValidatePrior(raw, { promptId: 1, runId }, fakeValidateFetch({
+      graded_weeks: 13, maturity: "first_look",
+      rows: [{ ticker: "FULL1", signal_week_start: "2026-10-02", horizon_weeks: 2, view: "trade", status: "pending", buy_price: 101, r_Nw: null }],
+    }) as any);
+    expect(pending.complete).toBe(false);
+    const done = await runValidatePrior(raw, { promptId: 1, runId }, fakeValidateFetch({
+      graded_weeks: 13, maturity: "first_look",
+      rows: [{ ticker: "FULL1", signal_week_start: "2026-10-02", horizon_weeks: 2, view: "trade", status: "graded", buy_price: 101, r_Nw: 1 }],
+    }) as any);
+    expect(done.complete).toBe(true);
+  });
 });

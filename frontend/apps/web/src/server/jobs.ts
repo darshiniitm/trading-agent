@@ -3,7 +3,12 @@ import type Database from "better-sqlite3";
 export async function withJob<T>(
   raw: Database.Database,
   key: { type: string; promptId: number; asOf: string | null },
-  fn: () => Promise<T>
+  fn: () => Promise<T>,
+  // Optional: a job whose fn succeeds but whose work isn't finished yet (e.g.
+  // validate_prior on a run whose later horizons haven't matured) returns
+  // false here — the row goes back to 'queued' instead of 'done', so the next
+  // call for the same key runs fn again rather than skipping it.
+  opts: { isComplete?: (result: T) => boolean } = {}
 ): Promise<{ result: T | null; skipped: boolean }> {
   const existing = raw
     .prepare(
@@ -36,7 +41,8 @@ export async function withJob<T>(
 
   try {
     const result = await fn();
-    raw.prepare("UPDATE jobs SET status = 'done', attempts = ?, finished_at = ? WHERE job_id = ?").run(attempts + 1, new Date().toISOString(), jobId);
+    const status = opts.isComplete && !opts.isComplete(result) ? "queued" : "done";
+    raw.prepare("UPDATE jobs SET status = ?, attempts = ?, error = NULL, finished_at = ? WHERE job_id = ?").run(status, attempts + 1, new Date().toISOString(), jobId);
     return { result, skipped: false };
   } catch (err) {
     raw.prepare("UPDATE jobs SET status = 'failed', attempts = ?, error = ?, finished_at = ? WHERE job_id = ?").run(
