@@ -113,3 +113,35 @@ export const watchlistEntries = sqliteTable("watchlist_entries", {
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });
+
+export const entryEvents = sqliteTable("entry_events", {
+  eventId: integer("event_id").primaryKey({ autoIncrement: true }),
+  entryId: integer("entry_id").notNull(),
+  runId: integer("run_id"),
+  type: text("type").notNull(),
+  fromValue: text("from_value"),
+  toValue: text("to_value"),
+  at: text("at").notNull(),
+});
+
+export const validations = sqliteTable("validations", {
+  runId: integer("run_id").notNull(),
+  horizonW: integer("horizon_w").notNull(),
+  n: integer("n").notNull(),
+  ewReturn: real("ew_return"),
+  controlEwReturn: real("control_ew_return"),
+  hitRate: real("hit_rate"),
+  computedAt: text("computed_at").notNull(),
+});
+
+export const jobs = sqliteTable("jobs", {
+  jobId: integer("job_id").primaryKey({ autoIncrement: true }),
+  type: text("type").notNull(),
+  promptId: integer("prompt_id"),
+  asOf: text("as_of"),
+  status: text("status").notNull(),
+  attempts: integer("attempts").notNull(),
+  error: text("error"),
+  createdAt: text("created_at").notNull(),
+  finishedAt: text("finished_at"),
+});
