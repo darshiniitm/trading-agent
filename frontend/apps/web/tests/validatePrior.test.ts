@@ -73,6 +73,37 @@ function insertRunResult(raw: ReturnType<typeof createTestDb>, runId: number, sy
   ).run(runId, symbol, row.entryPrice, row.sl, row.entryStatus, row.entryPrice);
 }
 
+// watchlist_id 1 for a prompt seeded via seedPromptWithGradedRuns, used only
+// by the "real co-existing state" N1a/N1b variants below, which deliberately
+// seed the actual production parallel state (a watchlist_entries row DOES
+// exist, frozen, alongside run_results) to prove the fix holds even when
+// that stale row is sitting right there — not just in its absence.
+function insertWatchlist(raw: ReturnType<typeof createTestDb>) {
+  const ownerId = ensureOwnerUser(raw);
+  const now = new Date().toISOString();
+  raw.prepare(`INSERT INTO watchlists (watchlist_id, user_id, prompt_id, name, created_at) VALUES (1, ?, 1, 'wl', ?)`).run(ownerId, now);
+}
+
+// A frozen watchlist_entries row exactly as selectEntry.ts would leave one
+// for a real 'entered'/'not_confirmed' outcome: first_run_id/last_run_id
+// pinned to the run it was resolved on, never touched again by any later
+// weeklyScreen.ts run (FROZEN_STATUSES skip-if-frozen logic, untouched by
+// this fix).
+function insertFrozenWatchlistEntry(
+  raw: ReturnType<typeof createTestDb>,
+  symbol: string,
+  runId: number,
+  status: "entered" | "not_confirmed",
+  entryPrice: number,
+  stop: number
+) {
+  const now = new Date().toISOString();
+  raw.prepare(
+    `INSERT INTO watchlist_entries (watchlist_id, symbol, first_run_id, last_run_id, membership, status, entry_price, stop, created_at, updated_at)
+     VALUES (1, ?, ?, ?, 'full_match', ?, ?, ?, ?, ?)`
+  ).run(symbol, runId, runId, status, entryPrice, stop, now, now);
+}
+
 describe("runValidatePrior", () => {
   it("writes nothing when maturity is not_first_look (fewer than 13 graded weeks)", async () => {
     const raw = createTestDb();
@@ -173,6 +204,31 @@ describe("runValidatePrior", () => {
     expect(JSON.parse(atRun2.mock.calls[0][1].body).picks).toEqual([{ ticker: "FULL1", entry_price: 105, sl: 98 }]);
   });
 
+  it("N1a (real co-existing state): a stale frozen watchlist_entries row from run 1 does not block run 2's fresh pick", async () => {
+    const raw = createTestDb();
+    seedPromptWithGradedRuns(raw, 12);
+    insertWatchlist(raw);
+    const run1 = insertRun(raw, "2026-09-25");
+    insertRunResult(raw, run1, "FULL1", { entryStatus: "not_confirmed", entryPrice: 101, sl: 95 });
+    // Real production parallel state: selectEntry.ts also writes a
+    // watchlist_entries row for this outcome, frozen forever at run 1
+    // (weeklyScreen.ts's FROZEN_STATUSES, untouched by this fix).
+    insertFrozenWatchlistEntry(raw, "FULL1", run1, "not_confirmed", 101, 95);
+
+    const run2 = insertRun(raw, "2026-10-02");
+    insertRunResult(raw, run2, "FULL1", { entryStatus: "entered", entryPrice: 105, sl: 98 });
+    // In real usage weeklyScreen.ts never touches the frozen row on run 2
+    // either — it stays pinned exactly at run 1, forever.
+
+    const atRun2 = fakeValidateFetch({ graded_weeks: 14, maturity: "first_look", rows: [] });
+    await runValidatePrior(raw, { promptId: 1, runId: run2 }, atRun2 as any);
+    expect(JSON.parse(atRun2.mock.calls[0][1].body).picks).toEqual([{ ticker: "FULL1", entry_price: 105, sl: 98 }]);
+    // Sanity: the frozen watchlist_entries row is still exactly as it was —
+    // the fix doesn't need it to change, and doesn't touch it.
+    expect(raw.prepare("SELECT status, entry_price, stop, last_run_id FROM watchlist_entries WHERE symbol = 'FULL1'").get())
+      .toEqual({ status: "not_confirmed", entry_price: 101, stop: 95, last_run_id: run1 });
+  });
+
   it("N1b: a symbol entered on run 1, dropped, then freshly entered again on run 3 is graded under run 3 too", async () => {
     const raw = createTestDb();
     seedPromptWithGradedRuns(raw, 12);
@@ -190,6 +246,36 @@ describe("runValidatePrior", () => {
     const atRun3 = fakeValidateFetch({ graded_weeks: 15, maturity: "first_look", rows: [] });
     await runValidatePrior(raw, { promptId: 1, runId: run3 }, atRun3 as any);
     expect(JSON.parse(atRun3.mock.calls[0][1].body).picks).toEqual([{ ticker: "FULL1", entry_price: 130, sl: 120 }]);
+  });
+
+  it("N1b (real co-existing state): a stale frozen 'entered' watchlist_entries row from run 1 does not block run 3's fresh re-entry", async () => {
+    const raw = createTestDb();
+    seedPromptWithGradedRuns(raw, 12);
+    insertWatchlist(raw);
+    const run1 = insertRun(raw, "2026-09-18");
+    insertRunResult(raw, run1, "FULL1", { entryStatus: "entered", entryPrice: 101, sl: 95 });
+    // Real production parallel state: selectEntry.ts also writes a
+    // watchlist_entries row for this outcome, frozen forever at run 1.
+    insertFrozenWatchlistEntry(raw, "FULL1", run1, "entered", 101, 95);
+
+    // run 2: FULL1 drops off the screen. In real usage weeklyScreen.ts never
+    // drops a frozen ('entered') entry (DROPPABLE_STATUSES excludes
+    // FROZEN_STATUSES), so the row above stays exactly as it is.
+    insertRun(raw, "2026-09-25");
+    const run3 = insertRun(raw, "2026-10-02");
+    insertRunResult(raw, run3, "FULL1", { entryStatus: "entered", entryPrice: 130, sl: 120 });
+    // In real usage weeklyScreen.ts's selectOpenEntry would find the frozen
+    // row still occupying this (watchlist, symbol) slot (it's not in a
+    // terminal status) and skip it — no new watchlist_entries row is ever
+    // created for FULL1's run-3 re-entry. run_results, by contrast, gets a
+    // brand-new (run_id, symbol) row every time, which is exactly why this
+    // fix sources picks from there.
+
+    const atRun3 = fakeValidateFetch({ graded_weeks: 15, maturity: "first_look", rows: [] });
+    await runValidatePrior(raw, { promptId: 1, runId: run3 }, atRun3 as any);
+    expect(JSON.parse(atRun3.mock.calls[0][1].body).picks).toEqual([{ ticker: "FULL1", entry_price: 130, sl: 120 }]);
+    expect(raw.prepare("SELECT status, entry_price, stop, last_run_id FROM watchlist_entries WHERE symbol = 'FULL1'").get())
+      .toEqual({ status: "entered", entry_price: 101, stop: 95, last_run_id: run1 });
   });
 
   it("does not depend on watchlist_entries or the owner's watchlist at all", async () => {
