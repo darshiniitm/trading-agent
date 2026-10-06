@@ -66,4 +66,25 @@ describe("confirmDraft — value_origin from the compiler path", () => {
     expect(row.value_origin).toBe("user_answer");
     expect(row.source_phrase).toBeNull();
   });
+
+  it("a compiler-sourced condition with zero numeric leaves is 'user_answer', not vacuously 'prompt', even with empty sourcePhrases", async () => {
+    const raw = createTestDb();
+    const userId = ensureOwnerUser(raw);
+    const { draftId } = createDraft(raw, { userId });
+    const spec = {
+      spec_version: 4, structure: "literal" as const, timeframe: "1W" as const, selection_point: null,
+      conditions: [{ id: "C1", role: "event" as const, kind: "indicator" as const, name: "vstop", params: {}, op: "flip", dir: "long" as const }],
+      stop: { from: "C1" }, risk_cap_pct: null, near_miss: null,
+    };
+    updateDraft(raw, draftId, {
+      structure: "literal", specJson: JSON.stringify(spec), hypothesis: "h", killCriterion: "k",
+      needsInputJson: "[]", unsupportedJson: "[]", sourcePhrasesJson: "[]",
+    });
+    const fetchFn = vi.fn().mockResolvedValue({ ok: true, text: async () => JSON.stringify({ candidates: [], applied_steps: [], funnel: [], sector_view: [] }) });
+    const { promptId } = await confirmDraft(raw, draftId, "2026-10-02", fetchFn as any);
+
+    const row = raw.prepare("SELECT value_origin, source_phrase FROM prompt_conditions WHERE prompt_id = ? AND cond_no = 1").get(promptId) as any;
+    expect(row.value_origin).toBe("user_answer");
+    expect(row.source_phrase).toBeNull();
+  });
 });
