@@ -49,3 +49,26 @@ export const ScreenSpecSchema = z
     }
   });
 export type ScreenSpec = z.infer<typeof ScreenSpecSchema>;
+
+export const SourcePhraseSchema = z.object({ path: z.string().min(1), phrase: z.string().min(1) });
+export type SourcePhrase = z.infer<typeof SourcePhraseSchema>;
+
+export const NeedsInputItemSchema = z.object({ path: z.string().min(1), question: z.string().min(1) });
+export type NeedsInputItem = z.infer<typeof NeedsInputItemSchema>;
+
+export const UnsupportedItemSchema = z.object({ text: z.string().min(1), reason: z.string().min(1) });
+export type UnsupportedItem = z.infer<typeof UnsupportedItemSchema>;
+
+export const CompileOutputSchema = z.object({
+  structure: z.enum(["literal", "t1_literal"]).nullable(),
+  conditions: z.array(ConditionSchema),
+  selection_point: SelectionPointSchema.nullable(),
+  stop: StopSchema.nullable(),
+  risk_cap_pct: z.number().nullable(),
+  near_miss: NearMissSchema.nullable(),
+  t1_window: T1WindowSchema.nullable(),
+  source_phrases: z.array(SourcePhraseSchema),
+  needs_input: z.array(NeedsInputItemSchema),
+  unsupported: z.array(UnsupportedItemSchema),
+});
+export type CompileOutput = z.infer<typeof CompileOutputSchema>;
