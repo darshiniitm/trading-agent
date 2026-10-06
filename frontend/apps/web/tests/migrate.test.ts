@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import Database from "better-sqlite3";
+import fs from "node:fs";
+import path from "node:path";
 import { createTestDb } from "@/server/db/test-db";
 import { applyMigrations } from "@/server/db/migrate";
 
@@ -35,5 +38,38 @@ describe("createTestDb / applyMigrations", () => {
     expect(() =>
       raw.prepare("INSERT INTO jobs (type, prompt_id, as_of, status, created_at) VALUES ('select_entry', 1, '2026-10-02', 'queued', '2026-01-01')").run()
     ).toThrow();
+  });
+
+  it("backfills 0001_init.sql in _migrations if tables exist but tracking is missing (old DB upgrade path)", () => {
+    // Simulate a pre-existing database created by the old client.ts logic:
+    // 0001_init.sql was executed directly, but no _migrations table was created.
+    const raw = new Database(":memory:");
+    raw.pragma("foreign_keys = ON");
+
+    // Execute 0001_init.sql directly (old behavior, no _migrations tracking)
+    const migration0001Path = path.join(process.cwd(), "src", "server", "db", "migrations", "0001_init.sql");
+    const sql0001 = fs.readFileSync(migration0001Path, "utf-8");
+    raw.exec(sql0001);
+
+    // Verify 0001 tables exist but _migrations doesn't
+    const usersExists = raw.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'users'").get();
+    expect(usersExists).toBeTruthy();
+    const migrationsExists = raw.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = '_migrations'").get();
+    expect(migrationsExists).toBeFalsy();
+
+    // Now call applyMigrations: it should detect that users exists,
+    // backfill 0001_init.sql into _migrations, then apply 0002.
+    expect(() => applyMigrations(raw)).not.toThrow();
+
+    // Verify both 0001 and 0002 tables now exist
+    const tables = (raw.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all() as { name: string }[]).map((r) => r.name);
+    expect(tables).toContain("users");
+    expect(tables).toContain("entry_events");
+    expect(tables).toContain("validations");
+    expect(tables).toContain("jobs");
+
+    // Verify both migrations are recorded (no duplicates)
+    const migrations = (raw.prepare("SELECT filename FROM _migrations ORDER BY filename").all() as { filename: string }[]).map((r) => r.filename);
+    expect(migrations).toEqual(["0001_init.sql", "0002_jobs_and_grading.sql"]);
   });
 });
