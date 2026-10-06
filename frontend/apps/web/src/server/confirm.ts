@@ -1,24 +1,7 @@
 import type Database from "better-sqlite3";
 import { createHash } from "node:crypto";
 import { getDraft } from "@/server/drafts";
-import { screen } from "@/server/engine/client";
-
-function statusFor(membership: string): string {
-  return membership === "full_match" ? "pending_selection" : "watching";
-}
-
-function remapKeysToCondNo(values: Record<string, unknown>, idToCondNo: Record<string, number>) {
-  const out: Record<string, unknown> = {};
-  for (const [id, value] of Object.entries(values)) {
-    const condNo = idToCondNo[id];
-    if (condNo !== undefined) out[`C${condNo}`] = value;
-  }
-  return out;
-}
-
-function remapIdsToCondNo(ids: string[], idToCondNo: Record<string, number>): string[] {
-  return ids.filter((id) => idToCondNo[id] !== undefined).map((id) => `C${idToCondNo[id]}`);
-}
+import { runWeeklyScreen } from "@/server/weeklyScreen";
 
 export async function confirmDraft(
   raw: Database.Database,
@@ -50,15 +33,8 @@ export async function confirmDraft(
     );
   }
 
-  const screenResult = await screen(draft.spec!, asOf, fetchFn);
-
-  const idToCondNo: Record<string, number> = {};
-  draft.spec!.conditions.forEach((cond, i) => {
-    idToCondNo[cond.id] = i + 1;
-  });
-
   const now = new Date().toISOString();
-  const run = raw.transaction(() => {
+  const createPromptAndWatchlist = raw.transaction(() => {
     let promptInfo;
     try {
       promptInfo = raw
@@ -108,48 +84,6 @@ export async function confirmDraft(
       .run(draft.userId, promptId, draft.title ?? `Prompt ${promptId}`, now);
     const watchlistId = Number(watchlistInfo.lastInsertRowid);
 
-    const runInfo = raw
-      .prepare(
-        `INSERT INTO runs (prompt_id, as_of, kind, status, applied_steps_json, funnel_json, finished_at)
-         VALUES (?, ?, 'catch_up', 'done', ?, ?, ?)`
-      )
-      .run(promptId, asOf, JSON.stringify(screenResult.applied_steps), JSON.stringify(screenResult.funnel), now);
-    const runId = Number(runInfo.lastInsertRowid);
-
-    const insertSymbol = raw.prepare(`INSERT OR IGNORE INTO symbols (symbol, active) VALUES (?, 1)`);
-    const insertRunResult = raw.prepare(
-      `INSERT INTO run_results
-         (run_id, symbol, membership, in_forward_record, failed_conds_json, cond_json, metrics_json,
-          ep, sl, ref_price, confidence, entry_status)
-       VALUES (?, ?, ?, 0, ?, ?, NULL, ?, ?, ?, NULL, ?)`
-    );
-    const insertWatchlistEntry = raw.prepare(
-      `INSERT INTO watchlist_entries
-         (watchlist_id, symbol, first_run_id, last_run_id, membership, status, ref_price, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    );
-
-    for (const candidate of screenResult.candidates) {
-      insertSymbol.run(candidate.ticker);
-
-      const entryStatus = statusFor(candidate.membership);
-      const condJson = remapKeysToCondNo(candidate.values, idToCondNo);
-      const failedCondsJson = remapIdsToCondNo(candidate.failed_ids, idToCondNo);
-
-      insertRunResult.run(
-        runId, candidate.ticker, candidate.membership, JSON.stringify(failedCondsJson), JSON.stringify(condJson),
-        candidate.membership === "full_match" ? candidate.ep : null,
-        candidate.membership === "full_match" ? candidate.sl : null,
-        candidate.membership === "full_match" ? null : candidate.ep,
-        entryStatus
-      );
-
-      insertWatchlistEntry.run(
-        watchlistId, candidate.ticker, runId, runId, candidate.membership, entryStatus,
-        candidate.membership === "full_match" ? null : candidate.ep, now, now
-      );
-    }
-
     raw
       .prepare(`UPDATE prompt_drafts SET status = 'confirmed', confirmed_prompt_id = ?, updated_at = ? WHERE draft_id = ?`)
       .run(promptId, now, draftId);
@@ -157,5 +91,29 @@ export async function confirmDraft(
     return { promptId, watchlistId };
   });
 
-  return run();
+  const { promptId, watchlistId } = createPromptAndWatchlist();
+
+  // runWeeklyScreen does its own HTTP round-trip, so it can't live inside the
+  // synchronous better-sqlite3 transaction above. A 422 from the engine must
+  // still surface as if nothing had been written, per the confirm.test.ts
+  // regression ("propagates a 422... without writing anything") — so on
+  // failure here, undo the prompt/watchlist/conditions/draft-status change
+  // rather than leaving a prompt with no run at all.
+  try {
+    await runWeeklyScreen(raw, { promptId, asOf, kind: "catch_up" }, fetchFn);
+  } catch (err) {
+    raw.transaction(() => {
+      // prompt_drafts.confirmed_prompt_id references prompts(prompt_id), so it
+      // must be cleared before the prompt row is deleted — deleting prompts
+      // first trips a FOREIGN KEY constraint (prompt_drafts still pointing at
+      // the row being removed).
+      raw.prepare(`UPDATE prompt_drafts SET status = 'open', confirmed_prompt_id = NULL, updated_at = ? WHERE draft_id = ?`).run(new Date().toISOString(), draftId);
+      raw.prepare("DELETE FROM watchlists WHERE watchlist_id = ?").run(watchlistId);
+      raw.prepare("DELETE FROM prompt_conditions WHERE prompt_id = ?").run(promptId);
+      raw.prepare("DELETE FROM prompts WHERE prompt_id = ?").run(promptId);
+    })();
+    throw err;
+  }
+
+  return { promptId, watchlistId };
 }
