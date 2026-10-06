@@ -55,7 +55,7 @@ export default function PromptsPage() {
                 <td>week {p.gradedWeeks} of 13</td>
                 <td>{p.lastHorizon1Return === null ? "not graded yet" : `${p.lastHorizon1Return.toFixed(2)}%`}</td>
                 <td>
-                  <a href={`/watchlists/${p.promptId}`}>Open watchlist</a>{" "}
+                  {p.watchlistId !== null && <><a href={`/watchlists/${p.watchlistId}`}>Open watchlist</a>{" "}</>}
                   {p.status === "confirmed" && (
                     <>
                       <button type="button" onClick={() => editAsNewVersion(p.promptId)}>Edit as new version</button>{" "}
