@@ -111,6 +111,37 @@ describe("DraftEditor", () => {
     expect(window.alert).not.toHaveBeenCalled();
   });
 
+  it("stops and shows the save error instead of confirming when the spec PATCH fails (never confirms a stale server spec)", async () => {
+    const fetchFn = routedFetch({
+      "GET /api/drafts/5": { body: SAVED_DRAFT },
+      "PATCH /api/drafts/5": { ok: false, status: 400, body: { error: "invalid spec: condition ids must be unique" } },
+      "GET /api/health": { body: { status: "ok", last_bar_date: "2026-10-02" } },
+      "POST /api/drafts/5/confirm": { status: 201, body: { prompt_id: 4, watchlist_id: 7, selection_warning: null } },
+    });
+    vi.stubGlobal("fetch", fetchFn);
+    render(<DraftEditor initialDraftId={5} />);
+    await screen.findByText(/Draft 5/);
+
+    fireEvent.click(screen.getByRole("button", { name: /Confirm and assign Prompt ID/ }));
+    expect(await screen.findByText(/Could not save the draft: invalid spec: condition ids must be unique/)).toHaveAttribute("role", "alert");
+    expect(callsTo(fetchFn, "POST /api/drafts/5/confirm")).toHaveLength(0);
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("stops and shows the save error instead of dry-running when the spec PATCH fails", async () => {
+    const fetchFn = routedFetch({
+      "GET /api/drafts/5": { body: SAVED_DRAFT },
+      "PATCH /api/drafts/5": { ok: false, status: 400, body: { error: "invalid spec: boom" } },
+    });
+    vi.stubGlobal("fetch", fetchFn);
+    render(<DraftEditor initialDraftId={5} />);
+    await screen.findByText(/Draft 5/);
+
+    fireEvent.click(screen.getByRole("button", { name: /Dry run/ }));
+    expect(await screen.findByText(/Could not save the draft: invalid spec: boom/)).toBeInTheDocument();
+    expect(fetchFn.mock.calls.some(([url]) => String(url).endsWith("/dry-run"))).toBe(false);
+  });
+
   it("falls back to today's date as as_of for a dry run when the health check fails", async () => {
     const fetchFn = routedFetch({
       "GET /api/drafts/5": { body: SAVED_DRAFT },

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Condition } from "spec";
 
 // value/params carry whatever shape engine/conditions/catalog.py's CATALOG requires
@@ -12,8 +12,37 @@ function isEmpty(value: unknown): boolean {
   return value === null || value === undefined || (typeof value === "object" && Object.keys(value as object).length === 0);
 }
 
-function useJsonField<T>(initial: T) {
-  const [text, setText] = useState(() => (isEmpty(initial) ? "" : JSON.stringify(initial)));
+function toText(value: unknown): string {
+  return isEmpty(value) ? "" : JSON.stringify(value);
+}
+
+// True when the text already says exactly `value` — i.e. it is either the
+// user's own (possibly differently-formatted) typing that produced the
+// current prop, or an empty field for an empty value.
+function textMatches(text: string, value: unknown): boolean {
+  if (text.trim() === "") return isEmpty(value);
+  try {
+    return JSON.stringify(JSON.parse(text)) === JSON.stringify(value);
+  } catch {
+    return false;
+  }
+}
+
+// Local text so an in-progress edit isn't clobbered, but resynced whenever
+// the prop's value changes to something the text doesn't already say — e.g.
+// the parent replaced this condition from server data after a needs_input
+// answer filled a missing param. Without the resync the input would keep
+// showing (and, on the next keystroke, re-propagate) the stale value. The
+// user's own valid keystrokes round-trip through onChange to an equal prop,
+// so they are left exactly as typed (no reformatting, no cursor jump).
+function useJsonField(value: unknown) {
+  const [text, setText] = useState(() => toText(value));
+  const valueKey = JSON.stringify(value ?? null);
+  useEffect(() => {
+    setText((prev) => (textMatches(prev, value) ? prev : toText(value)));
+    // valueKey is the dependency: a new-but-equal object must not resync
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [valueKey]);
   return { text, setText };
 }
 

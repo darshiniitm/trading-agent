@@ -59,6 +59,31 @@ describe("ConditionRow", () => {
     expect(onChange).toHaveBeenCalledWith({ ...EMPTY_CONDITION, dir: "long" });
   });
 
+  it("resyncs its params/value text when the condition prop is replaced externally (e.g. after a needs_input answer), and a later edit builds on the new value, not the stale one", () => {
+    const before = { id: "C1", role: "event" as const, kind: "indicator" as const, name: "vstop", params: { mult: 2, source: "close" }, op: "flip", value: null };
+    const onChange = vi.fn();
+    const { rerender } = render(<ConditionRow condition={before} onChange={onChange} onRemove={vi.fn()} />);
+    expect(screen.getByLabelText(/^params/i)).toHaveValue('{"mult":2,"source":"close"}');
+
+    // The parent swaps in server data where the answered length is now present.
+    const after = { ...before, params: { mult: 2, source: "close", length: 10 } };
+    rerender(<ConditionRow condition={after} onChange={onChange} onRemove={vi.fn()} />);
+    expect(screen.getByLabelText(/^params/i)).toHaveValue('{"mult":2,"source":"close","length":10}');
+
+    // Editing the value field afterwards carries the answered length along.
+    fireEvent.change(screen.getByLabelText(/^value/i), { target: { value: "1" } });
+    expect(onChange).toHaveBeenLastCalledWith({ ...after, value: 1 });
+  });
+
+  it("does not reformat the user's own valid typing when the parent echoes the parsed value back", () => {
+    let current: any = { ...EMPTY_CONDITION };
+    const onChange = vi.fn((next) => { current = next; });
+    const { rerender } = render(<ConditionRow condition={current} onChange={onChange} onRemove={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText(/^value/i), { target: { value: "[10000,  50000]" } });
+    rerender(<ConditionRow condition={current} onChange={onChange} onRemove={vi.fn()} />);
+    expect(screen.getByLabelText(/^value/i)).toHaveValue("[10000,  50000]");
+  });
+
   it("round-trips a non-empty value/params from the condition back into the inputs as JSON text", () => {
     const condition = {
       id: "C3", role: "event" as const, kind: "indicator" as const, name: "vstop",

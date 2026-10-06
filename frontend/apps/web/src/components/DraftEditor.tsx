@@ -1,12 +1,41 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Condition, ScreenSpec } from "spec";
+import type { Condition, ScreenSpec, SelectionPoint, T1Window } from "spec";
 import { ConditionRow } from "@/components/ConditionRow";
 import { QuestionRow } from "@/components/QuestionRow";
 import { describeApiError } from "@/lib/apiError";
 
 type LiquidityChoice = "confirm_10cr" | "custom" | "none" | null;
+type Structure = "literal" | "t1_literal";
+
+// The shape a draft's spec_json can actually hold (drafts.ts's lenient
+// DraftSpecSchema): structure may still be unresolved (null-structure
+// compile), and selection_point/t1_window may be partially answered.
+type DraftSpec = Omit<ScreenSpec, "structure" | "selection_point" | "t1_window"> & {
+  structure: Structure | null;
+  selection_point: Partial<SelectionPoint> | null;
+  t1_window?: Partial<T1Window> | null;
+};
+
+type NeedsInput = { path: string; question: string };
+type CompileView = {
+  structure: Structure | null;
+  spec: DraftSpec | null;
+  needs_input: NeedsInput[];
+  source_phrases: { path: string; phrase: string }[];
+  unsupported: { text: string; reason: string }[];
+};
+
+type LoadedDraft = {
+  status: string; structure: Structure | null; spec: DraftSpec | null;
+  hypothesis: string | null; killCriterion: string | null; promptText?: string;
+  needsInput?: NeedsInput[] | null;
+  sourcePhrases?: { path: string; phrase: string }[] | null;
+  unsupported?: { text: string; reason: string }[] | null;
+};
+
+type SaveResult = { ok: true; spec: DraftSpec } | { ok: false; error: string };
 
 const LIQUIDITY_CONDITION_NAME = "traded_value_cr";
 
@@ -17,6 +46,14 @@ function isLiquidityCondition(c: Condition): boolean {
   return c.name === LIQUIDITY_CONDITION_NAME && c.op === ">=" && (c.params as any)?.window === "1W";
 }
 
+// Offsets are typed as a comma-separated list of integers; null means the
+// text doesn't parse (the confirm gate reports it), [] means "left blank".
+function parseOffsets(text: string): number[] | null {
+  const parts = text.split(",").map((s) => s.trim()).filter((s) => s !== "");
+  if (!parts.every((p) => /^-?\d+$/.test(p))) return null;
+  return parts.map(Number);
+}
+
 // Used by /drafts/new (no initialDraftId: creates a fresh draft on mount) and
 // by /drafts/[draftId] (loads that existing draft — e.g. an edit-as-new-version
 // draft, or "Continue" from the Drafts tab — instead of creating a new one).
@@ -25,29 +62,29 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
   const [draftId, setDraftId] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [draftStatus, setDraftStatus] = useState<string | null>(null);
-  const [structure, setStructure] = useState<"literal" | "t1_literal" | "">("");
+  const [structure, setStructure] = useState<Structure | "">("");
   const [conditions, setConditions] = useState<Condition[]>([]);
   const nextConditionNo = useRef(1); // monotonic — never reused, unlike conditions.length (removing then re-adding would collide)
 
   const [promptText, setPromptText] = useState("");
   const [compiling, setCompiling] = useState(false);
-  const [compileResult, setCompileResult] = useState<{
-    structure: "literal" | "t1_literal" | null;
-    spec: ScreenSpec | null;
-    needs_input: { path: string; question: string }[];
-    source_phrases: { path: string; phrase: string }[];
-    unsupported: { text: string; reason: string }[];
-  } | null>(null);
+  const [compileResult, setCompileResult] = useState<CompileView | null>(null);
   const [compileError, setCompileError] = useState<string | null>(null);
 
+  // No value below is pre-filled (D6): every parameter input starts empty and
+  // is only ever filled from the user's own typing, a compiled/answered spec,
+  // or a loaded draft.
   const [hasSelectionPoint, setHasSelectionPoint] = useState(false);
-  const [sessionOfWeek, setSessionOfWeek] = useState("1");
-  const [selectionAt, setSelectionAt] = useState<"open" | "close">("open");
+  const [sessionOfWeek, setSessionOfWeek] = useState("");
+  const [selectionAt, setSelectionAt] = useState<"open" | "close" | "">("");
   const [stopFrom, setStopFrom] = useState("");
   const [hasRiskCap, setHasRiskCap] = useState(false);
   const [riskCapPct, setRiskCapPct] = useState("");
   const [hasNearMiss, setHasNearMiss] = useState(false);
-  const [nearMissMaxFailed, setNearMissMaxFailed] = useState("0");
+  const [nearMissMaxFailed, setNearMissMaxFailed] = useState("");
+  const [hasT1Window, setHasT1Window] = useState(false);
+  const [t1LengthSessions, setT1LengthSessions] = useState("");
+  const [t1OffsetsText, setT1OffsetsText] = useState("");
 
   const [liquidity, setLiquidity] = useState<LiquidityChoice>(null);
   const [liquidityCustom, setLiquidityCustom] = useState("");
@@ -79,17 +116,19 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialDraftId]);
 
-  function loadDraft(draft: {
-    status: string; structure: "literal" | "t1_literal" | null; spec: ScreenSpec | null;
-    hypothesis: string | null; killCriterion: string | null; promptText?: string;
-  }) {
-    setDraftStatus(draft.status);
-    setPromptText(draft.promptText ?? "");
-    setHypothesis(draft.hypothesis ?? "");
-    setKillCriterion(draft.killCriterion ?? "");
-    setStructure(draft.structure ?? draft.spec?.structure ?? "");
-    const spec = draft.spec;
+  // The single place a spec (a loaded draft's, a fresh compile result, or the
+  // spec returned after answering a question) is hydrated into the form, so
+  // every path fills structure/conditions/selection point/stop/risk cap/near
+  // miss/T1 window/liquidity — and advances nextConditionNo — identically.
+  //
+  // absentLiquidity: what a spec WITHOUT a trailing liquidity condition says
+  // about the liquidity question. Only a spec that went through buildSpec()
+  // (a manually saved draft) can mean "No liquidity filter" by its absence;
+  // a compiler-written spec never carries the app's liquidity answer (D3),
+  // so there absence means "not answered yet" and the current answer is kept.
+  function populateFromSpec(spec: DraftSpec | null, { absentLiquidity }: { absentLiquidity: "none" | "keep" }): void {
     if (!spec) return;
+    if (spec.structure) setStructure(spec.structure);
 
     const liquidityCond = spec.conditions.find(isLiquidityCondition);
     setConditions(spec.conditions.filter((c) => c !== liquidityCond));
@@ -99,27 +138,59 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
         setLiquidity("custom");
         setLiquidityCustom(String(liquidityCond.value));
       }
-    } else {
-      // A saved spec with no liquidity filter means "No liquidity filter" was
-      // the answer (the confirm gate requires one).
+    } else if (absentLiquidity === "none") {
       setLiquidity("none");
     }
+    // Every id already in the spec (including the liquidity condition's) is
+    // spent: the next manual "Add condition", and the liquidity condition
+    // buildSpec() appends, must never reuse one.
     const maxNo = spec.conditions.reduce((max, c) => {
       const m = /^C(\d+)$/.exec(c.id);
       return m ? Math.max(max, Number(m[1])) : max;
     }, 0);
-    nextConditionNo.current = maxNo + 1;
+    nextConditionNo.current = Math.max(nextConditionNo.current, maxNo + 1);
 
-    setHasSelectionPoint(spec.selection_point !== null);
-    if (spec.selection_point) {
-      setSessionOfWeek(String(spec.selection_point.session_of_week));
-      setSelectionAt(spec.selection_point.at);
-    }
+    setHasSelectionPoint(spec.selection_point !== null && spec.selection_point !== undefined);
+    setSessionOfWeek(spec.selection_point?.session_of_week !== undefined ? String(spec.selection_point.session_of_week) : "");
+    setSelectionAt(spec.selection_point?.at ?? "");
     setStopFrom(spec.stop?.from ?? "");
-    setHasRiskCap(spec.risk_cap_pct !== null);
-    setRiskCapPct(spec.risk_cap_pct !== null ? String(spec.risk_cap_pct) : "");
-    setHasNearMiss(spec.near_miss !== null);
-    if (spec.near_miss) setNearMissMaxFailed(String(spec.near_miss.max_failed));
+    setHasRiskCap(spec.risk_cap_pct !== null && spec.risk_cap_pct !== undefined);
+    setRiskCapPct(spec.risk_cap_pct !== null && spec.risk_cap_pct !== undefined ? String(spec.risk_cap_pct) : "");
+    setHasNearMiss(spec.near_miss !== null && spec.near_miss !== undefined);
+    setNearMissMaxFailed(spec.near_miss ? String(spec.near_miss.max_failed) : "");
+    setHasT1Window(spec.t1_window !== null && spec.t1_window !== undefined);
+    setT1LengthSessions(spec.t1_window?.length_sessions !== undefined ? String(spec.t1_window.length_sessions) : "");
+    setT1OffsetsText((spec.t1_window?.offsets ?? []).join(", "));
+  }
+
+  function loadDraft(draft: LoadedDraft) {
+    setDraftStatus(draft.status);
+    setPromptText(draft.promptText ?? "");
+    setHypothesis(draft.hypothesis ?? "");
+    setKillCriterion(draft.killCriterion ?? "");
+    // spec.structure is the freshest reading when a spec exists: a
+    // null-structure re-compile leaves the column holding the previous
+    // structure, but the spec (and its pending "structure" question) says
+    // it's unresolved again.
+    setStructure((draft.spec ? draft.spec.structure : draft.structure) ?? "");
+    // A draft that was compiled and still carries its compiler state (pending
+    // questions, unsupported items, source phrases) reopens with that state
+    // visible — otherwise its pending questions would be unanswerable from
+    // the UI short of re-running the model.
+    const compiled = draft.needsInput != null || draft.sourcePhrases != null || draft.unsupported != null;
+    if (compiled) {
+      setCompileResult({
+        structure: draft.spec?.structure ?? draft.structure ?? null,
+        spec: draft.spec,
+        needs_input: draft.needsInput ?? [],
+        source_phrases: draft.sourcePhrases ?? [],
+        unsupported: draft.unsupported ?? [],
+      });
+    }
+    // sourcePhrases is cleared by any manual save that changes a traced value
+    // (see the PATCH /api/drafts/:id route); while it is still set, the spec
+    // is compiler-written and can't speak for the liquidity answer.
+    populateFromSpec(draft.spec, { absentLiquidity: draft.sourcePhrases != null ? "keep" : "none" });
   }
 
   // The as_of sent to dry-run/confirm must be a real bar date: the engine's
@@ -148,23 +219,50 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
     setCompiling(true);
     setCompileError(null);
     try {
-      await fetch(`/api/drafts/${draftId}`, {
+      const saveRes = await fetch(`/api/drafts/${draftId}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ promptText }),
       });
+      if (!saveRes.ok) {
+        setCompileError(describeApiError(await saveRes.json(), "could not save the prompt text"));
+        return;
+      }
       const res = await fetch(`/api/drafts/${draftId}/compile`, { method: "POST" });
       const body = await res.json();
       if (!res.ok) {
         setCompileError(describeApiError(body, "could not read this prompt"));
         return;
       }
-      setCompileResult(body);
-      if (body.structure) setStructure(body.structure);
-      if (body.spec?.conditions) setConditions(body.spec.conditions);
+      const spec: DraftSpec | null = body.spec ?? null;
+      setCompileResult({
+        structure: spec ? spec.structure : body.structure ?? null,
+        spec,
+        needs_input: body.needs_input ?? [],
+        source_phrases: body.source_phrases ?? [],
+        unsupported: body.unsupported ?? [],
+      });
+      // An unresolved structure clears the select rather than keeping a
+      // stale choice: it is now a pending question.
+      if (spec && spec.structure === null) setStructure("");
+      populateFromSpec(spec, { absentLiquidity: "keep" });
     } finally {
       setCompiling(false);
     }
+  }
+
+  function onAnswered(path: string, spec: DraftSpec | null, needsInput: NeedsInput[] | null) {
+    setCompileResult((prev) =>
+      prev
+        ? {
+            ...prev,
+            spec: spec ?? prev.spec,
+            structure: spec?.structure ?? prev.structure,
+            needs_input: needsInput ?? prev.needs_input.filter((x) => x.path !== path),
+          }
+        : prev
+    );
+    populateFromSpec(spec, { absentLiquidity: "keep" });
   }
 
   function phraseFor(path: string): string | null {
@@ -177,7 +275,7 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
     setConditions([...conditions, { id: nextId, role: "filter", kind: "field", name: "", params: {}, op: "", value: null }]);
   }
 
-  function buildSpec(): ScreenSpec | null {
+  function buildSpec(): DraftSpec | null {
     if (!structure) return null;
     const allConditions: Condition[] = [...conditions];
     if (liquidity === "confirm_10cr" || liquidity === "custom") {
@@ -186,14 +284,29 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
         params: { window: "1W" }, op: ">=", value: liquidity === "confirm_10cr" ? 10 : Number(liquidityCustom),
       });
     }
-    return {
+    // Partially-answered selection point / T1 window keep only the parts the
+    // user (or the prompt) actually supplied — never a filled-in default.
+    const selectionPoint: Partial<SelectionPoint> = {};
+    if (sessionOfWeek.trim() !== "") selectionPoint.session_of_week = Number(sessionOfWeek);
+    if (selectionAt) selectionPoint.at = selectionAt;
+    const spec: DraftSpec = {
       spec_version: 4, structure, timeframe: "1W",
-      selection_point: hasSelectionPoint ? { session_of_week: Number(sessionOfWeek), at: selectionAt } : null,
+      selection_point: hasSelectionPoint ? selectionPoint : null,
       conditions: allConditions,
       stop: stopFrom.trim() ? { from: stopFrom.trim() } : null,
       risk_cap_pct: hasRiskCap && riskCapPct !== "" ? Number(riskCapPct) : null,
-      near_miss: hasNearMiss ? { max_failed: Number(nearMissMaxFailed) } : null,
+      near_miss: hasNearMiss && nearMissMaxFailed.trim() !== "" ? { max_failed: Number(nearMissMaxFailed) } : null,
     };
+    // t1_window is only written when used, so a spec that never had one keeps
+    // the exact shape (and spec_hash) it had before this field existed.
+    if (hasT1Window) {
+      const t1: Partial<T1Window> = {};
+      if (t1LengthSessions.trim() !== "") t1.length_sessions = Number(t1LengthSessions);
+      const offsets = parseOffsets(t1OffsetsText);
+      if (offsets && offsets.length > 0) t1.offsets = offsets;
+      spec.t1_window = t1;
+    }
+    return spec;
   }
 
   function gateReason(): string | null {
@@ -201,6 +314,13 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
     if (conditions.length === 0) return "Add at least one condition";
     if (compileResult && compileResult.needs_input.length > 0) return `Answer ${compileResult.needs_input.length} question(s) first`;
     if (compileResult && compileResult.unsupported.length > 0) return "Remove the unsupported condition(s) from your prompt first";
+    if (hasSelectionPoint && (sessionOfWeek.trim() === "" || !selectionAt)) return "Complete the selection point (session and open/close)";
+    if (hasNearMiss && !/^\d+$/.test(nearMissMaxFailed.trim())) return "Enter the near-miss max failed count";
+    if (hasT1Window) {
+      if (!/^\d+$/.test(t1LengthSessions.trim())) return "Enter the T1 window length in sessions";
+      const offsets = parseOffsets(t1OffsetsText);
+      if (offsets === null || offsets.length === 0) return "Enter the T1 window offsets (comma-separated whole numbers)";
+    }
     if (liquidity === null) return "Answer the liquidity question";
     if (liquidity === "custom" && (liquidityCustom === "" || Number.isNaN(Number(liquidityCustom)))) {
       return "Enter a valid liquidity floor";
@@ -211,21 +331,35 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
   }
   const blocked = gateReason();
 
-  async function saveSpec(): Promise<ScreenSpec | null> {
+  async function saveSpec(): Promise<SaveResult> {
     const spec = buildSpec();
-    if (!draftId || !spec) return null;
-    await fetch(`/api/drafts/${draftId}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ structure, specJson: JSON.stringify(spec), hypothesis, killCriterion }),
-    });
-    return spec;
+    if (!draftId || !spec) return { ok: false, error: "Choose a structure and add a condition first" };
+    let res: Response;
+    try {
+      res = await fetch(`/api/drafts/${draftId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ structure, specJson: JSON.stringify(spec), hypothesis, killCriterion }),
+      });
+    } catch (err) {
+      return { ok: false, error: `Could not save the draft: ${(err as Error).message}` };
+    }
+    if (!res.ok) {
+      let body: unknown = null;
+      try {
+        body = await res.json();
+      } catch {
+        // non-JSON error body — fall back to the generic message below
+      }
+      return { ok: false, error: `Could not save the draft: ${describeApiError(body, `save failed (${res.status})`)}` };
+    }
+    return { ok: true, spec };
   }
 
   async function dryRun() {
     setDryRunResult(null);
-    const spec = await saveSpec();
-    if (!draftId || !spec) return setDryRunResult("Choose a structure and add a condition first");
+    const saved = await saveSpec();
+    if (!saved.ok) return setDryRunResult(saved.error);
     const asOf = await resolveAsOf();
     const res = await fetch(`/api/drafts/${draftId}/dry-run`, {
       method: "POST",
@@ -254,7 +388,13 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
     setBlockedReason(null);
     setConfirming(true);
     try {
-      await saveSpec();
+      // Never confirm on top of a save that didn't land: the server would
+      // confirm whatever spec it last had, not what this form shows.
+      const saved = await saveSpec();
+      if (!saved.ok) {
+        setBlockedReason(saved.error);
+        return;
+      }
       const asOf = await resolveAsOf();
       const res = await fetch(`/api/drafts/${draftId}/confirm`, {
         method: "POST",
@@ -352,10 +492,7 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
                   index={i + 1}
                   item={n}
                   draftId={draftId!}
-                  onAnswered={(path, spec) => {
-                    setCompileResult((prev) => (prev ? { ...prev, needs_input: prev.needs_input.filter((x) => x.path !== path) } : prev));
-                    if (spec?.conditions) setConditions(spec.conditions);
-                  }}
+                  onAnswered={(path, spec, needsInput) => onAnswered(path, spec as DraftSpec | null, needsInput)}
                 />
               ))}
             </fieldset>
@@ -365,7 +502,7 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
 
       <label>
         Structure
-        <select aria-label="structure" value={structure} onChange={(e) => setStructure(e.target.value as any)}>
+        <select aria-label="structure" value={structure} onChange={(e) => setStructure(e.target.value as Structure | "")}>
           <option value="">— choose —</option>
           <option value="literal">literal</option>
           <option value="t1_literal">t1_literal</option>
@@ -399,7 +536,8 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
             </label>
             <label>
               At
-              <select aria-label="selection at" value={selectionAt} onChange={(e) => setSelectionAt(e.target.value as "open" | "close")}>
+              <select aria-label="selection at" value={selectionAt} onChange={(e) => setSelectionAt(e.target.value as "open" | "close" | "")}>
+                <option value="">— choose —</option>
                 <option value="open">open</option>
                 <option value="close">close</option>
               </select>
@@ -438,6 +576,26 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
             Max failed conditions (0 = none)
             <input aria-label="near miss max failed" type="number" min={0} value={nearMissMaxFailed} onChange={(e) => setNearMissMaxFailed(e.target.value)} />
           </label>
+        )}
+      </fieldset>
+
+      <fieldset>
+        <legend>T1 window</legend>
+        <label>
+          <input type="checkbox" aria-label="use a T1 window" checked={hasT1Window} onChange={(e) => setHasT1Window(e.target.checked)} />
+          Check over a rolling window of sessions (t1_literal)
+        </label>
+        {hasT1Window && (
+          <>
+            <label>
+              Window length (sessions)
+              <input aria-label="t1 window length sessions" type="number" min={1} value={t1LengthSessions} onChange={(e) => setT1LengthSessions(e.target.value)} />
+            </label>
+            <label>
+              Offsets (comma-separated session offsets)
+              <input aria-label="t1 window offsets" value={t1OffsetsText} onChange={(e) => setT1OffsetsText(e.target.value)} />
+            </label>
+          </>
         )}
       </fieldset>
 
