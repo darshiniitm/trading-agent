@@ -28,6 +28,17 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
   const [conditions, setConditions] = useState<Condition[]>([]);
   const nextConditionNo = useRef(1); // monotonic — never reused, unlike conditions.length (removing then re-adding would collide)
 
+  const [promptText, setPromptText] = useState("");
+  const [compiling, setCompiling] = useState(false);
+  const [compileResult, setCompileResult] = useState<{
+    structure: "literal" | "t1_literal" | null;
+    spec: ScreenSpec | null;
+    needs_input: { path: string; question: string }[];
+    source_phrases: { path: string; phrase: string }[];
+    unsupported: { text: string; reason: string }[];
+  } | null>(null);
+  const [compileError, setCompileError] = useState<string | null>(null);
+
   const [hasSelectionPoint, setHasSelectionPoint] = useState(false);
   const [sessionOfWeek, setSessionOfWeek] = useState("1");
   const [selectionAt, setSelectionAt] = useState<"open" | "close">("open");
@@ -69,9 +80,10 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
 
   function loadDraft(draft: {
     status: string; structure: "literal" | "t1_literal" | null; spec: ScreenSpec | null;
-    hypothesis: string | null; killCriterion: string | null;
+    hypothesis: string | null; killCriterion: string | null; promptText?: string;
   }) {
     setDraftStatus(draft.status);
+    setPromptText(draft.promptText ?? "");
     setHypothesis(draft.hypothesis ?? "");
     setKillCriterion(draft.killCriterion ?? "");
     setStructure(draft.structure ?? draft.spec?.structure ?? "");
@@ -128,6 +140,34 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
     // as_of may leave this run's horizons ungradable; the screen/confirm call
     // that follows will most likely fail anyway if the engine is truly down.
     return new Date().toISOString().slice(0, 10);
+  }
+
+  async function readMyPrompt() {
+    if (!draftId) return;
+    setCompiling(true);
+    setCompileError(null);
+    try {
+      await fetch(`/api/drafts/${draftId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ promptText }),
+      });
+      const res = await fetch(`/api/drafts/${draftId}/compile`, { method: "POST" });
+      const body = await res.json();
+      if (!res.ok) {
+        setCompileError(describeApiError(body, "could not read this prompt"));
+        return;
+      }
+      setCompileResult(body);
+      if (body.structure) setStructure(body.structure);
+      if (body.spec?.conditions) setConditions(body.spec.conditions);
+    } finally {
+      setCompiling(false);
+    }
+  }
+
+  function phraseFor(path: string): string | null {
+    return compileResult?.source_phrases.find((p) => p.path === path)?.phrase ?? null;
   }
 
   function addCondition() {
@@ -246,6 +286,61 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
     <main>
       <h1>Draft {draftId ?? "…"} · not yet numbered</h1>
       {draftStatus && draftStatus !== "open" && <p role="status">This draft is {draftStatus}; it can no longer be confirmed.</p>}
+
+      <label>
+        Your prompt
+        <textarea aria-label="prompt text" value={promptText} onChange={(e) => setPromptText(e.target.value)} />
+      </label>
+      <button type="button" onClick={readMyPrompt} disabled={compiling || !promptText.trim() || !draftId}>
+        {compiling ? "Reading…" : "Read my prompt"}
+      </button>
+      {compileError && <p role="alert">{compileError}</p>}
+
+      {compileResult && (
+        <section>
+          <p>
+            {compileResult.spec?.conditions.length ?? 0} condition{(compileResult.spec?.conditions.length ?? 0) === 1 ? "" : "s"} found ·{" "}
+            {compileResult.needs_input.length} question{compileResult.needs_input.length === 1 ? "" : "s"}
+          </p>
+          <p>
+            Structure: <strong>{compileResult.structure ?? "unclear"}</strong>
+            {phraseFor("structure") && <> — decided by &quot;{phraseFor("structure")}&quot;</>}
+          </p>
+
+          <h2>How your prompt was read</h2>
+          <table>
+            <thead><tr><th>Role</th><th>Condition</th><th>Parameters</th><th>Your words</th></tr></thead>
+            <tbody>
+              {(compileResult.spec?.conditions ?? []).map((c, i) => (
+                <tr key={c.id}>
+                  <td>{c.role}</td>
+                  <td>{c.kind}:{c.name}</td>
+                  <td>
+                    {Object.keys(c.params ?? {}).length === 0 && !phraseFor(`conditions.${i}.params`) ? "—" : null}
+                    {Object.entries(c.params ?? {}).map(([k, v]) => (
+                      <span key={k}>{k}={String(v)} </span>
+                    ))}
+                    {/* A required param this condition is still missing shows as an amber "?", not silently as nothing */}
+                    {compileResult.needs_input.filter((n) => n.path.startsWith(`conditions.${i}.params.`)).map((n) => (
+                      <span key={n.path} style={{ color: "#b45f06" }} title={n.question}>?</span>
+                    ))}
+                  </td>
+                  <td>{phraseFor(`conditions.${i}.params.${Object.keys(c.params ?? {})[0] ?? ""}`) ?? phraseFor(`conditions.${i}.value`) ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {compileResult.unsupported.length > 0 && (
+            <div role="alert" style={{ border: "2px solid #c00", padding: "8px" }}>
+              <strong>Unsupported conditions — remove these from your prompt and read it again:</strong>
+              <ul>
+                {compileResult.unsupported.map((u, i) => <li key={i}>&quot;{u.text}&quot; — {u.reason}</li>)}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
 
       <label>
         Structure
