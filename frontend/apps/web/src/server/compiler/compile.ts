@@ -126,7 +126,7 @@ export async function compilePrompt(
       assertTraceable(parsed.data, parsed.data.source_phrases);
     } catch (err) {
       if (err instanceof UntraceableValueError) {
-        lastErrors = err.paths.map((p) => `${p}: no source phrase for this number — never invent a value, add it to source_phrases or drop it`);
+        lastErrors = err.paths.map((p) => `${p}: no source phrase for this value — never invent a value (number or text), add it to source_phrases or drop it`);
         continue;
       }
       throw err;

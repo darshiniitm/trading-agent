@@ -12,7 +12,10 @@ function fullyTraceableOutput() {
     structure: "literal",
     conditions: [{ id: "C1", role: "event", kind: "indicator", name: "vstop", params: { length: 10, mult: 2, source: "close" }, op: "flip", dir: "long" }],
     selection_point: null, stop: { from: "C1" }, risk_cap_pct: null, near_miss: null, t1_window: null,
-    source_phrases: [{ path: "conditions.0.params.length", phrase: "VStop 10" }, { path: "conditions.0.params.mult", phrase: "mult 2" }],
+    source_phrases: [
+      { path: "conditions.0.params.length", phrase: "VStop 10" }, { path: "conditions.0.params.mult", phrase: "mult 2" },
+      { path: "conditions.0.params.source", phrase: "close" },
+    ],
     needs_input: [], unsupported: [],
   };
 }
@@ -102,6 +105,29 @@ describe("compilePrompt", () => {
     expect(attempts).toBe(1);
     expect(callModel).toHaveBeenCalledTimes(1);
     expect(output.needs_input).toHaveLength(1);
+  });
+
+  it("retries when a TEXT param value (params.source) has no source phrase — a fabricated string is an invented value too (I3)", async () => {
+    const base = fullyTraceableOutput();
+    const fabricatedSource = { ...base, source_phrases: base.source_phrases.filter((s) => s.path !== "conditions.0.params.source") };
+    const callModel = vi.fn().mockResolvedValue(JSON.stringify(fabricatedSource));
+    await expect(compilePrompt("VStop(10,2) flip up", CATALOG, STRUCTURES, { callModel })).rejects.toBeInstanceOf(CompileError);
+    expect(callModel).toHaveBeenCalledTimes(2);
+    expect(callModel.mock.calls[1][1]).toMatch(/conditions\.0\.params\.source: no source phrase for this value/);
+  });
+
+  it("retries when selection_point.at has no source phrase (I3)", async () => {
+    const base = fullyTraceableOutput();
+    const withSelection = {
+      ...base, selection_point: { session_of_week: 1, at: "open" },
+      source_phrases: [...base.source_phrases, { path: "selection_point.session_of_week", phrase: "Monday" }],
+    };
+    const callModel = vi.fn()
+      .mockResolvedValueOnce(JSON.stringify(withSelection))
+      .mockResolvedValueOnce(JSON.stringify({ ...withSelection, source_phrases: [...withSelection.source_phrases, { path: "selection_point.at", phrase: "at the open" }] }));
+    const { attempts } = await compilePrompt("VStop(10,2,close) flip up, Monday at the open", CATALOG, STRUCTURES, { callModel });
+    expect(attempts).toBe(2);
+    expect(callModel.mock.calls[1][1]).toMatch(/selection_point\.at: no source phrase/);
   });
 
   it("rejects a __proto__ needs_input path as a validation error, forcing a retry (I4 layer 1)", async () => {

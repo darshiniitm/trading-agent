@@ -26,10 +26,11 @@ describe("compiler regression — no app-supplied values", () => {
       selection_point: { session_of_week: 1, at: "open" }, stop: { from: "C3" }, risk_cap_pct: null, near_miss: null, t1_window: null,
       source_phrases: [
         { path: "conditions.0.value.0", phrase: "10,000cr" }, { path: "conditions.0.value.1", phrase: "50,000cr" },
-        { path: "conditions.1.value", phrase: "10cr/week" },
+        { path: "conditions.1.value", phrase: "10cr/week" }, { path: "conditions.1.params.window", phrase: "/week" },
         { path: "conditions.2.params.length", phrase: "VStop 10" }, { path: "conditions.2.params.mult", phrase: "multiplier 2" },
+        { path: "conditions.2.params.source", phrase: "on the close" },
         { path: "conditions.3.params.length", phrase: "RSI 14" }, { path: "conditions.3.value.0", phrase: "between 50" }, { path: "conditions.3.value.1", phrase: "and 65" },
-        { path: "selection_point.session_of_week", phrase: "Monday" },
+        { path: "selection_point.session_of_week", phrase: "Monday" }, { path: "selection_point.at", phrase: "at the open" },
       ],
       needs_input: [], unsupported: [],
     });
@@ -55,6 +56,20 @@ describe("compiler regression — no app-supplied values", () => {
     const { output } = await compilePrompt("VStop flip", CATALOG, STRUCTURES, { callModel });
     expect(output.conditions[0].params).toEqual({});
     expect(output.needs_input).toHaveLength(3);
+  });
+});
+
+describe("compiler regression — no invented TEXT values either (I3)", () => {
+  it("a model that fills in VStop's price source as \"high\" with no phrase for it never gets that value into a compiled spec", async () => {
+    const fabricated = {
+      structure: "literal",
+      conditions: [{ id: "C1", role: "event", kind: "indicator", name: "vstop", params: { length: 10, mult: 2, source: "high" }, op: "flip", dir: "long" }],
+      selection_point: null, stop: { from: "C1" }, risk_cap_pct: null, near_miss: null, t1_window: null,
+      source_phrases: [{ path: "conditions.0.params.length", phrase: "VStop 10" }, { path: "conditions.0.params.mult", phrase: "2" }],
+      needs_input: [], unsupported: [],
+    };
+    const callModel = modelReturning(fabricated);
+    await expect(compilePrompt("VStop(10,2) flip", CATALOG, STRUCTURES, { callModel })).rejects.toBeInstanceOf(CompileError);
   });
 });
 
@@ -96,8 +111,9 @@ describe("compiler regression — open parameters (no fixed defaults)", () => {
       t1_window: { length_sessions: 3, offsets: [0, 1, 2] },
       source_phrases: [
         { path: "conditions.0.params.length", phrase: "VStop 14" }, { path: "conditions.0.params.mult", phrase: "3" },
+        { path: "conditions.0.params.source", phrase: "close" },
         { path: "conditions.1.params.length", phrase: "RSI 9" }, { path: "conditions.1.value.0", phrase: "50" }, { path: "conditions.1.value.1", phrase: "65" },
-        { path: "selection_point.session_of_week", phrase: "Monday" },
+        { path: "selection_point.session_of_week", phrase: "Monday" }, { path: "selection_point.at", phrase: "open" },
         { path: "t1_window.length_sessions", phrase: "3-session window" }, { path: "t1_window.offsets.0", phrase: "day 0" }, { path: "t1_window.offsets.1", phrase: "day 1" }, { path: "t1_window.offsets.2", phrase: "day 2" },
       ],
       needs_input: [], unsupported: [],

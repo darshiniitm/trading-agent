@@ -4,7 +4,7 @@ import { getDraft } from "@/server/drafts";
 import { runWeeklyScreen } from "@/server/weeklyScreen";
 import { registerArm, retireArm } from "@/server/engine/client";
 import { runSelectEntry } from "@/server/selectEntry";
-import { numericLeafPaths } from "@/server/compiler/traceability";
+import { traceableLeafPaths } from "@/server/compiler/traceability";
 
 export async function confirmDraft(
   raw: Database.Database,
@@ -111,8 +111,12 @@ export async function confirmDraft(
     const knownPhrasePaths = new Set(sourcePhrases.map((s) => s.path));
     const knownAnswerPaths = new Set(answers);
 
+    // A condition is 'prompt'-origin only if every one of its traceable
+    // leaves (each param value and value, number or text — see
+    // traceableLeafPaths) has a source phrase; one answered or untraced leaf
+    // makes the whole row 'user_answer'.
     draft.spec!.conditions.forEach((cond, i) => {
-      const thisConditionLeaves = numericLeafPaths({ conditions: [cond], risk_cap_pct: null, near_miss: null, selection_point: null, t1_window: null })
+      const thisConditionLeaves = traceableLeafPaths({ conditions: [cond], risk_cap_pct: null, near_miss: null, selection_point: null, t1_window: null })
         .map((p) => p.replace(/^conditions\.0\./, `conditions.${i}.`));
       const allFromPrompt = thisConditionLeaves.length > 0 && thisConditionLeaves.every((p) => knownPhrasePaths.has(p));
       const anyFromAnswer = thisConditionLeaves.some((p) => knownAnswerPaths.has(p));
@@ -124,7 +128,7 @@ export async function confirmDraft(
         sourcePhrase = sourcePhrases.filter((s) => thisConditionLeaves.includes(s.path)).map((s) => s.phrase).join(" / ") || null;
       } else if (anyFromAnswer || thisConditionLeaves.length === 0) {
         // thisConditionLeaves.length === 0 covers both: a condition with no
-        // numeric params at all (nothing to trace either way — Phase 1/2's
+        // param/value leaves at all (nothing to trace either way — Phase 1/2's
         // manual-form behavior, always user_answer/NULL), and a
         // compiler-sourced condition answered purely by the user.
         valueOrigin = "user_answer";

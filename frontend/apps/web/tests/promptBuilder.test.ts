@@ -9,6 +9,11 @@ describe("buildCompilerPrompt", () => {
     expect(system).toContain("source_phrases");
     expect(system).toMatch(/never.*liquidity/i);
     expect(system).toMatch(/never invent/i);
+    // Every VALUE, not just every number (I3): text params and selection_point.at need phrases too.
+    expect(system).toMatch(/numbers AND text/);
+    expect(system).toContain("selection_point.at");
+    // The path allow-list is stated to the model as well as enforced (I4).
+    expect(system).toContain("conditions.N.params.<param name>");
     expect(user).toContain("Buy when VStop flips up");
   });
 });

@@ -5,7 +5,7 @@ import { createDraft, updateDraft } from "@/server/drafts";
 import { confirmDraft } from "@/server/confirm";
 
 describe("confirmDraft — value_origin from the compiler path", () => {
-  it("marks a condition 'prompt' origin when every one of its numeric leaves has a source phrase", async () => {
+  it("marks a condition 'prompt' origin when every one of its traceable leaves (numbers and text) has a source phrase", async () => {
     const raw = createTestDb();
     const userId = ensureOwnerUser(raw);
     const { draftId } = createDraft(raw, { userId });
@@ -17,7 +17,10 @@ describe("confirmDraft — value_origin from the compiler path", () => {
     updateDraft(raw, draftId, {
       structure: "literal", specJson: JSON.stringify(spec), hypothesis: "h", killCriterion: "k",
       needsInputJson: "[]", unsupportedJson: "[]",
-      sourcePhrasesJson: JSON.stringify([{ path: "conditions.0.params.length", phrase: "VStop 10" }, { path: "conditions.0.params.mult", phrase: "mult 2" }]),
+      sourcePhrasesJson: JSON.stringify([
+        { path: "conditions.0.params.length", phrase: "VStop 10" }, { path: "conditions.0.params.mult", phrase: "mult 2" },
+        { path: "conditions.0.params.source", phrase: "on the close" },
+      ]),
     });
     const fetchFn = vi.fn().mockResolvedValue({ ok: true, text: async () => JSON.stringify({ candidates: [], applied_steps: [], funnel: [], sector_view: [] }) });
     const { promptId } = await confirmDraft(raw, draftId, "2026-10-02", fetchFn as any);
@@ -27,7 +30,7 @@ describe("confirmDraft — value_origin from the compiler path", () => {
     expect(row.source_phrase).toContain("VStop 10");
   });
 
-  it("marks a condition 'user_answer' origin when any one of its numeric leaves came from an answer, not a source phrase", async () => {
+  it("marks a condition 'user_answer' origin when any one of its leaves came from an answer, not a source phrase", async () => {
     const raw = createTestDb();
     const userId = ensureOwnerUser(raw);
     const { draftId } = createDraft(raw, { userId });

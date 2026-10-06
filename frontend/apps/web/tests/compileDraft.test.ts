@@ -28,14 +28,14 @@ describe("compileDraft", () => {
       structure: "literal",
       conditions: [{ id: "C1", role: "event", kind: "indicator", name: "vstop", params: { length: 10, mult: 2, source: "close" }, op: "flip", dir: "long" }],
       selection_point: null, stop: { from: "C1" }, risk_cap_pct: null, near_miss: null, t1_window: null,
-      source_phrases: [{ path: "conditions.0.params.length", phrase: "10" }, { path: "conditions.0.params.mult", phrase: "2" }],
+      source_phrases: [{ path: "conditions.0.params.length", phrase: "10" }, { path: "conditions.0.params.mult", phrase: "2" }, { path: "conditions.0.params.source", phrase: "close" }],
       needs_input: [], unsupported: [],
     }));
 
     const draft = await compileDraft(raw, draftId, { fetchFn: fakeEngineFetch() as any, callModel });
     expect(draft.structure).toBe("literal");
     expect(draft.spec?.conditions).toHaveLength(1);
-    expect(draft.sourcePhrases).toHaveLength(2);
+    expect(draft.sourcePhrases).toHaveLength(3);
 
     const compilation = raw.prepare("SELECT model, errors_json FROM compilations WHERE draft_id = ?").get(draftId) as any;
     expect(compilation.model).toBeTruthy();

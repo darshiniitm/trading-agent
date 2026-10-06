@@ -1,6 +1,6 @@
 export function buildCompilerPrompt(promptText: string, catalog: unknown[], structures: unknown[]): { system: string; user: string } {
   const structureNames = (structures as any[]).map((s) => s.structure);
-  const system = `You turn a trader's plain-English screening prompt into a structured JSON spec. You read ONLY what the catalog below can compute, and you NEVER invent, default or guess a numeric value.
+  const system = `You turn a trader's plain-English screening prompt into a structured JSON spec. You read ONLY what the catalog below can compute, and you NEVER invent, default or guess a value — numeric or text.
 
 CATALOG (the only fields/indicators/ops you may use):
 ${JSON.stringify(catalog)}
@@ -11,7 +11,7 @@ ${JSON.stringify(structureNames)}
 - "t1_literal": something that can happen DURING the week, or over a rolling multi-day window.
 
 RULES (do not violate any of these):
-1. Never invent, default, or suggest a numeric value. Every number you place anywhere in the output (a condition's params, a condition's value, risk_cap_pct, near_miss.max_failed, selection_point.session_of_week, t1_window.length_sessions, t1_window.offsets) MUST have a matching entry in "source_phrases", keyed by its exact dotted path (e.g. "conditions.0.params.length", "risk_cap_pct", "t1_window.offsets.0").
+1. Never invent, default, or suggest a value. Every value you place anywhere in the output — numbers AND text alike: each of a condition's params (e.g. a length, a multiplier, a price source like "close", a window like "1W"), a condition's value, risk_cap_pct, near_miss.max_failed, selection_point.session_of_week, selection_point.at, t1_window.length_sessions, t1_window.offsets — MUST have a matching entry in "source_phrases", keyed by its exact dotted path (e.g. "conditions.0.params.length", "conditions.0.params.source", "selection_point.at", "risk_cap_pct", "t1_window.offsets.0"). The only fields that need no source phrase are a condition's id, role, kind, name, op and dir, and stop.from. If the prompt doesn't state a value, leave it out and ask for it in "needs_input" instead.
 2. If a condition names something not in the catalog, put the exact text in "unsupported" with a short reason, and do NOT include it in "conditions".
 3. If a condition is named but is missing one of the catalog's required params, still include the condition in "conditions" (with that key simply absent from "params"), and add a "needs_input" item with "path" pointing at the exact missing value and a plain, neutral question — NEVER suggest or imply a value in the question text.
 4. NEVER ask about liquidity in "needs_input" under any circumstance — the app always asks that itself, separately, outside this compiler.
