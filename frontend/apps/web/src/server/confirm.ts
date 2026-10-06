@@ -2,13 +2,15 @@ import type Database from "better-sqlite3";
 import { createHash } from "node:crypto";
 import { getDraft } from "@/server/drafts";
 import { runWeeklyScreen } from "@/server/weeklyScreen";
+import { registerArm } from "@/server/engine/client";
+import { runSelectEntry } from "@/server/selectEntry";
 
 export async function confirmDraft(
   raw: Database.Database,
   draftId: number,
   asOf: string,
   fetchFn?: typeof fetch
-): Promise<{ promptId: number; watchlistId: number }> {
+): Promise<{ promptId: number; watchlistId: number; selectionWarning: string | null }> {
   const draft = getDraft(raw, draftId);
   if (!draft) throw new Error(`draft ${draftId} not found`);
   if (draft.status === "confirmed") throw new Error("draft already confirmed");
@@ -99,8 +101,9 @@ export async function confirmDraft(
   // regression ("propagates a 422... without writing anything") — so on
   // failure here, undo the prompt/watchlist/conditions/draft-status change
   // rather than leaving a prompt with no run at all.
+  let runId: number;
   try {
-    await runWeeklyScreen(raw, { promptId, asOf, kind: "catch_up" }, fetchFn);
+    ({ runId } = await runWeeklyScreen(raw, { promptId, asOf, kind: "catch_up" }, fetchFn));
   } catch (err) {
     raw.transaction(() => {
       // prompt_drafts.confirmed_prompt_id references prompts(prompt_id), so it
@@ -115,5 +118,17 @@ export async function confirmDraft(
     throw err;
   }
 
-  return { promptId, watchlistId };
+  let selectionWarning: string | null = null;
+  try {
+    await registerArm(promptId, draft.spec!, fetchFn);
+    await runSelectEntry(raw, { promptId, runId }, fetchFn);
+  } catch (err) {
+    // The prompt/watchlist/run are already committed and real; a transient
+    // engine problem here must not undo them (Review Focus item 1) — it only
+    // means entries stay at their weekly-screen default status until the
+    // next select_entry job (manual retry, or the next weekly catch-up) runs.
+    selectionWarning = `prompt confirmed, but selection could not run yet: ${(err as Error).message}`;
+  }
+
+  return { promptId, watchlistId, selectionWarning };
 }
