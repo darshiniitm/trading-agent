@@ -23,6 +23,8 @@ export const promptDrafts = sqliteTable("prompt_drafts", {
   killCriterion: text("kill_criterion"),
   status: text("status").notNull(),
   confirmedPromptId: integer("confirmed_prompt_id"),
+  sourcePhrasesJson: text("source_phrases_json"),
+  unsupportedJson: text("unsupported_json"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });
@@ -149,4 +151,13 @@ export const jobs = sqliteTable("jobs", {
   error: text("error"),
   createdAt: text("created_at").notNull(),
   finishedAt: text("finished_at"),
+});
+
+export const compilations = sqliteTable("compilations", {
+  compilationId: integer("compilation_id").primaryKey({ autoIncrement: true }),
+  draftId: integer("draft_id").notNull(),
+  model: text("model").notNull(),
+  rawJson: text("raw_json").notNull(),
+  errorsJson: text("errors_json"),
+  createdAt: text("created_at").notNull(),
 });

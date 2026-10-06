@@ -70,6 +70,6 @@ describe("createTestDb / applyMigrations", () => {
 
     // Verify all migrations are recorded (no duplicates)
     const migrations = (raw.prepare("SELECT filename FROM _migrations ORDER BY filename").all() as { filename: string }[]).map((r) => r.filename);
-    expect(migrations).toEqual(["0001_init.sql", "0002_jobs_and_grading.sql", "0003_run_results_entry_price.sql"]);
+    expect(migrations).toEqual(["0001_init.sql", "0002_jobs_and_grading.sql", "0003_run_results_entry_price.sql", "0004_compiler.sql"]);
   });
 });

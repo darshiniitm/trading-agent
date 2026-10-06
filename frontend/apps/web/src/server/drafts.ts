@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import { ScreenSpecSchema, type ScreenSpec } from "spec";
+import { ScreenSpecSchema, type ScreenSpec, type NeedsInputItem, type SourcePhrase, type UnsupportedItem } from "spec";
 
 export type DraftRow = {
   draftId: number;
@@ -13,6 +13,9 @@ export type DraftRow = {
   killCriterion: string | null;
   status: "open" | "confirmed" | "abandoned";
   confirmedPromptId: number | null;
+  needsInput: NeedsInputItem[] | null;
+  sourcePhrases: SourcePhrase[] | null;
+  unsupported: UnsupportedItem[] | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -30,6 +33,9 @@ function rowToDraft(row: any): DraftRow {
     killCriterion: row.kill_criterion,
     status: row.status,
     confirmedPromptId: row.confirmed_prompt_id,
+    needsInput: row.needs_input_json ? JSON.parse(row.needs_input_json) : null,
+    sourcePhrases: row.source_phrases_json ? JSON.parse(row.source_phrases_json) : null,
+    unsupported: row.unsupported_json ? JSON.parse(row.unsupported_json) : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -58,6 +64,9 @@ type DraftPatch = Partial<{
   specJson: string;
   hypothesis: string;
   killCriterion: string;
+  needsInputJson: string;
+  sourcePhrasesJson: string;
+  unsupportedJson: string;
 }>;
 
 const COLUMN_BY_KEY: Record<keyof DraftPatch, string> = {
@@ -67,6 +76,9 @@ const COLUMN_BY_KEY: Record<keyof DraftPatch, string> = {
   specJson: "spec_json",
   hypothesis: "hypothesis",
   killCriterion: "kill_criterion",
+  needsInputJson: "needs_input_json",
+  sourcePhrasesJson: "source_phrases_json",
+  unsupportedJson: "unsupported_json",
 };
 
 export function updateDraft(raw: Database.Database, draftId: number, patch: DraftPatch): DraftRow {

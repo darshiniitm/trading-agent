@@ -78,3 +78,18 @@ describe("updateDraft", () => {
     expect(() => updateDraft(raw, draftId, { specJson: JSON.stringify(badSpec) })).toThrow(/invalid spec/i);
   });
 });
+
+describe("updateDraft — compiler fields", () => {
+  it("stores and round-trips needsInputJson/sourcePhrasesJson/unsupportedJson", () => {
+    const { raw, userId } = setup();
+    const { draftId } = createDraft(raw, { userId });
+    const updated = updateDraft(raw, draftId, {
+      needsInputJson: JSON.stringify([{ path: "conditions.0.params.length", question: "What length?" }]),
+      sourcePhrasesJson: JSON.stringify([{ path: "structure", phrase: "weekly close" }]),
+      unsupportedJson: JSON.stringify([{ text: "MACD", reason: "not in catalog" }]),
+    });
+    expect(updated.needsInput).toEqual([{ path: "conditions.0.params.length", question: "What length?" }]);
+    expect(updated.sourcePhrases).toEqual([{ path: "structure", phrase: "weekly close" }]);
+    expect(updated.unsupported).toEqual([{ text: "MACD", reason: "not in catalog" }]);
+  });
+});
