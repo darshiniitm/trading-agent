@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { WatchlistTable } from "@/components/WatchlistTable";
+import { ValidationCard } from "@/components/ValidationCard";
 import { describeApiError } from "@/lib/apiError";
 
 type Tab = "all" | "full_match" | "near_miss" | "rejected_risk_cap";
@@ -92,6 +93,14 @@ export default function WatchlistPage({ params }: { params: { watchlistId: strin
       {!view.hasRiskCap && <p>No risk-cap tab: this prompt doesn't set a risk cap.</p>}
 
       <WatchlistTable entries={visibleEntries} conditionNames={view.conditions.map((c: any) => `C${c.condNo}`)} quotes={quotes} />
+
+      <ValidationCard gradedWeeks={view.validation.gradedWeeks} horizons={view.validation.horizons} />
+
+      <ul>
+        {visibleEntries.map((e: any) => (
+          <li key={e.entryId}><a href={`/watchlists/${params.watchlistId}/entries/${e.entryId}`}>{e.symbol} — detail</a></li>
+        ))}
+      </ul>
     </main>
   );
 }

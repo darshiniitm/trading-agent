@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import { getValidationSummary } from "@/server/validations";
 
 export function getWatchlistView(raw: Database.Database, watchlistId: number) {
   const watchlist = raw.prepare("SELECT * FROM watchlists WHERE watchlist_id = ?").get(watchlistId) as any;
@@ -41,10 +42,12 @@ export function getWatchlistView(raw: Database.Database, watchlistId: number) {
     };
   });
 
+  const validation = getValidationSummary(raw, prompt.prompt_id);
+
   return {
     watchlistId: watchlist.watchlist_id, promptId: prompt.prompt_id, title: prompt.title,
     structure: prompt.structure, hypothesis: prompt.hypothesis, killCriterion: prompt.kill_criterion,
     conditions, hasRiskCap: spec.risk_cap_pct !== null && spec.risk_cap_pct !== undefined,
-    lastRun, entries,
+    lastRun, entries, validation,
   };
 }
