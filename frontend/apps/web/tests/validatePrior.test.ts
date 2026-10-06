@@ -55,8 +55,8 @@ describe("runValidatePrior", () => {
     const fetchFn = fakeValidateFetch({
       graded_weeks: 13, maturity: "first_look",
       rows: [
-        { ticker: "FULL1", signal_week_start: "2026-10-02", horizon_weeks: 1, status: "graded", buy_price: 101, r_Nw: 4.0 },
-        { ticker: "FULL1", signal_week_start: "2026-10-02", horizon_weeks: 2, status: "pending", buy_price: 101, r_Nw: null },
+        { ticker: "FULL1", signal_week_start: "2026-10-02", horizon_weeks: 1, view: "trade", status: "graded", buy_price: 101, r_Nw: 4.0 },
+        { ticker: "FULL1", signal_week_start: "2026-10-02", horizon_weeks: 2, view: "trade", status: "pending", buy_price: 101, r_Nw: null },
       ],
     });
 
@@ -80,5 +80,33 @@ describe("runValidatePrior", () => {
     const body = JSON.parse(init.body);
     expect(body.picks).toEqual([{ ticker: "FULL1", entry_price: 101, sl: 95 }]);
     expect(body.graded_weeks_so_far).toBe(13);
+  });
+
+  it("aggregates only the engine's 'trade' view, never mixing in the 'signal' view rows for the same ticker/horizon", async () => {
+    const raw = createTestDb();
+    const { runId } = seedGradableRun(raw, { gradedRunsBefore: 12 });
+    raw.prepare(`INSERT OR IGNORE INTO symbols (symbol, active) VALUES ('FULL2', 1)`).run();
+    raw.prepare(
+      `INSERT INTO watchlist_entries (watchlist_id, symbol, first_run_id, last_run_id, membership, status, entry_price, stop, created_at, updated_at)
+       VALUES (1, 'FULL2', ?, ?, 'full_match', 'entered', 50, 45, '2026-10-02', '2026-10-02')`
+    ).run(runId, runId);
+    const fetchFn = fakeValidateFetch({
+      graded_weeks: 13, maturity: "first_look",
+      rows: [
+        // FULL1: signal view says +10, trade view (stopped out) says -3.
+        { ticker: "FULL1", signal_week_start: "2026-10-02", horizon_weeks: 1, view: "signal", status: "graded", buy_price: 101, r_Nw: 10.0 },
+        { ticker: "FULL1", signal_week_start: "2026-10-02", horizon_weeks: 1, view: "trade", status: "graded", buy_price: 101, r_Nw: -3.0 },
+        // FULL2: signal +2, trade +5.
+        { ticker: "FULL2", signal_week_start: "2026-10-02", horizon_weeks: 1, view: "signal", status: "graded", buy_price: 50, r_Nw: 2.0 },
+        { ticker: "FULL2", signal_week_start: "2026-10-02", horizon_weeks: 1, view: "trade", status: "graded", buy_price: 50, r_Nw: 5.0 },
+        // A t1_literal-style not-gradable row (no view key) is ignored too.
+        { ticker: "FULL3", signal_week_start: "2026-10-02", horizon_weeks: 1, status: "not_gradable_weekly_downtrend", buy_price: 10 },
+      ],
+    });
+
+    await runValidatePrior(raw, { promptId: 1, runId }, fetchFn as any);
+
+    const h1 = raw.prepare("SELECT n, ew_return, hit_rate FROM validations WHERE run_id = ? AND horizon_w = 1").get(runId) as any;
+    expect(h1).toEqual({ n: 2, ew_return: 1.0, hit_rate: 0.5 }); // (-3 + 5) / 2; one of two > 0
   });
 });

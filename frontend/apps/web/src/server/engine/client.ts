@@ -138,10 +138,20 @@ export async function retireArm(promptId: number, fetchFn: FetchFn = fetch) {
 
 export type ValidatePick = { ticker: string; entry_price: number | null; sl: number | null };
 
+// The engine (src/backtest/horizons.py:grade_horizons) emits TWO rows per
+// (ticker, horizon): view "signal" (close-to-close, stop ignored) and view
+// "trade" (trailing-stop exit, frozen once hit). Consumers must pick one view
+// — averaging both mixes two different return definitions and double-counts
+// n. `view` is optional only because engine/validation.py's
+// not_gradable_weekly_downtrend rows (t1_literal picks with no resting weekly
+// stop) carry no view key at all; graded/pending rows always have one.
+export type ValidateView = "signal" | "trade";
+
 export type ValidateRow = {
   ticker: string;
   signal_week_start: string;
   horizon_weeks: number;
+  view?: ValidateView;
   status: "graded" | "pending" | "not_gradable_weekly_downtrend";
   buy_price: number | null;
   r_Nw: number | null;

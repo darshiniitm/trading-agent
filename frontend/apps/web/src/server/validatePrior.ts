@@ -1,8 +1,16 @@
 import type Database from "better-sqlite3";
 import { validateArm, type ValidateRow } from "@/server/engine/client";
 
+// The one engine view a validations row is built from: "trade" (trailing-stop
+// exit) — the realistic, actionable number for a forward-testing program, and
+// the project's own primary view (src/backtest/horizons.py). The "signal" view
+// rows the engine also returns are deliberately ignored here, never averaged in.
+export const VALIDATION_VIEW = "trade" as const;
+
 function aggregate(rows: ValidateRow[], horizon: number): { n: number; ewReturn: number; hitRate: number } | null {
-  const graded = rows.filter((r) => r.horizon_weeks === horizon && r.status === "graded" && r.r_Nw !== null);
+  const graded = rows.filter(
+    (r) => r.view === VALIDATION_VIEW && r.horizon_weeks === horizon && r.status === "graded" && r.r_Nw !== null
+  );
   if (graded.length === 0) return null;
   const n = graded.length;
   const ewReturn = graded.reduce((sum, r) => sum + (r.r_Nw as number), 0) / n;
