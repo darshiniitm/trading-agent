@@ -51,12 +51,32 @@ describe("POST /api/prompts/[promptId]/edit route wiring", () => {
 });
 
 describe("POST /api/prompts/[promptId]/retire route wiring", () => {
-  it("retires a prompt and returns 200 with prompt_id and status", async () => {
+  // Never let these wiring tests reach a real engine on 127.0.0.1:8001 (they
+  // used to: retirePrompt calls retireArm with the global fetch, which
+  // retired real arm ids in a locally running engine's registry).
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, text: async () => JSON.stringify({ status: "retired" }) }));
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("retires a prompt and returns 200 with prompt_id, status and a null warning", async () => {
     const promptId = seedConfirmedPrompt();
     const res = await retireRoute(new Request("http://localhost/api/prompts/100/retire", { method: "POST" }), { params: { promptId: String(promptId) } });
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body).toEqual({ prompt_id: promptId, status: "retired" });
+    expect(body).toEqual({ prompt_id: promptId, status: "retired", warning: null });
+  });
+
+  it("returns 200 with the warning (not 409) when the local retire succeeded but the engine call failed", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("ECONNREFUSED")));
+    const promptId = seedConfirmedPrompt();
+    const res = await retireRoute(new Request("http://localhost/api/prompts/100/retire", { method: "POST" }), { params: { promptId: String(promptId) } });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.status).toBe("retired");
+    expect(body.warning).toMatch(/notifying the engine failed: ECONNREFUSED/);
   });
 
   it("returns 409 when trying to retire an already-retired prompt", async () => {

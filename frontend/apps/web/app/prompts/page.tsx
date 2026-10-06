@@ -24,7 +24,10 @@ export default function PromptsPage() {
 
   async function retire(promptId: number) {
     const res = await fetch(`/api/prompts/${promptId}/retire`, { method: "POST" });
-    if (res.ok) setMine((rows) => rows!.map((r) => (r.promptId === promptId ? { ...r, status: "retired" } : r)));
+    if (!res.ok) return;
+    const body = await res.json();
+    if (body.warning) window.alert(body.warning);
+    setMine((rows) => rows!.map((r) => (r.promptId === promptId ? { ...r, status: "retired" } : r)));
   }
 
   return (

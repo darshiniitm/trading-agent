@@ -61,6 +61,32 @@ describe("retirePrompt", () => {
     expect(fetchFn).toHaveBeenCalledWith("http://127.0.0.1:8001/arms/1/retire", expect.anything());
   });
 
+  it("refuses to retire a superseded prompt, leaving its status and closed_at untouched", async () => {
+    const raw = createTestDb();
+    seedConfirmedPrompt(raw, "superseded");
+    raw.prepare("UPDATE prompts SET closed_at = '2026-10-01T00:00:00.000Z' WHERE prompt_id = 1").run();
+    const fetchFn = vi.fn();
+    await expect(retirePrompt(raw, 1, fetchFn as any)).rejects.toThrow(/already superseded/);
+    expect(raw.prepare("SELECT status, closed_at FROM prompts WHERE prompt_id = 1").get()).toEqual({ status: "superseded", closed_at: "2026-10-01T00:00:00.000Z" });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it("still retires locally and returns a warning (not a throw) when the engine's retire call fails", async () => {
+    const raw = createTestDb();
+    seedConfirmedPrompt(raw);
+    const fetchFn = vi.fn().mockRejectedValue(new Error("engine down"));
+    const { warning } = await retirePrompt(raw, 1, fetchFn as any);
+    expect(warning).toMatch(/retired, but notifying the engine failed: engine down/);
+    expect((raw.prepare("SELECT status FROM prompts WHERE prompt_id = 1").get() as any).status).toBe("retired");
+  });
+
+  it("returns warning null when the engine's retire call succeeds", async () => {
+    const raw = createTestDb();
+    seedConfirmedPrompt(raw);
+    const fetchFn = vi.fn().mockResolvedValue({ ok: true, text: async () => JSON.stringify({ prompt_id: 1, status: "retired" }) });
+    expect(await retirePrompt(raw, 1, fetchFn as any)).toEqual({ warning: null });
+  });
+
   it("refuses to retire a prompt that is already retired", async () => {
     const raw = createTestDb();
     seedConfirmedPrompt(raw, "retired");
