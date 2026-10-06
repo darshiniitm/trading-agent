@@ -37,6 +37,55 @@ function validateAgainstCatalog(output: CompileOutput, catalog: CatalogEntry[]):
   return errors;
 }
 
+// needs_input/source_phrases paths come straight from the model's output and
+// later drive mergeAnswer.ts's dynamic setAtPath() write, so they are
+// untrusted input: anything outside this explicit grammar is a validation
+// error (forcing the usual single retry), never passed through. This is
+// layer 1 of the prototype-pollution defense; setAtPath() refuses
+// __proto__/constructor/prototype segments on its own as layer 2.
+const FIXED_PATHS = new Set([
+  "structure", "risk_cap_pct", "selection_point.session_of_week", "selection_point.at",
+  "near_miss.max_failed", "t1_window.length_sessions",
+]);
+const INDEX = "(0|[1-9][0-9]*)"; // non-negative integer, no leading zeros
+const IDENTIFIER = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+// The identifier pattern alone does NOT exclude these (each is a valid
+// identifier), so they are refused explicitly.
+const FORBIDDEN_NAMES = new Set(["__proto__", "constructor", "prototype"]);
+// Bound on the second-level indexes (a condition's value band, the T1
+// window's offsets) — generous for any real spec, small enough that a
+// fabricated index can't blow up the spec when an answer is written to it.
+export const MAX_SECONDARY_INDEX = 64;
+
+export function pathGrammarError(path: string, conditionCount: number): string | null {
+  if (FIXED_PATHS.has(path)) return null;
+  let m = new RegExp(`^t1_window\\.offsets\\.${INDEX}$`).exec(path);
+  if (m) return Number(m[1]) < MAX_SECONDARY_INDEX ? null : `offset index ${m[1]} is out of range`;
+  m = new RegExp(`^conditions\\.${INDEX}\\.(params\\.([^.]+)|value(\\.${INDEX})?)$`).exec(path);
+  if (!m) return "not one of the allowed paths";
+  if (Number(m[1]) >= conditionCount) return `condition index ${m[1]} does not exist (there are ${conditionCount} condition(s))`;
+  const param = m[3];
+  if (param !== undefined && (!IDENTIFIER.test(param) || FORBIDDEN_NAMES.has(param))) return `"${param}" is not a valid parameter name`;
+  const valueIndex = m[5];
+  if (valueIndex !== undefined && Number(valueIndex) >= MAX_SECONDARY_INDEX) return `value index ${valueIndex} is out of range`;
+  return null;
+}
+
+export function validatePaths(output: CompileOutput): string[] {
+  const errors: string[] = [];
+  const check = (kind: "needs_input" | "source_phrases", path: string) => {
+    const problem = pathGrammarError(path, output.conditions.length);
+    if (problem) {
+      errors.push(
+        `${kind} path ${JSON.stringify(path)}: ${problem} — use only structure, risk_cap_pct, selection_point.session_of_week, selection_point.at, near_miss.max_failed, t1_window.length_sessions, t1_window.offsets.<N>, conditions.<N>.params.<name>, conditions.<N>.value, conditions.<N>.value.<N>`
+      );
+    }
+  };
+  output.needs_input.forEach((n) => check("needs_input", n.path));
+  output.source_phrases.forEach((s) => check("source_phrases", s.path));
+  return errors;
+}
+
 type CallModelFn = (system: string, user: string) => Promise<string>;
 
 export async function compilePrompt(
@@ -67,7 +116,7 @@ export async function compilePrompt(
       continue;
     }
 
-    const catalogErrors = validateAgainstCatalog(parsed.data, catalog);
+    const catalogErrors = [...validatePaths(parsed.data), ...validateAgainstCatalog(parsed.data, catalog)];
     if (catalogErrors.length > 0) {
       lastErrors = catalogErrors;
       continue;

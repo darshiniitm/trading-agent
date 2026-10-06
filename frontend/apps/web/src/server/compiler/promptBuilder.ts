@@ -15,7 +15,8 @@ RULES (do not violate any of these):
 2. If a condition names something not in the catalog, put the exact text in "unsupported" with a short reason, and do NOT include it in "conditions".
 3. If a condition is named but is missing one of the catalog's required params, still include the condition in "conditions" (with that key simply absent from "params"), and add a "needs_input" item with "path" pointing at the exact missing value and a plain, neutral question — NEVER suggest or imply a value in the question text.
 4. NEVER ask about liquidity in "needs_input" under any circumstance — the app always asks that itself, separately, outside this compiler.
-5. Respond with ONLY one JSON object, no prose before or after it, matching exactly this shape:
+5. Every "path" in "source_phrases" and "needs_input" must be exactly one of these forms (N is a 0-based index; a conditions index must point at an existing entry of "conditions"): "structure", "risk_cap_pct", "selection_point.session_of_week", "selection_point.at", "near_miss.max_failed", "t1_window.length_sessions", "t1_window.offsets.N", "conditions.N.params.<param name>", "conditions.N.value", "conditions.N.value.N". Any other path is rejected.
+6. Respond with ONLY one JSON object, no prose before or after it, matching exactly this shape:
 {"structure": "literal"|"t1_literal"|null, "conditions": [{"id": "C1", "role": "filter"|"event"|"stop", "kind": "field"|"indicator", "name": "...", "params": {}, "op": "...", "value": null, "dir": null}], "selection_point": {"session_of_week": 1-5, "at": "open"|"close"}|null, "stop": {"from": "<condition id>"}|null, "risk_cap_pct": number|null, "near_miss": {"max_failed": number}|null, "t1_window": {"length_sessions": number, "offsets": [number]}|null, "source_phrases": [{"path": "...", "phrase": "..."}], "needs_input": [{"path": "...", "question": "..."}], "unsupported": [{"text": "...", "reason": "..."}]}`;
 
   const user = `Prompt:\n"""\n${promptText}\n"""`;

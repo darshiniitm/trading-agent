@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { compilePrompt, CompileError } from "@/server/compiler/compile";
+import { compilePrompt, CompileError, pathGrammarError } from "@/server/compiler/compile";
 
 const CATALOG = [
   { kind: "field", name: "mcap_cr", required_params: [], ops: [{ op: "between", requires_value: true }] },
@@ -102,5 +102,53 @@ describe("compilePrompt", () => {
     expect(attempts).toBe(1);
     expect(callModel).toHaveBeenCalledTimes(1);
     expect(output.needs_input).toHaveLength(1);
+  });
+
+  it("rejects a __proto__ needs_input path as a validation error, forcing a retry (I4 layer 1)", async () => {
+    const base = fullyTraceableOutput();
+    const polluting = { ...base, needs_input: [{ path: "__proto__.polluted", question: "What value?" }] };
+    const callModel = vi.fn()
+      .mockResolvedValueOnce(JSON.stringify(polluting))
+      .mockResolvedValueOnce(JSON.stringify(base));
+    const { attempts, output } = await compilePrompt("x", CATALOG, STRUCTURES, { callModel });
+    expect(attempts).toBe(2);
+    expect(output.needs_input).toEqual([]);
+    expect(callModel.mock.calls[1][1]).toMatch(/needs_input path "__proto__\.polluted": not one of the allowed paths/);
+    expect(({} as any).polluted).toBeUndefined();
+  });
+
+  it("a model that keeps emitting a polluting path is a CompileError, never an accepted output", async () => {
+    const polluting = { ...fullyTraceableOutput(), needs_input: [{ path: "conditions.0.params.__proto__", question: "What value?" }] };
+    const callModel = vi.fn().mockResolvedValue(JSON.stringify(polluting));
+    await expect(compilePrompt("x", CATALOG, STRUCTURES, { callModel })).rejects.toBeInstanceOf(CompileError);
+    expect(callModel).toHaveBeenCalledTimes(2);
+  });
+
+  it("checks source_phrases paths against the same grammar", async () => {
+    const bad = { ...fullyTraceableOutput(), source_phrases: [...fullyTraceableOutput().source_phrases, { path: "constructor.prototype.x", phrase: "x" }] };
+    const callModel = vi.fn().mockResolvedValueOnce(JSON.stringify(bad)).mockResolvedValueOnce(JSON.stringify(fullyTraceableOutput()));
+    const { attempts } = await compilePrompt("x", CATALOG, STRUCTURES, { callModel });
+    expect(attempts).toBe(2);
+    expect(callModel.mock.calls[1][1]).toMatch(/source_phrases path "constructor\.prototype\.x"/);
+  });
+});
+
+describe("pathGrammarError — the needs_input/source_phrases path allow-list", () => {
+  it.each([
+    "structure", "risk_cap_pct", "selection_point.session_of_week", "selection_point.at", "near_miss.max_failed",
+    "t1_window.length_sessions", "t1_window.offsets.0", "t1_window.offsets.12",
+    "conditions.0.params.length", "conditions.1.params.source_2", "conditions.0.value", "conditions.1.value.1",
+  ])("accepts %s", (path) => {
+    expect(pathGrammarError(path, 2)).toBeNull();
+  });
+
+  it.each([
+    "__proto__.polluted", "conditions.0.params.__proto__", "conditions.0.params.constructor", "conditions.0.params.prototype",
+    "conditions.__proto__.params.x", "conditions.0.__proto__", "constructor.prototype.polluted",
+    "conditions.2.params.length", // only 2 conditions
+    "conditions.01.params.length", "conditions.-1.value", "conditions.0.params.a.b", "conditions.0.params.1x",
+    "conditions.0.value.64", "t1_window.offsets.64", "t1_window.offsets.x", "stop.from", "liquidity", "selection_point", "",
+  ])("rejects %s", (path) => {
+    expect(pathGrammarError(path, 2)).not.toBeNull();
   });
 });
