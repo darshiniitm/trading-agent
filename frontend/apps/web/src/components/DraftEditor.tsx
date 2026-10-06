@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Condition, ScreenSpec } from "spec";
 import { ConditionRow } from "@/components/ConditionRow";
+import { QuestionRow } from "@/components/QuestionRow";
 import { describeApiError } from "@/lib/apiError";
 
 type LiquidityChoice = "confirm_10cr" | "custom" | "none" | null;
@@ -198,6 +199,8 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
   function gateReason(): string | null {
     if (!structure) return "Choose a structure";
     if (conditions.length === 0) return "Add at least one condition";
+    if (compileResult && compileResult.needs_input.length > 0) return `Answer ${compileResult.needs_input.length} question(s) first`;
+    if (compileResult && compileResult.unsupported.length > 0) return "Remove the unsupported condition(s) from your prompt first";
     if (liquidity === null) return "Answer the liquidity question";
     if (liquidity === "custom" && (liquidityCustom === "" || Number.isNaN(Number(liquidityCustom)))) {
       return "Enter a valid liquidity floor";
@@ -338,6 +341,24 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
                 {compileResult.unsupported.map((u, i) => <li key={i}>&quot;{u.text}&quot; — {u.reason}</li>)}
               </ul>
             </div>
+          )}
+
+          {compileResult.needs_input.length > 0 && (
+            <fieldset>
+              <legend>Questions for you</legend>
+              {compileResult.needs_input.map((n, i) => (
+                <QuestionRow
+                  key={n.path}
+                  index={i + 1}
+                  item={n}
+                  draftId={draftId!}
+                  onAnswered={(path, spec) => {
+                    setCompileResult((prev) => (prev ? { ...prev, needs_input: prev.needs_input.filter((x) => x.path !== path) } : prev));
+                    if (spec?.conditions) setConditions(spec.conditions);
+                  }}
+                />
+              ))}
+            </fieldset>
           )}
         </section>
       )}
