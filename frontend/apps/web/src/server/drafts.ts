@@ -1,5 +1,28 @@
 import type Database from "better-sqlite3";
-import { ScreenSpecSchema, type ScreenSpec, type NeedsInputItem, type SourcePhrase, type UnsupportedItem } from "spec";
+import { z } from "zod";
+import { ScreenSpecSchema, SelectionPointSchema, T1WindowSchema, ConditionSchema, StopSchema, NearMissSchema, type ScreenSpec, type NeedsInputItem, type SourcePhrase, type UnsupportedItem } from "spec";
+
+// Local, lenient variant of ScreenSpecSchema for in-progress drafts:
+// Allows partial selection_point/t1_window (e.g., only session_of_week set, at pending)
+// without exposing this permissiveness to compiler output validation (D6 rule).
+const DraftSpecSchema = z
+  .object({
+    spec_version: z.number().int(),
+    structure: z.enum(["literal", "t1_literal"]),
+    timeframe: z.literal("1W"),
+    selection_point: SelectionPointSchema.partial().nullable(),
+    conditions: z.array(ConditionSchema),
+    stop: StopSchema.nullable(),
+    risk_cap_pct: z.number().nullable(),
+    near_miss: NearMissSchema.nullable(),
+    t1_window: T1WindowSchema.partial().nullable().optional(),
+  })
+  .superRefine((spec, ctx) => {
+    const ids = spec.conditions.map((c) => c.id);
+    if (new Set(ids).size !== ids.length) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "condition ids must be unique" });
+    }
+  });
 
 export type DraftRow = {
   draftId: number;
@@ -86,7 +109,7 @@ export function updateDraft(raw: Database.Database, draftId: number, patch: Draf
   if (!existing) throw new Error(`draft ${draftId} not found`);
 
   if (patch.specJson !== undefined) {
-    const result = ScreenSpecSchema.safeParse(JSON.parse(patch.specJson));
+    const result = DraftSpecSchema.safeParse(JSON.parse(patch.specJson));
     if (!result.success) {
       throw new Error(`invalid spec: ${result.error.issues.map((i) => i.message).join("; ")}`);
     }

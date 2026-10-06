@@ -30,10 +30,12 @@ export function applyAnswer(
   setAtPath(spec, path, value);
   const remainingNeedsInput = needsInput.filter((n) => n.path !== path);
 
-  const existingAnswersRow = raw.prepare("SELECT answers_json FROM prompt_drafts WHERE draft_id = ?").get(draftId) as { answers_json: string | null };
-  const answers = (existingAnswersRow.answers_json ? JSON.parse(existingAnswersRow.answers_json) : []) as { path: string; value: unknown }[];
-  const nextAnswers = answers.filter((a) => a.path !== path).concat([{ path, value }]);
-  raw.prepare("UPDATE prompt_drafts SET answers_json = ? WHERE draft_id = ?").run(JSON.stringify(nextAnswers), draftId);
+  return raw.transaction(() => {
+    const existingAnswersRow = raw.prepare("SELECT answers_json FROM prompt_drafts WHERE draft_id = ?").get(draftId) as { answers_json: string | null };
+    const answers = (existingAnswersRow.answers_json ? JSON.parse(existingAnswersRow.answers_json) : []) as { path: string; value: unknown }[];
+    const nextAnswers = answers.filter((a) => a.path !== path).concat([{ path, value }]);
+    raw.prepare("UPDATE prompt_drafts SET answers_json = ? WHERE draft_id = ?").run(JSON.stringify(nextAnswers), draftId);
 
-  return updateDraft(raw, draftId, { specJson: JSON.stringify(spec), needsInputJson: JSON.stringify(remainingNeedsInput) });
+    return updateDraft(raw, draftId, { specJson: JSON.stringify(spec), needsInputJson: JSON.stringify(remainingNeedsInput) });
+  })();
 }

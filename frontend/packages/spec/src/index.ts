@@ -14,7 +14,7 @@ export type Condition = z.infer<typeof ConditionSchema>;
 
 export const SelectionPointSchema = z.object({
   session_of_week: z.number().int().min(1).max(5),
-  at: z.enum(["open", "close"]).default("open"),
+  at: z.enum(["open", "close"]),
 });
 export type SelectionPoint = z.infer<typeof SelectionPointSchema>;
 
