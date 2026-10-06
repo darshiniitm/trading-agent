@@ -12,7 +12,9 @@ describe("parseAnswer", () => {
 });
 
 describe("QuestionRow", () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
   function stubAnswerFetch() {
     const fetchFn = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ spec: null, needs_input: [] }) });
