@@ -34,7 +34,18 @@ export async function compileDraft(
         ...output.needs_input,
         { path: "structure", question: "Is this a weekly closing-price signal (literal), or does it look for something happening during the week or over a rolling window (t1_literal)?" },
       ];
+      // Same spec shape as the resolved branch below, with structure still
+      // null: whatever the model DID find (conditions, selection point, ...)
+      // is kept, and the "structure" needs_input item is answerable through
+      // applyAnswer (which needs a spec to write into). The structure COLUMN
+      // is left untouched here; applyAnswer sets it alongside spec.structure.
+      const spec = {
+        spec_version: 4, structure: null, timeframe: "1W" as const,
+        selection_point: output.selection_point, conditions: output.conditions, stop: output.stop,
+        risk_cap_pct: output.risk_cap_pct, near_miss: output.near_miss, t1_window: output.t1_window,
+      };
       updateDraft(raw, draftId, {
+        specJson: JSON.stringify(spec),
         needsInputJson: JSON.stringify(needsInput),
         sourcePhrasesJson: JSON.stringify(output.source_phrases),
         unsupportedJson: JSON.stringify(output.unsupported),

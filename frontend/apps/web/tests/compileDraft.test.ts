@@ -42,7 +42,7 @@ describe("compileDraft", () => {
     expect(compilation.errors_json).toBeNull();
   });
 
-  it("when structure is null, writes only needs_input (plus a structure question) and leaves specJson untouched", async () => {
+  it("when structure is null, writes needs_input (plus a structure question) and a structure-null spec", async () => {
     const raw = createTestDb();
     const draftId = draftWithText(raw, "something vague");
     const callModel = vi.fn().mockResolvedValue(JSON.stringify({
@@ -51,12 +51,37 @@ describe("compileDraft", () => {
     }));
 
     const draft = await compileDraft(raw, draftId, { fetchFn: fakeEngineFetch() as any, callModel });
-    expect(draft.spec).toBeNull();
+    expect(draft.spec).toMatchObject({ structure: null, conditions: [] });
+    expect(draft.structure).toBeNull();
     expect(draft.needsInput!.some((n) => n.path === "structure")).toBe(true);
     // Structure being unresolved doesn't stop the model from flagging an
     // independently-unsupported condition in the same prompt — both facts
     // should reach the draft.
     expect(draft.unsupported).toEqual([{ text: "MACD crossover", reason: "MACD is not in the catalog" }]);
+  });
+
+  it("when structure is null, keeps every condition/selection point/stop the model DID find in a structure-null spec (I2)", async () => {
+    const raw = createTestDb();
+    const draftId = draftWithText(raw, "VStop(10,2,close) flips up, Monday open");
+    const callModel = vi.fn().mockResolvedValue(JSON.stringify({
+      structure: null,
+      conditions: [{ id: "C1", role: "event", kind: "indicator", name: "vstop", params: { length: 10, mult: 2, source: "close" }, op: "flip", dir: "long" }],
+      selection_point: { session_of_week: 1, at: "open" }, stop: { from: "C1" }, risk_cap_pct: null, near_miss: null, t1_window: null,
+      source_phrases: [
+        { path: "conditions.0.params.length", phrase: "10" }, { path: "conditions.0.params.mult", phrase: "2" }, { path: "conditions.0.params.source", phrase: "close" },
+        { path: "selection_point.session_of_week", phrase: "Monday" }, { path: "selection_point.at", phrase: "open" },
+      ],
+      needs_input: [], unsupported: [],
+    }));
+    const draft = await compileDraft(raw, draftId, { fetchFn: fakeEngineFetch() as any, callModel });
+    expect(draft.structure).toBeNull();
+    expect(draft.spec).toEqual({
+      spec_version: 4, structure: null, timeframe: "1W",
+      selection_point: { session_of_week: 1, at: "open" },
+      conditions: [{ id: "C1", role: "event", kind: "indicator", name: "vstop", params: { length: 10, mult: 2, source: "close" }, op: "flip", dir: "long" }],
+      stop: { from: "C1" }, risk_cap_pct: null, near_miss: null, t1_window: null,
+    });
+    expect(draft.needsInput).toEqual([expect.objectContaining({ path: "structure" })]);
   });
 
   it("on CompileError, writes nothing to the draft's structure/specJson and logs errors_json", async () => {

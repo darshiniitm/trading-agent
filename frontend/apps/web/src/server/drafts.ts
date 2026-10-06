@@ -4,11 +4,14 @@ import { ScreenSpecSchema, SelectionPointSchema, T1WindowSchema, ConditionSchema
 
 // Local, lenient variant of ScreenSpecSchema for in-progress drafts:
 // Allows partial selection_point/t1_window (e.g., only session_of_week set, at pending)
-// without exposing this permissiveness to compiler output validation (D6 rule).
+// and a still-unresolved structure (a null-structure compile, whose "structure"
+// needs_input item is answered later via applyAnswer), without exposing this
+// permissiveness to compiler output validation (D6 rule). The confirm gate
+// still requires the draft's structure column to be set.
 const DraftSpecSchema = z
   .object({
     spec_version: z.number().int(),
-    structure: z.enum(["literal", "t1_literal"]),
+    structure: z.enum(["literal", "t1_literal"]).nullable(),
     timeframe: z.literal("1W"),
     selection_point: SelectionPointSchema.partial().nullable(),
     conditions: z.array(ConditionSchema),

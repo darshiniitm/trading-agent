@@ -5,8 +5,11 @@ import { CompileError } from "@/server/compiler/compile";
 export async function POST(_req: Request, { params }: { params: { draftId: string } }) {
   try {
     const draft = await compileDraft(db(), Number(params.draftId));
+    // compileDraft always writes a spec on success; its structure is this
+    // compile's reading (null = unresolved, pending a "structure" answer),
+    // whereas the column can still hold a previous compile's structure.
     return Response.json({
-      structure: draft.structure, spec: draft.spec, needs_input: draft.needsInput,
+      structure: draft.spec ? draft.spec.structure : draft.structure, spec: draft.spec, needs_input: draft.needsInput,
       source_phrases: draft.sourcePhrases, unsupported: draft.unsupported,
     });
   } catch (err) {
