@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import { getHealth } from "@/server/engine/client";
+import { getHealth, registerArm } from "@/server/engine/client";
 import { runWeeklyScreen } from "@/server/weeklyScreen";
 import { runSelectEntry } from "@/server/selectEntry";
 import { runValidatePrior } from "@/server/validatePrior";
@@ -95,11 +95,30 @@ export async function runCatchUp(
   raw: Database.Database,
   { promptId }: { promptId: number },
   fetchFn?: typeof fetch
-): Promise<{ weeksRun: string[]; gradingFailures: string[] }> {
+): Promise<{ weeksRun: string[]; gradingFailures: string[]; armRegistrationError: string | null }> {
   const anchorAsOf = lastCompleteAsOf(raw, promptId);
 
+  // Self-healing arm registration: confirmDraft registers the arm once, and a
+  // failure there used to be permanent — the engine's is_active(prompt_id)
+  // gate then never lets /select write a forward record for this prompt. The
+  // engine's register_arm is an idempotent upsert, so re-assert it on every
+  // catch-up. Only for a still-confirmed prompt: registering would flip a
+  // retired/superseded prompt's arm back to active. Best-effort — a failure
+  // here never blocks the week's screen/select/grading.
+  const prompt = raw.prepare("SELECT status, spec_json FROM prompts WHERE prompt_id = ?").get(promptId) as
+    | { status: string; spec_json: string }
+    | undefined;
+  let armRegistrationError: string | null = null;
+  if (prompt && prompt.status === "confirmed") {
+    try {
+      await registerArm(promptId, JSON.parse(prompt.spec_json), fetchFn);
+    } catch (err) {
+      armRegistrationError = (err as Error).message;
+    }
+  }
+
   const health = (await getHealth(fetchFn)) as { last_bar_date: string | null };
-  if (!health.last_bar_date) return { weeksRun: [], gradingFailures: [] };
+  if (!health.last_bar_date) return { weeksRun: [], gradingFailures: [], armRegistrationError };
 
   const missedWeeks = fridaysBetweenExclusiveInclusive(anchorAsOf, health.last_bar_date);
   const weeksRun: string[] = [];
@@ -137,5 +156,5 @@ export async function runCatchUp(
     await gradeMaturedRuns(raw, promptId, health.last_bar_date, fetchFn, gradingFailures);
   }
 
-  return { weeksRun, gradingFailures };
+  return { weeksRun, gradingFailures, armRegistrationError };
 }

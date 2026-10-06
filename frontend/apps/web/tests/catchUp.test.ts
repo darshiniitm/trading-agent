@@ -31,6 +31,7 @@ function validateCallAsOfs(fetchFn: { mock: { calls: any[][] } }): string[] {
 function fakeFetch() {
   return vi.fn().mockImplementation(async (url: string) => {
     if (url.endsWith("/health")) return { ok: true, text: async () => JSON.stringify({ status: "ok", engine_git_sha: "abc", last_bar_date: "2026-10-16", data_snapshot_hash: null }) };
+    if (url.endsWith("/arms/register")) return { ok: true, text: async () => JSON.stringify({ prompt_id: 1, status: "active" }) };
     if (url.endsWith("/screen")) return { ok: true, text: async () => JSON.stringify({ candidates: [], applied_steps: [], funnel: [], sector_view: [] }) };
     if (url.endsWith("/select")) return { ok: true, text: async () => JSON.stringify({ entered: [], not_confirmed: [], no_point_data: [], watching: [] }) };
     if (url.endsWith("/validate")) return { ok: true, text: async () => JSON.stringify({ graded_weeks: 1, maturity: "not_first_look", rows: [] }) };
@@ -43,6 +44,7 @@ function fakeFetch() {
 function fetchWithValidateFailure() {
   return vi.fn().mockImplementation(async (url: string) => {
     if (url.endsWith("/health")) return { ok: true, text: async () => JSON.stringify({ status: "ok", engine_git_sha: "abc", last_bar_date: "2026-10-16", data_snapshot_hash: null }) };
+    if (url.endsWith("/arms/register")) return { ok: true, text: async () => JSON.stringify({ prompt_id: 1, status: "active" }) };
     if (url.endsWith("/screen")) return { ok: true, text: async () => JSON.stringify({ candidates: [], applied_steps: [], funnel: [], sector_view: [] }) };
     if (url.endsWith("/select")) return { ok: true, text: async () => JSON.stringify({ entered: [], not_confirmed: [], no_point_data: [], watching: [] }) };
     if (url.endsWith("/validate")) throw new Error("validate engine down");
@@ -55,6 +57,7 @@ function fetchWithValidateFailure() {
 function fetchFailingSelectFor(asOfToFail: string) {
   return vi.fn().mockImplementation(async (url: string, init?: { body?: string }) => {
     if (url.endsWith("/health")) return { ok: true, text: async () => JSON.stringify({ status: "ok", engine_git_sha: "abc", last_bar_date: "2026-10-16", data_snapshot_hash: null }) };
+    if (url.endsWith("/arms/register")) return { ok: true, text: async () => JSON.stringify({ prompt_id: 1, status: "active" }) };
     if (url.endsWith("/screen")) return { ok: true, text: async () => JSON.stringify({ candidates: [], applied_steps: [], funnel: [], sector_view: [] }) };
     if (url.endsWith("/select")) {
       const body = JSON.parse(init?.body ?? "{}");
@@ -273,5 +276,40 @@ describe("runCatchUp", () => {
     // Attempted (and failed) during both week 10-09's and week 10-16's
     // catch-up, then succeeded on this retry.
     expect(raw.prepare("SELECT status, attempts FROM jobs WHERE type = 'validate_prior' AND as_of = '2026-10-02'").get()).toEqual({ status: "done", attempts: 3 });
+  });
+
+  // --- Final-review I2: arm registration is retried on every catch-up.
+  it("re-registers the prompt's arm with its spec on every catch-up", async () => {
+    const raw = createTestDb();
+    seedPromptWithOneRun(raw, "2026-10-16");
+    const fetchFn = fakeFetch();
+    const { armRegistrationError } = await runCatchUp(raw, { promptId: 1 }, fetchFn as any);
+    expect(armRegistrationError).toBeNull();
+    const registerCalls = fetchFn.mock.calls.filter(([url]: any[]) => String(url).endsWith("/arms/register"));
+    expect(registerCalls).toHaveLength(1);
+    expect(JSON.parse(registerCalls[0][1].body)).toEqual({ prompt_id: 1, spec: SPEC });
+  });
+
+  it("still screens, selects and grades the week when arm registration fails, and reports the failure", async () => {
+    const raw = createTestDb();
+    seedPromptWithOneRun(raw, "2026-10-02");
+    const ok = fakeFetch();
+    const fetchFn = vi.fn().mockImplementation(async (url: string, init?: unknown) => {
+      if (url.endsWith("/arms/register")) throw new Error("register engine down");
+      return ok(url, init);
+    });
+    const { weeksRun, armRegistrationError } = await runCatchUp(raw, { promptId: 1 }, fetchFn as any);
+    expect(armRegistrationError).toBe("register engine down");
+    expect(weeksRun).toEqual(["2026-10-09", "2026-10-16"]);
+    expect(raw.prepare("SELECT COUNT(*) AS n FROM jobs WHERE type = 'validate_prior'").get()).toEqual({ n: 2 });
+  });
+
+  it("never re-registers (re-activates) the arm of a retired prompt", async () => {
+    const raw = createTestDb();
+    seedPromptWithOneRun(raw, "2026-10-16");
+    raw.prepare("UPDATE prompts SET status = 'retired', closed_at = '2026-10-17' WHERE prompt_id = 1").run();
+    const fetchFn = fakeFetch();
+    await runCatchUp(raw, { promptId: 1 }, fetchFn as any);
+    expect(fetchFn.mock.calls.some(([url]: any[]) => String(url).endsWith("/arms/register"))).toBe(false);
   });
 });

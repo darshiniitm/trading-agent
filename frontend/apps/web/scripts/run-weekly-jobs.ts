@@ -7,7 +7,10 @@ async function main() {
 
   for (const prompt of prompts) {
     try {
-      const { weeksRun, gradingFailures } = await runCatchUp(raw, { promptId: prompt.prompt_id });
+      const { weeksRun, gradingFailures, armRegistrationError } = await runCatchUp(raw, { promptId: prompt.prompt_id });
+      if (armRegistrationError) {
+        console.warn(`Prompt ${prompt.prompt_id} (${prompt.title}): arm registration failed (will retry next catch-up) — ${armRegistrationError}`);
+      }
       console.log(
         weeksRun.length > 0
           ? `Prompt ${prompt.prompt_id} (${prompt.title}): caught up ${weeksRun.join(", ")}`
