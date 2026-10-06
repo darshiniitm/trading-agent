@@ -38,6 +38,27 @@ export default function NewDraftPage() {
       .then((d) => setDraftId(d.draft_id));
   }, []);
 
+  // The as_of sent to dry-run/confirm must be a real bar date: the engine's
+  // grade_horizons matches the signal bar by exact date, so an arbitrary
+  // "today" (any weekday, in the browser's clock) leaves every horizon
+  // permanently "pending". Use the engine's own last_bar_date.
+  async function resolveAsOf(): Promise<string> {
+    try {
+      const res = await fetch("/api/health");
+      if (res.ok) {
+        const health = await res.json();
+        if (typeof health.last_bar_date === "string" && health.last_bar_date) return health.last_bar_date;
+      }
+    } catch {
+      // fall through to the degraded fallback below
+    }
+    // Degraded fallback (accepted simplification): with the engine's health
+    // unavailable, use today's date so the page stays usable. A non-bar-date
+    // as_of may leave this run's horizons ungradable; the screen/confirm call
+    // that follows will most likely fail anyway if the engine is truly down.
+    return new Date().toISOString().slice(0, 10);
+  }
+
   function addCondition() {
     const nextId = `C${nextConditionNo.current}`;
     nextConditionNo.current += 1;
@@ -91,10 +112,11 @@ export default function NewDraftPage() {
     setDryRunResult(null);
     const spec = await saveSpec();
     if (!draftId || !spec) return setDryRunResult("Choose a structure and add a condition first");
+    const asOf = await resolveAsOf();
     const res = await fetch(`/api/drafts/${draftId}/dry-run`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ as_of: new Date().toISOString().slice(0, 10) }),
+      body: JSON.stringify({ as_of: asOf }),
     });
     const body = await res.json();
     if (!res.ok) {
@@ -119,10 +141,11 @@ export default function NewDraftPage() {
     setConfirming(true);
     try {
       await saveSpec();
+      const asOf = await resolveAsOf();
       const res = await fetch(`/api/drafts/${draftId}/confirm`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ as_of: new Date().toISOString().slice(0, 10) }),
+        body: JSON.stringify({ as_of: asOf }),
       });
       const body = await res.json();
       if (!res.ok) {

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { createTestDb } from "@/server/db/test-db";
 import { ensureOwnerUser } from "@/server/db/seed";
 
@@ -10,6 +10,7 @@ vi.mock("@/server/db/client", () => ({ db: () => raw }));
 import { GET as getPromptsRoute } from "@/../app/api/prompts/route";
 import { POST as editRoute } from "@/../app/api/prompts/[promptId]/edit/route";
 import { POST as retireRoute } from "@/../app/api/prompts/[promptId]/retire/route";
+import { GET as healthRoute } from "@/../app/api/health/route";
 
 function seedConfirmedPrompt() {
   const promptId = 100 + Math.floor(Math.random() * 1000);
@@ -67,5 +68,24 @@ describe("POST /api/prompts/[promptId]/retire route wiring", () => {
     expect(res.status).toBe(409);
     const body = await res.json();
     expect(body).toHaveProperty("error");
+  });
+});
+
+describe("GET /api/health route wiring", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("returns the engine's /health body unchanged", async () => {
+    const health = { status: "ok", engine_git_sha: "abc", last_bar_date: "2026-10-02", data_snapshot_hash: null };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, text: async () => JSON.stringify(health) }));
+    const res = await healthRoute();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(health);
+  });
+
+  it("returns 502 with an error body when the engine is unreachable", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("ECONNREFUSED")));
+    const res = await healthRoute();
+    expect(res.status).toBe(502);
+    expect((await res.json()).error).toMatch(/engine unreachable/);
   });
 });
