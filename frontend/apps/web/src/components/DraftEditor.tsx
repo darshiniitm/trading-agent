@@ -7,9 +7,23 @@ import { describeApiError } from "@/lib/apiError";
 
 type LiquidityChoice = "confirm_10cr" | "custom" | "none" | null;
 
-export default function NewDraftPage() {
+const LIQUIDITY_CONDITION_NAME = "traded_value_cr";
+
+// The liquidity floor is appended by buildSpec() as a trailing
+// traded_value_cr >= N (window 1W) filter; reverse that when loading a saved
+// draft so it shows up as the liquidity answer, not as a free-form condition.
+function isLiquidityCondition(c: Condition): boolean {
+  return c.name === LIQUIDITY_CONDITION_NAME && c.op === ">=" && (c.params as any)?.window === "1W";
+}
+
+// Used by /drafts/new (no initialDraftId: creates a fresh draft on mount) and
+// by /drafts/[draftId] (loads that existing draft — e.g. an edit-as-new-version
+// draft, or "Continue" from the Drafts tab — instead of creating a new one).
+export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
   const router = useRouter();
   const [draftId, setDraftId] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [draftStatus, setDraftStatus] = useState<string | null>(null);
   const [structure, setStructure] = useState<"literal" | "t1_literal" | "">("");
   const [conditions, setConditions] = useState<Condition[]>([]);
   const nextConditionNo = useRef(1); // monotonic — never reused, unlike conditions.length (removing then re-adding would collide)
@@ -33,10 +47,67 @@ export default function NewDraftPage() {
   const [blockedReason, setBlockedReason] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/drafts", { method: "POST" })
-      .then((r) => r.json())
-      .then((d) => setDraftId(d.draft_id));
-  }, []);
+    if (initialDraftId === undefined) {
+      fetch("/api/drafts", { method: "POST" })
+        .then((r) => r.json())
+        .then((d) => setDraftId(d.draft_id));
+      return;
+    }
+    fetch(`/api/drafts/${initialDraftId}`)
+      .then(async (r) => {
+        const body = await r.json();
+        if (!r.ok) throw new Error(describeApiError(body, `draft ${initialDraftId} could not be loaded`));
+        return body;
+      })
+      .then((draft) => {
+        loadDraft(draft);
+        setDraftId(draft.draftId);
+      })
+      .catch((err: Error) => setLoadError(err.message));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialDraftId]);
+
+  function loadDraft(draft: {
+    status: string; structure: "literal" | "t1_literal" | null; spec: ScreenSpec | null;
+    hypothesis: string | null; killCriterion: string | null;
+  }) {
+    setDraftStatus(draft.status);
+    setHypothesis(draft.hypothesis ?? "");
+    setKillCriterion(draft.killCriterion ?? "");
+    setStructure(draft.structure ?? draft.spec?.structure ?? "");
+    const spec = draft.spec;
+    if (!spec) return;
+
+    const liquidityCond = spec.conditions.find(isLiquidityCondition);
+    setConditions(spec.conditions.filter((c) => c !== liquidityCond));
+    if (liquidityCond) {
+      if (liquidityCond.value === 10) setLiquidity("confirm_10cr");
+      else {
+        setLiquidity("custom");
+        setLiquidityCustom(String(liquidityCond.value));
+      }
+    } else {
+      // A saved spec with no liquidity filter means "No liquidity filter" was
+      // the answer (the confirm gate requires one).
+      setLiquidity("none");
+    }
+    const maxNo = spec.conditions.reduce((max, c) => {
+      const m = /^C(\d+)$/.exec(c.id);
+      return m ? Math.max(max, Number(m[1])) : max;
+    }, 0);
+    nextConditionNo.current = maxNo + 1;
+
+    setHasSelectionPoint(spec.selection_point !== null);
+    if (spec.selection_point) {
+      setSessionOfWeek(String(spec.selection_point.session_of_week));
+      setSelectionAt(spec.selection_point.at);
+    }
+    setStopFrom(spec.stop?.from ?? "");
+    setHasRiskCap(spec.risk_cap_pct !== null);
+    setRiskCapPct(spec.risk_cap_pct !== null ? String(spec.risk_cap_pct) : "");
+    setHasNearMiss(spec.near_miss !== null);
+    if (spec.near_miss) setNearMissMaxFailed(String(spec.near_miss.max_failed));
+  }
 
   // The as_of sent to dry-run/confirm must be a real bar date: the engine's
   // grade_horizons matches the signal bar by exact date, so an arbitrary
@@ -152,15 +223,29 @@ export default function NewDraftPage() {
         setBlockedReason(describeApiError(body, "confirm failed"));
         return;
       }
+      // The prompt is confirmed even when post-confirm engine work (arm
+      // registration, first selection, retiring a superseded parent's arm)
+      // failed — tell the user before leaving the page.
+      if (body.selection_warning) window.alert(body.selection_warning);
       router.push(`/watchlists/${body.watchlist_id}`);
     } finally {
       setConfirming(false);
     }
   }
 
+  if (loadError) {
+    return (
+      <main>
+        <h1>Draft {initialDraftId}</h1>
+        <p role="alert">{loadError}</p>
+      </main>
+    );
+  }
+
   return (
     <main>
       <h1>Draft {draftId ?? "…"} · not yet numbered</h1>
+      {draftStatus && draftStatus !== "open" && <p role="status">This draft is {draftStatus}; it can no longer be confirmed.</p>}
 
       <label>
         Structure

@@ -5,8 +5,8 @@ import { EngineError } from "@/server/engine/client";
 export async function POST(req: Request, { params }: { params: { draftId: string } }) {
   const { as_of } = await req.json();
   try {
-    const { promptId, watchlistId } = await confirmDraft(db(), Number(params.draftId), as_of);
-    return Response.json({ prompt_id: promptId, watchlist_id: watchlistId }, { status: 201 });
+    const { promptId, watchlistId, selectionWarning } = await confirmDraft(db(), Number(params.draftId), as_of);
+    return Response.json({ prompt_id: promptId, watchlist_id: watchlistId, selection_warning: selectionWarning }, { status: 201 });
   } catch (err) {
     if (err instanceof EngineError) return Response.json(err.body, { status: err.status });
     const status = /already confirmed|abandoned|already have a confirmed prompt/.test((err as Error).message) ? 409 : 400;
