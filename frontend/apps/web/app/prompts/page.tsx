@@ -42,13 +42,14 @@ export default function PromptsPage() {
         <table>
           <thead>
             <tr>
-              <th>Prompt</th><th>Structure</th><th>Status</th><th>Graded</th><th>1-week return</th><th>Actions</th>
+              <th>Prompt</th><th>Title</th><th>Structure</th><th>Status</th><th>Graded</th><th>1-week return</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {(mine ?? []).map((p) => (
               <tr key={p.promptId}>
                 <td><VersionChain promptId={p.promptId} parentPromptId={p.parentPromptId} version={p.version} /></td>
+                <td>{p.title}</td>
                 <td>{p.structure}</td>
                 <td>{p.status}</td>
                 <td>week {p.gradedWeeks} of 13</td>
