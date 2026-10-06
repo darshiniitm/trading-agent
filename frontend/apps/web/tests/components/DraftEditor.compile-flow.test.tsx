@@ -268,6 +268,19 @@ describe("DraftEditor — compile → confirm, end to end", () => {
     expect(conditions[1].value_origin).toBe("prompt");
   });
 
+  it("manually editing a compiled condition's value in its row confirms EVERY condition as user_answer — never the edited value under the original phrase (I1)", async () => {
+    modelReturns(fullLiteralOutput());
+    await compile("VStop(10,2) ...");
+    fireEvent.change(screen.getAllByLabelText("params (JSON)")[0], { target: { value: '{"length":12,"mult":2,"source":"close"}' } });
+
+    fireEvent.click(screen.getByLabelText(/No liquidity filter/));
+    fillHypothesisAndKill();
+    await confirmAndWait();
+    const { spec, conditions } = confirmedPrompt();
+    expect(spec.conditions[0].params.length).toBe(12);
+    expect(conditions.map((c) => [c.value_origin, c.source_phrase])).toEqual([["user_answer", null], ["user_answer", null]]);
+  });
+
   it("a null-structure compile keeps the conditions it found; answering the structure question unblocks confirm with those conditions intact", async () => {
     modelReturns({ ...fullLiteralOutput(), structure: null, source_phrases: fullLiteralOutput().source_phrases.filter((p) => p.path !== "structure") });
     await compile("VStop(10,2) ...");
