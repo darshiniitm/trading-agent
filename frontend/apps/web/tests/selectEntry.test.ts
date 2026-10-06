@@ -48,10 +48,21 @@ describe("runSelectEntry", () => {
 
     const entry = raw.prepare("SELECT status, entry_price, stop FROM watchlist_entries WHERE symbol = 'FULL1'").get() as any;
     expect(entry).toEqual({ status: "entered", entry_price: 101, stop: 95 });
-    const result = raw.prepare("SELECT entry_status FROM run_results WHERE symbol = 'FULL1'").get() as any;
-    expect(result.entry_status).toBe("entered");
+    const result = raw.prepare("SELECT entry_status, entry_price FROM run_results WHERE symbol = 'FULL1'").get() as any;
+    expect(result).toEqual({ entry_status: "entered", entry_price: 101 });
     const events = raw.prepare("SELECT type, from_value, to_value FROM entry_events").all() as any[];
     expect(events).toEqual([{ type: "status_changed", from_value: "pending_selection", to_value: "entered" }]);
+  });
+
+  it("writes run_results.entry_price for a not_confirmed outcome too (N1)", async () => {
+    const raw = createTestDb();
+    const { runId } = seedRunAndEntries(raw, [{ symbol: "FULL1", membership: "full_match", status: "pending_selection" }]);
+    const fetchFn = fakeSelectFetch({ entered: [], not_confirmed: [{ ticker: "FULL1", membership: "full_match", values: {}, failed_ids: [], ep: 100, sl: 95, r: 0.05, entry_price: 101 }], no_point_data: [], watching: [] });
+
+    await runSelectEntry(raw, { promptId: 1, runId }, fetchFn as any);
+
+    const result = raw.prepare("SELECT entry_status, entry_price FROM run_results WHERE symbol = 'FULL1'").get() as any;
+    expect(result).toEqual({ entry_status: "not_confirmed", entry_price: 101 });
   });
 
   it("marks a shadow candidate watching with a ref_price, never writing entry_price (D8)", async () => {
@@ -63,6 +74,8 @@ describe("runSelectEntry", () => {
 
     const entry = raw.prepare("SELECT status, entry_price, ref_price FROM watchlist_entries WHERE symbol = 'NEAR1'").get() as any;
     expect(entry).toEqual({ status: "watching", entry_price: null, ref_price: 51.5 });
+    const result = raw.prepare("SELECT entry_status, entry_price FROM run_results WHERE symbol = 'NEAR1'").get() as any;
+    expect(result).toEqual({ entry_status: "watching", entry_price: null });
   });
 
   it("handles a run where every candidate ends up watching, with no entered/not_confirmed/no_point_data at all", async () => {

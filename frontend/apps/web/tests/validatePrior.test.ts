@@ -27,6 +27,10 @@ function seedGradableRun(raw: ReturnType<typeof createTestDb>, { gradedRunsBefor
   const runId = Number(runInfo.lastInsertRowid);
   raw.prepare(`INSERT OR IGNORE INTO symbols (symbol, active) VALUES ('FULL1', 1)`).run();
   raw.prepare(
+    `INSERT INTO run_results (run_id, symbol, membership, in_forward_record, cond_json, ep, sl, entry_status, entry_price)
+     VALUES (?, 'FULL1', 'full_match', 0, '{}', 101, 95, 'entered', 101)`
+  ).run(runId);
+  raw.prepare(
     `INSERT INTO watchlist_entries (watchlist_id, symbol, first_run_id, last_run_id, membership, status, entry_price, stop, created_at, updated_at)
      VALUES (1, 'FULL1', ?, ?, 'full_match', 'entered', 101, 95, ?, ?)`
   ).run(runId, runId, now, now);
@@ -35,6 +39,38 @@ function seedGradableRun(raw: ReturnType<typeof createTestDb>, { gradedRunsBefor
 
 function fakeValidateFetch(body: unknown) {
   return vi.fn().mockResolvedValue({ ok: true, text: async () => JSON.stringify(body) });
+}
+
+// Prompt + N filler graded runs, with no run_results/watchlist_entries rows
+// of its own — individual N1-regression tests add their own runs and
+// run_results rows on top, deliberately WITHOUT ever touching
+// watchlist_entries, to prove validatePrior's picks selection no longer
+// depends on it at all.
+function seedPromptWithGradedRuns(raw: ReturnType<typeof createTestDb>, gradedRunsBefore: number) {
+  const ownerId = ensureOwnerUser(raw);
+  const now = new Date().toISOString();
+  raw.prepare(`INSERT INTO prompt_drafts (draft_id, user_id, prompt_text, status, created_at, updated_at) VALUES (1, ?, 'x', 'confirmed', ?, ?)`).run(ownerId, now, now);
+  raw.prepare(
+    `INSERT INTO prompts (prompt_id, owner_user_id, draft_id, title, prompt_text, structure, spec_json, spec_hash, status, version, hypothesis, kill_criterion, confirmed_at)
+     VALUES (1, ?, 1, 'Prompt 1', 'x', 'literal', ?, 'h', 'confirmed', 1, 'hyp', 'kill', ?)`
+  ).run(ownerId, JSON.stringify(SPEC), now);
+  for (let i = 0; i < gradedRunsBefore; i++) {
+    raw.prepare(`INSERT INTO runs (prompt_id, as_of, kind, status, finished_at) VALUES (1, ?, 'scheduled', 'done', ?)`).run(`2026-0${1 + i}-01`, now);
+  }
+}
+
+function insertRun(raw: ReturnType<typeof createTestDb>, asOf: string): number {
+  const now = new Date().toISOString();
+  const info = raw.prepare(`INSERT INTO runs (prompt_id, as_of, kind, status, finished_at) VALUES (1, ?, 'scheduled', 'done', ?)`).run(asOf, now);
+  return Number(info.lastInsertRowid);
+}
+
+function insertRunResult(raw: ReturnType<typeof createTestDb>, runId: number, symbol: string, row: { entryStatus: string; entryPrice: number | null; sl: number | null }) {
+  raw.prepare(`INSERT OR IGNORE INTO symbols (symbol, active) VALUES (?, 1)`).run(symbol);
+  raw.prepare(
+    `INSERT INTO run_results (run_id, symbol, membership, in_forward_record, cond_json, ep, sl, entry_status, entry_price)
+     VALUES (?, ?, 'full_match', 0, '{}', ?, ?, ?, ?)`
+  ).run(runId, symbol, row.entryPrice, row.sl, row.entryStatus, row.entryPrice);
 }
 
 describe("runValidatePrior", () => {
@@ -69,7 +105,7 @@ describe("runValidatePrior", () => {
     expect(h2).toBeUndefined(); // no graded rows for horizon 2 yet (status "pending") -> no row written
   });
 
-  it("passes the owner's entered picks as {ticker, entry_price, sl} to the engine", async () => {
+  it("passes this run's entered picks (sourced from run_results) as {ticker, entry_price, sl} to the engine", async () => {
     const raw = createTestDb();
     const { runId } = seedGradableRun(raw, { gradedRunsBefore: 12 });
     const fetchFn = fakeValidateFetch({ graded_weeks: 13, maturity: "first_look", rows: [] });
@@ -86,6 +122,10 @@ describe("runValidatePrior", () => {
     const raw = createTestDb();
     const { runId } = seedGradableRun(raw, { gradedRunsBefore: 12 });
     raw.prepare(`INSERT OR IGNORE INTO symbols (symbol, active) VALUES ('FULL2', 1)`).run();
+    raw.prepare(
+      `INSERT INTO run_results (run_id, symbol, membership, in_forward_record, cond_json, ep, sl, entry_status, entry_price)
+       VALUES (?, 'FULL2', 'full_match', 0, '{}', 50, 45, 'entered', 50)`
+    ).run(runId);
     raw.prepare(
       `INSERT INTO watchlist_entries (watchlist_id, symbol, first_run_id, last_run_id, membership, status, entry_price, stop, created_at, updated_at)
        VALUES (1, 'FULL2', ?, ?, 'full_match', 'entered', 50, 45, '2026-10-02', '2026-10-02')`
@@ -110,20 +150,58 @@ describe("runValidatePrior", () => {
     expect(h1).toEqual({ n: 2, ew_return: 1.0, hit_rate: 0.5 }); // (-3 + 5) / 2; one of two > 0
   });
 
-  it("grades a pick under the run it was entered in (last_run_id), even when it was first seen in an earlier run", async () => {
+  // --- N1 regressions: validatePrior's picks come from run_results, an
+  // immutable per-(run_id, symbol) fact, not from watchlist_entries (whose
+  // rows freeze once a symbol reaches 'entered'/'not_confirmed', which used
+  // to silently exclude exactly the two scenarios below from ever being
+  // graded).
+
+  it("N1a: a symbol not_confirmed on run 1 is never graded there, but IS graded on run 2 once it genuinely enters", async () => {
     const raw = createTestDb();
-    const { runId: enteredRunId } = seedGradableRun(raw, { gradedRunsBefore: 12 });
-    // Re-point FULL1's first_run_id at an earlier run (first seen as a near-miss there).
-    const earlierRunId = (raw.prepare("SELECT run_id FROM runs WHERE as_of = '2026-01-01'").get() as { run_id: number }).run_id;
-    raw.prepare("UPDATE watchlist_entries SET first_run_id = ? WHERE symbol = 'FULL1'").run(earlierRunId);
+    seedPromptWithGradedRuns(raw, 12);
+    const run1 = insertRun(raw, "2026-09-25");
+    insertRunResult(raw, run1, "FULL1", { entryStatus: "not_confirmed", entryPrice: 101, sl: 95 });
+    const run2 = insertRun(raw, "2026-10-02");
+    insertRunResult(raw, run2, "FULL1", { entryStatus: "entered", entryPrice: 105, sl: 98 });
 
-    const atEntered = fakeValidateFetch({ graded_weeks: 13, maturity: "first_look", rows: [] });
-    await runValidatePrior(raw, { promptId: 1, runId: enteredRunId }, atEntered as any);
-    expect(JSON.parse(atEntered.mock.calls[0][1].body).picks).toEqual([{ ticker: "FULL1", entry_price: 101, sl: 95 }]);
+    const atRun1 = fakeValidateFetch({ graded_weeks: 13, maturity: "first_look", rows: [] });
+    await runValidatePrior(raw, { promptId: 1, runId: run1 }, atRun1 as any);
+    expect(JSON.parse(atRun1.mock.calls[0][1].body).picks).toEqual([]);
 
-    const atEarlier = fakeValidateFetch({ graded_weeks: 1, maturity: "not_first_look", rows: [] });
-    await runValidatePrior(raw, { promptId: 1, runId: earlierRunId }, atEarlier as any);
-    expect(JSON.parse(atEarlier.mock.calls[0][1].body).picks).toEqual([]);
+    const atRun2 = fakeValidateFetch({ graded_weeks: 14, maturity: "first_look", rows: [] });
+    await runValidatePrior(raw, { promptId: 1, runId: run2 }, atRun2 as any);
+    expect(JSON.parse(atRun2.mock.calls[0][1].body).picks).toEqual([{ ticker: "FULL1", entry_price: 105, sl: 98 }]);
+  });
+
+  it("N1b: a symbol entered on run 1, dropped, then freshly entered again on run 3 is graded under run 3 too", async () => {
+    const raw = createTestDb();
+    seedPromptWithGradedRuns(raw, 12);
+    const run1 = insertRun(raw, "2026-09-18");
+    insertRunResult(raw, run1, "FULL1", { entryStatus: "entered", entryPrice: 101, sl: 95 });
+    // run 2: FULL1 drops off the screen entirely (no run_results row for it at all).
+    insertRun(raw, "2026-09-25");
+    const run3 = insertRun(raw, "2026-10-02");
+    insertRunResult(raw, run3, "FULL1", { entryStatus: "entered", entryPrice: 130, sl: 120 });
+
+    const atRun1 = fakeValidateFetch({ graded_weeks: 13, maturity: "first_look", rows: [] });
+    await runValidatePrior(raw, { promptId: 1, runId: run1 }, atRun1 as any);
+    expect(JSON.parse(atRun1.mock.calls[0][1].body).picks).toEqual([{ ticker: "FULL1", entry_price: 101, sl: 95 }]);
+
+    const atRun3 = fakeValidateFetch({ graded_weeks: 15, maturity: "first_look", rows: [] });
+    await runValidatePrior(raw, { promptId: 1, runId: run3 }, atRun3 as any);
+    expect(JSON.parse(atRun3.mock.calls[0][1].body).picks).toEqual([{ ticker: "FULL1", entry_price: 130, sl: 120 }]);
+  });
+
+  it("does not depend on watchlist_entries or the owner's watchlist at all", async () => {
+    const raw = createTestDb();
+    seedPromptWithGradedRuns(raw, 12);
+    // Deliberately no watchlists row for this prompt at all.
+    const run = insertRun(raw, "2026-10-02");
+    insertRunResult(raw, run, "FULL1", { entryStatus: "entered", entryPrice: 101, sl: 95 });
+
+    const fetchFn = fakeValidateFetch({ graded_weeks: 13, maturity: "first_look", rows: [] });
+    await runValidatePrior(raw, { promptId: 1, runId: run }, fetchFn as any);
+    expect(JSON.parse(fetchFn.mock.calls[0][1].body).picks).toEqual([{ ticker: "FULL1", entry_price: 101, sl: 95 }]);
   });
 
   it("reports complete=false while any horizon is still pending, true once none are", async () => {

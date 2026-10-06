@@ -68,8 +68,8 @@ describe("createTestDb / applyMigrations", () => {
     expect(tables).toContain("validations");
     expect(tables).toContain("jobs");
 
-    // Verify both migrations are recorded (no duplicates)
+    // Verify all migrations are recorded (no duplicates)
     const migrations = (raw.prepare("SELECT filename FROM _migrations ORDER BY filename").all() as { filename: string }[]).map((r) => r.filename);
-    expect(migrations).toEqual(["0001_init.sql", "0002_jobs_and_grading.sql"]);
+    expect(migrations).toEqual(["0001_init.sql", "0002_jobs_and_grading.sql", "0003_run_results_entry_price.sql"]);
   });
 });

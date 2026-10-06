@@ -40,7 +40,12 @@ export async function runSelectEntry(
 
   const now = new Date().toISOString();
   const selectEntriesForRun = raw.prepare("SELECT entry_id, symbol, status FROM watchlist_entries WHERE last_run_id = ?");
-  const updateRunResult = raw.prepare("UPDATE run_results SET entry_status = ? WHERE run_id = ? AND symbol = ?");
+  // entry_price (N1 fix): the resolved selection-point fill, written here
+  // alongside entry_status so that validatePrior.ts can source its graded
+  // picks straight from run_results — an immutable per-(run_id, symbol)
+  // fact — instead of from watchlist_entries, whose rows freeze per
+  // watchlist and can't reflect a symbol re-entering on a later run.
+  const updateRunResult = raw.prepare("UPDATE run_results SET entry_status = ?, entry_price = ? WHERE run_id = ? AND symbol = ?");
   const updateEntry = raw.prepare(
     `UPDATE watchlist_entries
      SET status = ?, entry_price = ?, stop = ?, ref_price = COALESCE(?, ref_price),
@@ -69,7 +74,7 @@ export async function runSelectEntry(
       // recorded outcome for it.
       if (entries.some((e) => FROZEN_STATUSES.includes(e.status))) continue;
 
-      updateRunResult.run(outcome.status, runId, ticker);
+      updateRunResult.run(outcome.status, outcome.entryPrice, runId, ticker);
       for (const entry of entries) {
         // Only entries still awaiting a selection outcome are updated; a
         // terminal entry (e.g. dropped_from_screen, which also carries this

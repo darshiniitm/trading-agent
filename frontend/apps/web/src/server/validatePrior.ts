@@ -35,20 +35,24 @@ export async function runValidatePrior(
       .get(promptId, run.as_of) as { n: number }
   ).n;
 
-  const owner = raw.prepare("SELECT watchlist_id FROM watchlists WHERE prompt_id = ? AND user_id = ?").get(promptId, prompt.owner_user_id) as { watchlist_id: number } | undefined;
-  // last_run_id, not first_run_id: an entry can be first seen as a near-miss
-  // in an earlier run and only enter in a later one. Entries are frozen once
-  // entered (weeklyScreen.ts FROZEN_STATUSES), so last_run_id is exactly the
-  // run whose as_of the pick was bought at — its signal run.
-  const picks = owner
-    ? (raw
-        .prepare("SELECT symbol, entry_price, stop FROM watchlist_entries WHERE watchlist_id = ? AND last_run_id = ? AND status = 'entered'")
-        .all(owner.watchlist_id, runId) as { symbol: string; entry_price: number | null; stop: number | null }[])
-    : [];
+  // Sourced from run_results, not watchlist_entries (N1 fix): run_results is
+  // one immutable row per (run_id, symbol), never reused across runs, so it
+  // correctly distinguishes a symbol entered on THIS run from a frozen
+  // watchlist_entries row left over from an earlier run (not_confirmed, or
+  // entered-then-dropped-then-requalified). watchlist_entries rows freeze
+  // once status reaches 'entered'/'not_confirmed' (weeklyScreen.ts
+  // FROZEN_STATUSES) and so cannot be trusted to reflect which run a pick's
+  // entry actually belongs to. run_results is also per-PROMPT rather than
+  // per-watchlist — the arm's forward record is about the prompt's own
+  // picks, not any one user's watchlist view of them — so this also drops
+  // validatePrior's dependency on the owner's watchlist entirely.
+  const picks = raw
+    .prepare("SELECT symbol, entry_price, sl FROM run_results WHERE run_id = ? AND entry_status = 'entered'")
+    .all(runId) as { symbol: string; entry_price: number | null; sl: number | null }[];
 
   const result = await validateArm(
     promptId, spec, run.as_of,
-    picks.map((p) => ({ ticker: p.symbol, entry_price: p.entry_price, sl: p.stop })),
+    picks.map((p) => ({ ticker: p.symbol, entry_price: p.entry_price, sl: p.sl })),
     gradedWeeksSoFar, fetchFn
   );
 

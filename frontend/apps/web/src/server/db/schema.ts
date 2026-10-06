@@ -95,6 +95,11 @@ export const runResults = sqliteTable("run_results", {
   windowOffset: integer("window_offset"),
   daysSinceFlip: integer("days_since_flip"),
   entryStatus: text("entry_status"),
+  // The resolved selection-point fill (written by selectEntry.ts alongside
+  // entryStatus, for 'entered'/'not_confirmed' outcomes only) — distinct from
+  // `ep`, which stays the screen-time draft value. See migration
+  // 0003_run_results_entry_price.sql.
+  entryPrice: real("entry_price"),
 });
 
 export const watchlistEntries = sqliteTable("watchlist_entries", {
