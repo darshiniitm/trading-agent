@@ -6,7 +6,8 @@
     "dev": "next dev -H 127.0.0.1",
     "build": "next build",
     "start": "next start -H 127.0.0.1",
-    "test": "vitest run"
+    "test": "vitest run",
+    "jobs:catch-up": "tsx scripts/run-weekly-jobs.ts"
   },
   "dependencies": {
     "next": "14.2.35",
@@ -27,6 +28,7 @@
     "@vitejs/plugin-react": "4.3.1",
     "@testing-library/react": "16.0.0",
     "@testing-library/jest-dom": "6.4.8",
-    "jsdom": "25.0.0"
+    "jsdom": "25.0.0",
+    "tsx": "4.19.1"
   }
 }
