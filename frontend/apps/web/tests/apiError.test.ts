@@ -19,6 +19,19 @@ describe("describeApiError", () => {
     expect(describeApiError("Internal Server Error", "fallback")).toBe("Internal Server Error");
   });
 
+  it("joins the compile route's {errors: [...]} CompileError shape into a readable line", () => {
+    expect(
+      describeApiError(
+        { errors: ["conditions.0: 'indicator:macd' is not in the catalog", "risk_cap_pct: no source phrase for this number"] },
+        "fallback"
+      )
+    ).toBe("conditions.0: 'indicator:macd' is not in the catalog; risk_cap_pct: no source phrase for this number");
+  });
+
+  it("does not mistake a non-string errors array for the CompileError shape", () => {
+    expect(describeApiError({ errors: [{ message: "nope" }] }, "fallback")).toBe("fallback");
+  });
+
   it("falls back when the body matches none of the known shapes", () => {
     expect(describeApiError({ something: "else" }, "confirm failed")).toBe("confirm failed");
     expect(describeApiError(null, "confirm failed")).toBe("confirm failed");
