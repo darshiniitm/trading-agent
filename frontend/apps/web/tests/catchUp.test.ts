@@ -23,6 +23,11 @@ function seedPromptWithOneRun(raw: ReturnType<typeof createTestDb>, lastAsOf: st
   raw.prepare(`INSERT INTO runs (prompt_id, as_of, kind, status, finished_at) VALUES (1, ?, 'scheduled', 'done', ?)`).run(lastAsOf, now);
 }
 
+// The as_of of every /validate call a fake fetch received, in call order.
+function validateCallAsOfs(fetchFn: { mock: { calls: any[][] } }): string[] {
+  return fetchFn.mock.calls.filter(([url]) => String(url).endsWith("/validate")).map(([, init]) => JSON.parse(init.body).as_of);
+}
+
 function fakeFetch() {
   return vi.fn().mockImplementation(async (url: string) => {
     if (url.endsWith("/health")) return { ok: true, text: async () => JSON.stringify({ status: "ok", engine_git_sha: "abc", last_bar_date: "2026-10-16", data_snapshot_hash: null }) };
@@ -129,9 +134,7 @@ describe("runCatchUp", () => {
     const fetchFn = fakeFetch();
     await runCatchUp(raw, { promptId: 1 }, fetchFn as any);
 
-    const validatedAsOfs = fetchFn.mock.calls
-      .filter(([url]: [string]) => url.endsWith("/validate"))
-      .map(([, init]: [string, { body: string }]) => JSON.parse(init.body).as_of);
+    const validatedAsOfs = validateCallAsOfs(fetchFn);
     // Week 10-09 grades 10-02; week 10-16 grades 10-09 (10-02 is already
     // 'done' — not_first_look is final). 10-16 itself is never graded.
     expect(validatedAsOfs).toEqual(["2026-10-02", "2026-10-09"]);
@@ -252,9 +255,7 @@ describe("runCatchUp", () => {
     // the done 10-02 job is skipped — no /validate call for it at all.
     fetchFn.mockClear();
     expect((await runCatchUp(raw, { promptId: 1 }, fetchFn as any)).weeksRun).toEqual([]);
-    const validatedAsOfs = fetchFn.mock.calls
-      .filter(([url]: [string]) => url.endsWith("/validate"))
-      .map(([, init]: [string, { body: string }]) => JSON.parse(init.body).as_of);
+    const validatedAsOfs = validateCallAsOfs(fetchFn);
     expect(validatedAsOfs).not.toContain("2026-10-02");
     expect(validatedAsOfs).toEqual(["2026-10-09", "2026-10-16"]);
     expect(validateJob("2026-10-02")).toBe("done");

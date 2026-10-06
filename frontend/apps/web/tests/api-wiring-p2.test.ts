@@ -72,7 +72,9 @@ describe("POST /api/prompts/[promptId]/retire route wiring", () => {
 });
 
 describe("GET /api/health route wiring", () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
   it("returns the engine's /health body unchanged", async () => {
     const health = { status: "ok", engine_git_sha: "abc", last_bar_date: "2026-10-02", data_snapshot_hash: null };

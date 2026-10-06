@@ -65,12 +65,12 @@ describe("withJob", () => {
     const promptId = setupTestPrompt(raw);
     const fn = vi.fn().mockResolvedValueOnce({ complete: false }).mockResolvedValueOnce({ complete: true });
     const key = { type: "validate_prior", promptId, asOf: "2026-10-02" };
-    await withJob(raw, key, fn, { isComplete: (r) => r.complete });
+    await withJob(raw, key, fn, { isComplete: (r: { complete: boolean }) => r.complete });
     expect(raw.prepare("SELECT status, attempts FROM jobs WHERE type = 'validate_prior'").get()).toEqual({ status: "queued", attempts: 1 });
-    const second = await withJob(raw, key, fn, { isComplete: (r) => r.complete });
+    const second = await withJob(raw, key, fn, { isComplete: (r: { complete: boolean }) => r.complete });
     expect(second.skipped).toBe(false);
     expect(raw.prepare("SELECT status, attempts FROM jobs WHERE type = 'validate_prior'").get()).toEqual({ status: "done", attempts: 2 });
-    const third = await withJob(raw, key, fn, { isComplete: (r) => r.complete });
+    const third = await withJob(raw, key, fn, { isComplete: (r: { complete: boolean }) => r.complete });
     expect(third.skipped).toBe(true);
     expect(fn).toHaveBeenCalledTimes(2);
   });
