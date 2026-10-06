@@ -85,3 +85,85 @@ export async function screen(spec: ScreenSpec, asOf: string, fetchFn: FetchFn = 
     sector_view: unknown[];
   }>;
 }
+
+export type SelectCandidate = {
+  ticker: string;
+  membership: "full_match" | "near_miss" | "rejected_risk_cap";
+  values: Record<string, unknown>;
+  failed_ids: string[];
+  ep: number | null;
+  sl: number | null;
+  r: number | null;
+  entry_price?: number;
+  ref_price?: number | null;
+  reason?: string;
+};
+
+export type SelectResult = {
+  entered: SelectCandidate[];
+  not_confirmed: SelectCandidate[];
+  no_point_data: SelectCandidate[];
+  watching: SelectCandidate[];
+};
+
+export async function selectCandidates(
+  spec: ScreenSpec,
+  asOf: string,
+  promptId: number | null,
+  runKind: "scheduled" | "catch_up" | "dry_run",
+  fetchFn: FetchFn = fetch
+): Promise<SelectResult> {
+  return call(
+    "/select",
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ spec, as_of: asOf, prompt_id: promptId, run_kind: runKind }),
+    },
+    fetchFn
+  ) as Promise<SelectResult>;
+}
+
+export async function registerArm(promptId: number, spec: ScreenSpec, fetchFn: FetchFn = fetch) {
+  return call(
+    "/arms/register",
+    { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ prompt_id: promptId, spec }) },
+    fetchFn
+  ) as Promise<{ prompt_id: number; status: string }>;
+}
+
+export async function retireArm(promptId: number, fetchFn: FetchFn = fetch) {
+  return call(`/arms/${promptId}/retire`, { method: "POST" }, fetchFn) as Promise<{ prompt_id: number; status: string }>;
+}
+
+export type ValidatePick = { ticker: string; entry_price: number | null; sl: number | null };
+
+export type ValidateRow = {
+  ticker: string;
+  signal_week_start: string;
+  horizon_weeks: number;
+  status: "graded" | "pending" | "not_gradable_weekly_downtrend";
+  buy_price: number | null;
+  r_Nw: number | null;
+};
+
+export type ValidateResult = { graded_weeks: number; maturity: "not_first_look" | "first_look" | "real_read"; rows: ValidateRow[] };
+
+export async function validateArm(
+  promptId: number,
+  spec: ScreenSpec,
+  asOf: string,
+  picks: ValidatePick[],
+  gradedWeeksSoFar: number,
+  fetchFn: FetchFn = fetch
+): Promise<ValidateResult> {
+  return call(
+    "/validate",
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ prompt_id: promptId, spec, as_of: asOf, picks, graded_weeks_so_far: gradedWeeksSoFar }),
+    },
+    fetchFn
+  ) as Promise<ValidateResult>;
+}
