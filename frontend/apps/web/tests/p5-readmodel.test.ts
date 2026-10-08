@@ -47,7 +47,7 @@ describe("watchlist view (G4/G5/G7)", () => {
 
   it("captions are empty when the prompt has no run", () => {
     const raw = createTestDb();
-    expect(getValidationCaptions(raw, 99)).toEqual({ gradedAsOf: null, dueDates: {} });
+    expect(getValidationCaptions(raw, 99)).toEqual({ gradedAsOf: null, dueDates: {}, controls: {} });
   });
 });
 
@@ -85,5 +85,20 @@ describe("recent closes (G2)", () => {
   it("a symbol whose engine call fails gets an empty list, not a failed request", async () => {
     const fetchFn = vi.fn().mockRejectedValue(new Error("down"));
     expect(await getRecentCloses(["A"], 12, fetchFn as any)).toEqual({ A: [] });
+  });
+});
+
+import { setEntryNote, removeEntry } from "@/server/entryActions";
+describe("entry actions", () => {
+  it("saves a note and removes only for the watchlist's own user", () => {
+    const raw = seed();
+    const owner = 1;
+    expect(setEntryNote(raw, { watchlistId: 5, entryId: 7, userId: 99, note: "x" })).toBe(false);
+    expect(setEntryNote(raw, { watchlistId: 5, entryId: 7, userId: owner, note: "watch the gap" })).toBe(true);
+    expect((raw.prepare("SELECT user_note FROM watchlist_entries WHERE entry_id = 7").get() as any).user_note).toBe("watch the gap");
+    expect(removeEntry(raw, { watchlistId: 5, entryId: 7, userId: 99 })).toBe(false);
+    expect(removeEntry(raw, { watchlistId: 5, entryId: 7, userId: owner })).toBe(true);
+    expect((raw.prepare("SELECT status FROM watchlist_entries WHERE entry_id = 7").get() as any).status).toBe("removed_by_user");
+    expect((raw.prepare("SELECT to_value FROM entry_events WHERE entry_id = 7").get() as any).to_value).toBe("removed_by_user");
   });
 });

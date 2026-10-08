@@ -69,7 +69,7 @@ export function getWatchlistView(raw: Database.Database, watchlistId: number, vi
     structure: prompt.structure, hypothesis: prompt.hypothesis, killCriterion: prompt.kill_criterion,
     conditions, hasRiskCap: hasRiskCap(program),
     lastRun, entries, validation,
-    promptText: prompt.prompt_text, ownerName: owner?.display_name ?? "", isOwner: (viewerUserId ?? watchlist.user_id) === prompt.owner_user_id,
+    promptText: prompt.prompt_text, draftId: prompt.draft_id, ownerName: owner?.display_name ?? "", isOwner: (viewerUserId ?? watchlist.user_id) === prompt.owner_user_id,
     visibility: prompt.visibility ?? "private", followers, version: prompt.version, parentPromptId: prompt.parent_prompt_id ?? null,
     confirmedAt: prompt.confirmed_at, timeframe: (program as any).timeframe ?? null, entryAt: tradePlan?.entry?.at ?? null,
     whatRuns: whatRunsOf(program, lastRun?.appliedSteps ?? []),
