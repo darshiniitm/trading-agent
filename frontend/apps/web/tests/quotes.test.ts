@@ -70,3 +70,15 @@ describe("getQuotes", () => {
     await expect(getQuotes(["ABC"], fetchFn as any, () => 0)).rejects.toBeInstanceOf(EngineError);
   });
 });
+
+describe("getQuotes day change", () => {
+  it("computes chgPct from prev_close, and omits it when the engine sent none", async () => {
+    const fetchFn = fakeFetch(200, JSON.stringify({
+      UP: { price: 110, source: "yahoo", source_ts: "t", prev_close: 100 },
+      NOPREV: { price: 50, source: "yahoo", source_ts: "t" },
+    }));
+    const result = await getQuotes(["UP", "NOPREV"], fetchFn as any, () => 0);
+    expect(result.UP.chgPct).toBeCloseTo(10);
+    expect(result.NOPREV.chgPct).toBeUndefined();
+  });
+});

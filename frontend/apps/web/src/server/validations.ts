@@ -32,3 +32,18 @@ export function getValidationSummary(raw: Database.Database, promptId: number) {
 
   return { gradedWeeks, horizons };
 }
+
+// Captions for the validation tiles: the graded run's as_of and, for each horizon, the Friday-close date it
+// becomes due (as_of + horizon weeks). Kept apart from getValidationSummary so that function's shape is stable.
+export function getValidationCaptions(raw: Database.Database, promptId: number) {
+  const runId = latestGradedRunId(raw, promptId) ?? (raw.prepare("SELECT run_id FROM runs WHERE prompt_id = ? AND kind IN ('scheduled','catch_up') ORDER BY as_of DESC LIMIT 1").get(promptId) as { run_id: number } | undefined)?.run_id;
+  if (runId === undefined) return { gradedAsOf: null as string | null, dueDates: {} as Record<string, string> };
+  const asOf = (raw.prepare("SELECT as_of FROM runs WHERE run_id = ?").get(runId) as { as_of: string }).as_of;
+  const dueDates: Record<string, string> = {};
+  for (const h of [1, 2, 3]) {
+    const d = new Date(`${asOf}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 7 * h);
+    dueDates[String(h)] = d.toISOString().slice(0, 10);
+  }
+  return { gradedAsOf: asOf, dueDates };
+}
