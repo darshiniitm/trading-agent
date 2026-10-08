@@ -1,0 +1,3 @@
+.dlg { background: var(--surface-1); color: var(--text); border: 1px solid var(--border-strong); border-radius: var(--r-lg); padding: 20px; max-width: min(560px, calc(100vw - 32px)); }
+.dlg::backdrop { background: rgba(0, 0, 0, 0.6); }
+.actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }

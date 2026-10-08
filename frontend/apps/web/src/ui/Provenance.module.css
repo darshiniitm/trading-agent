@@ -1,0 +1,8 @@
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.prompt { background: var(--muted); }
+.user_answer { background: var(--amber); }
+.user_convention { border: 2px solid var(--amber); }
+.assumed { border: 1.5px dashed var(--amber); }
+.inferred { border: 1.5px dashed var(--blue); }
+.chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-0); border: 1px solid var(--border-strong); border-radius: var(--r-md); padding: 4px 9px; font-size: 13px; color: var(--text-2); }
+.id { font-family: var(--font-mono); color: var(--accent); font-weight: 600; }

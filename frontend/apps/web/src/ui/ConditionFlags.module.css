@@ -1,0 +1,5 @@
+.row { display: inline-flex; align-items: center; gap: 3px; }
+.sq { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+.met { background: var(--positive); }
+.unmet { border: 2px solid var(--amber); }
+.count { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-left: 6px; }

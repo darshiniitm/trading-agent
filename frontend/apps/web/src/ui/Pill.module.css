@@ -1,0 +1,7 @@
+.pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: var(--r-pill); font-size: 12px; font-weight: 500; border: 1px solid var(--border-dashed); color: var(--text-2); white-space: nowrap; }
+.dashed { border-style: dashed; }
+.blue { border-color: var(--blue); color: var(--blue-text); }
+.amber { border-color: var(--amber); color: var(--amber-text); }
+.orange { border-color: var(--orange); color: var(--amber-text); }
+.positive { border-color: var(--positive); color: var(--positive); }
+.negative { border-color: var(--negative); color: var(--negative); }

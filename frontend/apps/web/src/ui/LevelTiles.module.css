@@ -1,0 +1,4 @@
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tile { background: var(--surface-0); border: 1px solid var(--border); border-radius: var(--r-md); padding: 8px 10px; }
+.label { font-size: 12px; color: var(--muted); }
+.value { font-family: var(--font-mono); font-size: 15px; font-weight: 600; }
