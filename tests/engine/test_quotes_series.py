@@ -19,6 +19,19 @@ def test_fetch_quotes_returns_price_per_symbol():
     assert result["AAA.NS"]["source"] == "yahoo"
 
 
+def test_fetch_quotes_includes_prev_close_when_available():
+    class _T:
+        def __init__(self, symbol):
+            self.fast_info = _FakeFastInfo(last_price=110.0, previous_close=100.0)
+
+    class _NoPrev:
+        def __init__(self, symbol):
+            self.fast_info = _FakeFastInfo(last_price=110.0)
+
+    assert fetch_quotes(["A.NS"], yf_ticker_factory=_T)["A.NS"]["prev_close"] == 100.0
+    assert "prev_close" not in fetch_quotes(["A.NS"], yf_ticker_factory=_NoPrev)["A.NS"]
+
+
 def test_fetch_quotes_isolates_a_failing_symbol():
     result = fetch_quotes(["AAA.NS", "BAD.NS"], yf_ticker_factory=_FakeTicker)
     assert result["AAA.NS"]["price"] == 123.45

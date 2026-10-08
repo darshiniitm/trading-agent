@@ -5,6 +5,16 @@ from datetime import datetime, timezone
 from engine.env import Environment
 
 
+def _prev_close(info) -> float | None:
+    # Optional: a missing/zero previous close just means the day change is unknown, never a failed quote.
+    try:
+        raw = info["previous_close"] if isinstance(info, dict) else info.previous_close
+        value = float(raw)
+        return value if value > 0 else None
+    except Exception:
+        return None
+
+
 def fetch_quotes(symbols: list[str], yf_ticker_factory=None) -> dict[str, dict]:
     if yf_ticker_factory is None:
         import yfinance as yf
@@ -16,7 +26,11 @@ def fetch_quotes(symbols: list[str], yf_ticker_factory=None) -> dict[str, dict]:
         try:
             info = yf_ticker_factory(symbol).fast_info
             price = info["last_price"] if isinstance(info, dict) else info.last_price
-            out[symbol] = {"price": float(price), "source": "yahoo", "source_ts": now}
+            entry = {"price": float(price), "source": "yahoo", "source_ts": now}
+            prev = _prev_close(info)
+            if prev is not None:
+                entry["prev_close"] = prev
+            out[symbol] = entry
         except Exception as exc:
             out[symbol] = {"error": str(exc)}
     return out
@@ -35,7 +49,7 @@ def series_payload(symbol: str, env: Environment, vstop_params=None, rsi_params=
 
     # Compute and attach indicator values if params are provided
     if vstop_params is not None:
-        from src.indicators.vstop import compute_vstop
+        from src.indicators.vstop_tv import compute_vstop_tv as compute_vstop
 
         vstop_result = compute_vstop(
             panel,
