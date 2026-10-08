@@ -1,0 +1,12 @@
+.chip { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: var(--r-pill); font-size: 12px; font-weight: 500; border: 1px solid var(--border-dashed); color: var(--text-2); white-space: nowrap; }
+.chip[data-feasibility="ready"] { border-style: solid; color: var(--muted); }
+.chip[data-feasibility="fallback"] { border-color: var(--blue); color: var(--blue-text); }
+.chip[data-feasibility="stale"], .chip[data-feasibility="approx"] { border-color: var(--amber); color: var(--amber-text); }
+.chip[data-feasibility="unavailable"] { border-color: var(--orange); color: var(--amber-text); border-style: solid; }
+.run { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 12px 16px; margin-bottom: 12px; font-size: 13.5px; }
+.status { display: inline-block; padding: 1px 9px; border-radius: var(--r-pill); font-size: 12px; font-weight: 600; border: 1px solid var(--border-strong); }
+.status[data-run-status="complete"] { border-color: var(--blue); color: var(--blue-text); }
+.status[data-run-status="partial"], .status[data-run-status="low_coverage"] { border-color: var(--amber); color: var(--amber-text); }
+.alert { color: var(--warn-fg); background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: var(--r-md); padding: 8px 10px; }
+.uneval { margin: 12px 0; }
+.err { color: var(--negative); }

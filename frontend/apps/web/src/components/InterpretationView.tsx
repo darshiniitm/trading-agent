@@ -4,6 +4,11 @@ import { describeApiError } from "@/lib/apiError";
 import { FeasibilityChip, RunHeader, UnevaluatedSection, UploadControl, reasonText } from "@/components/DataStatus";
 import type { Feasibility } from "@/server/engine/client";
 import { ruleLine, type Slot } from "@/lib/conditionLabel";
+import { Button } from "@/ui/Button";
+import { Card } from "@/ui/Card";
+import { Banner } from "@/ui/Banner";
+import { ProvenanceDot } from "@/ui/ProvenanceDot";
+import styles from "./InterpretationView.module.css";
 
 type Clause = { id: string; text: string; status: "ok" | "question" | "ignored" | "not_understood" | "model"; maps_to: string; questions: number };
 type Chip = { path: string; label: string; value: unknown; provenance: "assumed" | "inferred"; options?: { label: string; value: unknown }[] };
@@ -145,19 +150,20 @@ export function InterpretationView({ draftId, promptText, hasProgram = false, on
   function ChipButton({ c }: { c: Chip }) {
     const open = chipEdit?.path === c.path;
     return (
-      <span data-chip={c.path} data-provenance={c.provenance}>
-        <button type="button" aria-label={`change ${c.label}`} disabled={busy} onClick={() => setChipEdit(open ? null : { path: c.path, text: "" })}>
+      <span data-chip={c.path} data-provenance={c.provenance} className={styles.chipWrap}>
+        <button type="button" className={styles.chip} aria-label={`change ${c.label}`} disabled={busy} onClick={() => setChipEdit(open ? null : { path: c.path, text: "" })}>
+          <ProvenanceDot origin={c.provenance} />
           {c.label}: {show(c)} · {c.provenance}
         </button>
         {open && (c.options ? (
-          <select aria-label={`new value for ${c.label}`} value="" onChange={(e) => { if (e.target.value !== "") void pickChip(c, Number(e.target.value)); }}>
+          <select className={styles.inline} aria-label={`new value for ${c.label}`} value="" onChange={(e) => { if (e.target.value !== "") void pickChip(c, Number(e.target.value)); }}>
             <option value="">— change to —</option>
             {c.options.map((o, i) => <option key={i} value={i}>{o.label}</option>)}
           </select>
         ) : (
           <>
-            <input aria-label={`new value for ${c.label}`} value={chipEdit!.text} onChange={(e) => setChipEdit({ path: c.path, text: e.target.value })} />
-            <button type="button" disabled={busy || !chipEdit!.text.trim()} onClick={() => void saveChip(c)}>Apply</button>
+            <input className={styles.inline} aria-label={`new value for ${c.label}`} value={chipEdit!.text} onChange={(e) => setChipEdit({ path: c.path, text: e.target.value })} />
+            <Button size={36} disabled={busy || !chipEdit!.text.trim()} onClick={() => void saveChip(c)}>Apply</Button>
           </>
         ))}
       </span>
@@ -168,14 +174,15 @@ export function InterpretationView({ draftId, promptText, hasProgram = false, on
   const ad = view?.addons;
 
   return (
-    <section aria-label="how your prompt was read">
-      <button type="button" onClick={interpret} disabled={busy || !promptText.trim()}>{busy && !view ? "Reading…" : "Read my prompt and run it"}</button>
-      {error && <p role="alert">{error}</p>}
+    <section aria-label="how your prompt was read" className={styles.cols}>
+      <div className={styles.left}>
+      <Button variant="primary" size={44} onClick={interpret} disabled={busy || !promptText.trim()}>{busy && !view ? "Reading…" : "Read my prompt and run it"}</Button>
+      {error && <Banner tone="warn" role="alert">{error}</Banner>}
 
       {view && (
         <>
-          <h2>How your prompt was read</h2>
-          <table>
+          <Card title="How your prompt was read">
+          <table className={styles.reading}>
             <tbody>
               {view.clauses.map((c) => {
                 const grey = c.status === "not_understood" || c.status === "ignored";
@@ -184,9 +191,9 @@ export function InterpretationView({ draftId, promptText, hasProgram = false, on
                     <td>
                       {editing?.id === c.id ? (
                         <>
-                          <input aria-label={`edit line ${c.id}`} value={editing.text} onChange={(e) => setEditing({ id: c.id, text: e.target.value })} />
-                          <button type="button" onClick={saveEdit} disabled={busy || !editing.text.trim()}>Save line</button>
-                          <button type="button" onClick={() => setEditing(null)}>Cancel</button>
+                          <input className={styles.inline} aria-label={`edit line ${c.id}`} value={editing.text} onChange={(e) => setEditing({ id: c.id, text: e.target.value })} />
+                          <Button size={36} variant="primary" onClick={saveEdit} disabled={busy || !editing.text.trim()}>Save line</Button>
+                          <Button size={36} onClick={() => setEditing(null)}>Cancel</Button>
                         </>
                       ) : <>“{c.text}”</>}
                     </td>
@@ -194,26 +201,27 @@ export function InterpretationView({ draftId, promptText, hasProgram = false, on
                       {c.status === "not_understood" ? <span>Not used: {c.maps_to}</span>
                         : slotsOf(c).length > 0 ? slotsOf(c).map((s) => <div key={s.id}>{ruleLine(s)}</div>)
                         : c.maps_to}
-                      <div>{chipsFor(c).map((k) => <ChipButton key={k.path} c={k} />)}</div>
+                      <div className={styles.chips}>{chipsFor(c).map((k) => <ChipButton key={k.path} c={k} />)}</div>
                       {feas && <div>{[...c.maps_to.matchAll(/\b(C\d+)\b/g)].map((m) => m[1]).filter((id, i, a) => a.indexOf(id) === i && feas.conditions[id])
                         .map((id) => <FeasibilityChip key={id} entry={feas.conditions[id]} />)}</div>}
                     </td>
-                    <td>{editing?.id !== c.id && <button type="button" onClick={() => setEditing({ id: c.id, text: c.text })}>Edit</button>}</td>
+                    <td>{editing?.id !== c.id && <Button size={36} onClick={() => setEditing({ id: c.id, text: c.text })}>Edit</Button>}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-          {strays.length > 0 && <div aria-label="other assumptions">{strays.map((k) => <ChipButton key={k.path} c={k} />)}</div>}
+          </Card>
+          {strays.length > 0 && <div aria-label="other assumptions" className={styles.chips}>{strays.map((k) => <ChipButton key={k.path} c={k} />)}</div>}
 
           {view.notEvaluable.length > 0 && (
             <ul aria-label="not used" style={{ opacity: 0.55 }}>
               {view.notEvaluable.map((n, i) => <li key={`${n.id}-${i}`}>“{n.text}” — not used: {n.reason}</li>)}
             </ul>
           )}
-          {!view.ready && <p role="alert">{view.problems.join("; ")}</p>}
+          {!view.ready && <Banner tone="warn" role="alert">{view.problems.join("; ")}</Banner>}
 
-          <details>
+          <details className={styles.addons}>
             <summary>Optional add-ons</summary>
             <p>All off. An add-on changes the results only when you switch it on.</p>
             <fieldset>
@@ -223,15 +231,15 @@ export function InterpretationView({ draftId, promptText, hasProgram = false, on
                   onChange={(e) => change({ liquidity: e.target.checked ? { mode: "floor", cr: Number(floor) > 0 ? Number(floor) : ad!.liquidity.suggested_cr } : { mode: "none" } })} />
                 Liquidity floor (₹ cr/week, median traded value) — {ad?.liquidity.enabled ? `${ad.liquidity.cr} cr` : `suggested ${ad?.liquidity.suggested_cr ?? 10} cr`}
               </label>{" "}
-              <input aria-label="custom liquidity floor" value={floor} onChange={(e) => setFloor(e.target.value)} placeholder={String(ad?.liquidity.suggested_cr ?? 10)} />
-              <button type="button" disabled={busy || !DECIMAL.test(floor.trim()) || Number(floor) <= 0} onClick={() => change({ liquidity: { mode: "floor", cr: Number(floor.trim()) } })}>Use this floor</button>
+              <input className={styles.inline} aria-label="custom liquidity floor" value={floor} onChange={(e) => setFloor(e.target.value)} placeholder={String(ad?.liquidity.suggested_cr ?? 10)} />
+              <Button size={36} disabled={busy || !DECIMAL.test(floor.trim()) || Number(floor) <= 0} onClick={() => change({ liquidity: { mode: "floor", cr: Number(floor.trim()) } })}>Use this floor</Button>
               <br />
               <label>
                 <input type="checkbox" checked={!!ad?.min_price.enabled} disabled={busy || (!ad?.min_price.enabled && !(Number(minPrice) > 0))}
                   onChange={(e) => change({ min_price: e.target.checked ? { mode: "floor", price: Number(minPrice) } : { mode: "none" } })} />
                 Minimum price (₹){ad?.min_price.enabled ? ` — ${ad.min_price.price}` : ""}
               </label>{" "}
-              <input aria-label="minimum price" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} />
+              <input className={styles.inline} aria-label="minimum price" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} />
               <br />
               <label>
                 <input type="checkbox" checked={false} disabled />
@@ -240,12 +248,19 @@ export function InterpretationView({ draftId, promptText, hasProgram = false, on
             </fieldset>
             {addonsExtra}
           </details>
+        </>
+      )}
+      </div>
 
-          <label>Run on week of <input aria-label="as of date" type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} /></label>
-          <button type="button" onClick={() => screenNow(view, asOf)} disabled={busy || !asOf || !view.ready}>Run again</button>
-          {runError && <p role="alert">{runError}</p>}
+      {view && (
+        <div className={styles.right}>
+          <div className={styles.runRow}>
+            <label>Run on week of <input aria-label="as of date" type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} /></label>
+            <Button onClick={() => screenNow(view, asOf)} disabled={busy || !asOf || !view.ready}>Run again</Button>
+          </div>
+          {runError && <Banner tone="warn" role="alert">{runError}</Banner>}
           {feas && (
-            <div aria-label="universe data status">
+            <div aria-label="universe data status" className={styles.universe}>
               Universe: <FeasibilityChip entry={feas.universe} />{" "}
               {feas.universe.can_upload && <UploadControl draftId={draftId} onUploaded={() => void screenNow(view, asOf)} />}
             </div>
@@ -253,7 +268,7 @@ export function InterpretationView({ draftId, promptText, hasProgram = false, on
           {run && <RunHeader coverage={run.run_coverage} conditionLabels={Object.fromEntries(view.conditions.map((c) => [c.id, ruleLine(c)]))} />}
           {run && <AllStocks table={table} state={tableState} conditions={view.conditions} setLabels={Object.fromEntries(Object.entries(run.sets ?? {}).map(([k, v]: [string, any]) => [k, v.label ?? k]))} />}
           {run && <DryRunResult run={run} conditions={view.conditions} />}
-        </>
+        </div>
       )}
     </section>
   );
