@@ -30,7 +30,7 @@ td { padding: 8px 10px; border-bottom: 1px solid var(--divider); vertical-align:
 fieldset { border: 1px solid var(--border); border-radius: var(--r-md); margin: 0 0 12px; padding: 10px 12px; }
 legend { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; padding: 0 6px; }
 details > summary { cursor: pointer; }
-input[type="text"], input[type="number"], input[type="date"], input:not([type]), select, textarea {
+input[type="text"], input[type="search"], input[type="number"], input[type="date"], input:not([type]), select, textarea {
   background: var(--surface-0);
   border: 1px solid var(--border-strong);
   border-radius: var(--r-md);

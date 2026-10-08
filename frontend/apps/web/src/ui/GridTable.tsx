@@ -10,9 +10,9 @@ export function GridTable<T>({ cols, minWidth, columns, rows, rowKey, renderRow,
 }) {
   return (
     <div className={styles.scroll} role="region" aria-label={label} tabIndex={0}>
-      <div className={styles.inner} style={{ ["--cols" as any]: cols, ["--min-width" as any]: `${minWidth ?? 640}px` }} role="table">
-        <div className={styles.head} role="row">{columns.map((c) => <span key={c.key} role="columnheader">{c.header}</span>)}</div>
-        {rows.length === 0 ? <div className={styles.empty}>{empty}</div> : rows.map((r) => <div key={rowKey(r)} role="presentation">{renderRow(r)}</div>)}
+      <div className={styles.inner} style={{ ["--cols" as any]: cols, ["--min-width" as any]: `${minWidth ?? 640}px` }}>
+        <div className={styles.head}>{columns.map((c) => <span key={c.key}>{c.header}</span>)}</div>
+        {rows.length === 0 ? <div className={styles.empty}>{empty}</div> : rows.map((r) => <div key={rowKey(r)}>{renderRow(r)}</div>)}
       </div>
     </div>
   );

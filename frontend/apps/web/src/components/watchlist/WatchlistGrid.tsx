@@ -14,7 +14,7 @@ export type GridEntry = {
 };
 export type GridCond = { condNo: number; label: string };
 
-const COLS = "minmax(150px,1.4fr) 90px 70px 70px 170px 100px 130px 130px 100px";
+const COLS = "minmax(140px,1.3fr) 70px 64px 64px 150px 90px 110px 120px 90px";
 const signClass = (n: number | null | undefined) => (n === null || n === undefined ? "" : n < 0 ? styles.neg : styles.pos);
 
 export function WatchlistGrid({ entries, conditions, quotes, stale, closes, selectedId, onSelect }: {
@@ -35,7 +35,7 @@ export function WatchlistGrid({ entries, conditions, quotes, stale, closes, sele
   return (
     <div ref={ref} onKeyDown={onKeyDown}>
       <GridTable
-        label="Watchlist stocks" cols={COLS} minWidth={1020} rows={entries} rowKey={(e) => e.entryId} empty="No stocks in this view."
+        label="Watchlist stocks" cols={COLS} minWidth={940} rows={entries} rowKey={(e) => e.entryId} empty="No stocks in this view."
         columns={[["stock", "Stock"], ["ltp", "LTP"], ["today", "Today"], ["added", "Added"], ["status", "Status"], ["since", "Since entry"], ["flags", "Conditions"], ["levels", "Entry / Stop"], ["spark", "12-wk"]].map(([key, header]) => ({ key, header }))}
         renderRow={(e) => {
           const q = quotes[e.symbol];
