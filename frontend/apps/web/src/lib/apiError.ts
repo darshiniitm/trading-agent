@@ -9,6 +9,7 @@ export function describeApiError(body: unknown, fallback: string): string {
   if (body && typeof body === "object") {
     const obj = body as Record<string, unknown>;
     if (typeof obj.error === "string") return obj.error;
+    if (typeof obj.detail === "string") return obj.detail;   // the engine's /data/upload 422 and /validate 422
     if (Array.isArray(obj.detail)) {
       return obj.detail
         .map((d: any) => (d?.condition_id ? `${d.condition_id}: ${d.message}` : String(d?.message ?? d)))
@@ -19,4 +20,11 @@ export function describeApiError(body: unknown, fallback: string): string {
     }
   }
   return fallback;
+}
+
+// The compile route's 422 carries the raw validation errors for logs/tests, but
+// the user is shown a plain line: how many parts were unreadable, not zod paths.
+export function friendlyCompileError(errors: string[]): string {
+  const n = new Set(errors.map((e) => e.split(":")[0].replace(/\.\d+(?=\.|$)/g, ""))).size || errors.length;
+  return `Couldn't read ${n} part${n === 1 ? "" : "s"} of your prompt. Try rephrasing it, stating each value (like "RSI 50 to 65") in the same line as its indicator — or use "Interpret my prompt" below, which reads multi-step prompts line by line.`;
 }

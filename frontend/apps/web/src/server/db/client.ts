@@ -4,7 +4,8 @@ import path from "node:path";
 import { ensureOwnerUser } from "./seed";
 import { applyMigrations } from "./migrate";
 
-const DB_PATH = path.join(process.cwd(), "data", "app.db");
+// PS_DB_PATH lets a demo/screenshot run use a throwaway database instead of data/app.db.
+const DB_PATH = process.env.PS_DB_PATH ?? path.join(process.cwd(), "data", "app.db");
 
 let instance: Database.Database | null = null;
 

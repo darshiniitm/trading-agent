@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import { programOf } from "@/server/programOf";
 import { validateArm, type ValidateRow } from "@/server/engine/client";
 
 // The one engine view a validations row is built from: "trade" (trailing-stop
@@ -27,11 +28,13 @@ export async function runValidatePrior(
   if (!prompt) throw new Error(`prompt ${promptId} not found`);
   const run = raw.prepare("SELECT * FROM runs WHERE run_id = ? AND prompt_id = ?").get(runId, promptId) as any;
   if (!run) throw new Error(`run ${runId} not found for prompt ${promptId}`);
-  const spec = JSON.parse(prompt.spec_json);
+  // Partial and low-coverage runs stay visible but are excluded from forward-test scoring (data-fallback spec §7).
+  if (run.scored === 0) return { maturity: "not_first_look", gradedWeeks: 0, complete: true };
+  const program = programOf(prompt.spec_json);
 
   const gradedWeeksSoFar = (
     raw
-      .prepare(`SELECT COUNT(*) AS n FROM runs WHERE prompt_id = ? AND kind IN ('scheduled','catch_up') AND as_of <= ?`)
+      .prepare(`SELECT COUNT(*) AS n FROM runs WHERE prompt_id = ? AND kind IN ('scheduled','catch_up') AND as_of <= ? AND (scored IS NULL OR scored = 1)`)
       .get(promptId, run.as_of) as { n: number }
   ).n;
 
@@ -51,7 +54,7 @@ export async function runValidatePrior(
     .all(runId) as { symbol: string; entry_price: number | null; sl: number | null }[];
 
   const result = await validateArm(
-    promptId, spec, run.as_of,
+    promptId, program, run.as_of,
     picks.map((p) => ({ ticker: p.symbol, entry_price: p.entry_price, sl: p.sl })),
     gradedWeeksSoFar, fetchFn
   );

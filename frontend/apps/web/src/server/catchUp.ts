@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import { programOf } from "@/server/programOf";
 import { getHealth, registerArm } from "@/server/engine/client";
 import { runWeeklyScreen } from "@/server/weeklyScreen";
 import { runSelectEntry } from "@/server/selectEntry";
@@ -111,7 +112,7 @@ export async function runCatchUp(
   let armRegistrationError: string | null = null;
   if (prompt && prompt.status === "confirmed") {
     try {
-      await registerArm(promptId, JSON.parse(prompt.spec_json), fetchFn);
+      await registerArm(promptId, programOf(prompt.spec_json), fetchFn);
     } catch (err) {
       armRegistrationError = (err as Error).message;
     }

@@ -43,7 +43,7 @@ export function WatchlistGrid({ entries, conditions, quotes, stale, closes, sele
           return (
             <button type="button" data-entry={e.entryId} aria-pressed={selectedId === e.entryId} className={`${gridRowClass} ${selectedId === e.entryId ? gridSelectedClass : ""}`} onClick={() => onSelect(e.entryId)}>
               <span><strong className="mono">{e.symbol}</strong>{e.name ? <><br /><span className={styles.sub}>{e.name}</span></> : null}</span>
-              <span className="mono">{q ? (q.error ?? fmtPrice(q.price)) : "—"}{stale.has(e.symbol) && <> <Pill tone="amber">stale</Pill></>}</span>
+              <span className="mono" title={q?.error ?? undefined}>{q ? (q.error ? "n/a" : fmtPrice(q.price)) : "—"}{stale.has(e.symbol) && <> <Pill tone="amber">stale</Pill></>}</span>
               <span className={`mono ${signClass(q?.chgPct)}`}>{fmtSignedPct(q?.chgPct)}</span>
               <span className={styles.sub}>{fmtDate(e.addedAsOf)}</span>
               <span><StatusChip status={e.status} /></span>

@@ -1,31 +1,5 @@
 import type Database from "better-sqlite3";
-import { z } from "zod";
-import { ScreenSpecSchema, SelectionPointSchema, T1WindowSchema, ConditionSchema, StopSchema, NearMissSchema, type ScreenSpec, type NeedsInputItem, type SourcePhrase, type UnsupportedItem } from "spec";
-
-// Local, lenient variant of ScreenSpecSchema for in-progress drafts:
-// Allows partial selection_point/t1_window (e.g., only session_of_week set, at pending)
-// and a still-unresolved structure (a null-structure compile, whose "structure"
-// needs_input item is answered later via applyAnswer), without exposing this
-// permissiveness to compiler output validation (D6 rule). The confirm gate
-// still requires the draft's structure column to be set.
-const DraftSpecSchema = z
-  .object({
-    spec_version: z.number().int(),
-    structure: z.enum(["literal", "t1_literal"]).nullable(),
-    timeframe: z.literal("1W"),
-    selection_point: SelectionPointSchema.partial().nullable(),
-    conditions: z.array(ConditionSchema),
-    stop: StopSchema.nullable(),
-    risk_cap_pct: z.number().nullable(),
-    near_miss: NearMissSchema.nullable(),
-    t1_window: T1WindowSchema.partial().nullable().optional(),
-  })
-  .superRefine((spec, ctx) => {
-    const ids = spec.conditions.map((c) => c.id);
-    if (new Set(ids).size !== ids.length) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "condition ids must be unique" });
-    }
-  });
+import type { ClauseView, ScreenProgram } from "spec";
 
 export type DraftRow = {
   draftId: number;
@@ -33,15 +7,15 @@ export type DraftRow = {
   parentPromptId: number | null;
   title: string | null;
   promptText: string;
-  structure: "literal" | "t1_literal" | null;
-  spec: ScreenSpec | null;
   hypothesis: string | null;
   killCriterion: string | null;
   status: "open" | "confirmed" | "abandoned";
   confirmedPromptId: number | null;
-  needsInput: NeedsInputItem[] | null;
-  sourcePhrases: SourcePhrase[] | null;
-  unsupported: UnsupportedItem[] | null;
+  copiedFromPromptId: number | null;
+  // v5 program state: written only server-side by the prompt compiler (never by a client PATCH)
+  program: ScreenProgram | null;
+  programClauses: ClauseView[] | null;
+  programNormalised: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -53,28 +27,27 @@ function rowToDraft(row: any): DraftRow {
     parentPromptId: row.parent_prompt_id,
     title: row.title,
     promptText: row.prompt_text,
-    structure: row.structure,
-    spec: row.spec_json ? JSON.parse(row.spec_json) : null,
     hypothesis: row.hypothesis,
     killCriterion: row.kill_criterion,
     status: row.status,
     confirmedPromptId: row.confirmed_prompt_id,
-    needsInput: row.needs_input_json ? JSON.parse(row.needs_input_json) : null,
-    sourcePhrases: row.source_phrases_json ? JSON.parse(row.source_phrases_json) : null,
-    unsupported: row.unsupported_json ? JSON.parse(row.unsupported_json) : null,
+    copiedFromPromptId: row.copied_from_prompt_id ?? null,
+    program: row.program_json ? JSON.parse(row.program_json) : null,
+    programClauses: row.program_clauses_json ? JSON.parse(row.program_clauses_json) : null,
+    programNormalised: row.program_normalised ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
-export function createDraft(raw: Database.Database, { userId }: { userId: number }): { draftId: number } {
+export function createDraft(raw: Database.Database, { userId, copiedFromPromptId }: { userId: number; copiedFromPromptId?: number }): { draftId: number } {
   const now = new Date().toISOString();
   const info = raw
     .prepare(
-      `INSERT INTO prompt_drafts (user_id, prompt_text, status, created_at, updated_at)
-       VALUES (?, '', 'open', ?, ?)`
+      `INSERT INTO prompt_drafts (user_id, copied_from_prompt_id, prompt_text, status, created_at, updated_at)
+       VALUES (?, ?, '', 'open', ?, ?)`
     )
-    .run(userId, now, now);
+    .run(userId, copiedFromPromptId ?? null, now, now);
   return { draftId: Number(info.lastInsertRowid) };
 }
 
@@ -83,49 +56,27 @@ export function getDraft(raw: Database.Database, draftId: number): DraftRow | nu
   return row ? rowToDraft(row) : null;
 }
 
-type DraftPatch = Partial<{
-  title: string;
-  promptText: string;
-  structure: "literal" | "t1_literal";
-  specJson: string;
-  hypothesis: string;
-  killCriterion: string;
-  needsInputJson: string;
-  sourcePhrasesJson: string;
-  unsupportedJson: string;
-}>;
+type DraftPatch = Partial<{ title: string; promptText: string; hypothesis: string; killCriterion: string }>;
 
 const COLUMN_BY_KEY: Record<keyof DraftPatch, string> = {
   title: "title",
   promptText: "prompt_text",
-  structure: "structure",
-  specJson: "spec_json",
   hypothesis: "hypothesis",
   killCriterion: "kill_criterion",
-  needsInputJson: "needs_input_json",
-  sourcePhrasesJson: "source_phrases_json",
-  unsupportedJson: "unsupported_json",
 };
 
 export function updateDraft(raw: Database.Database, draftId: number, patch: DraftPatch): DraftRow {
   const existing = raw.prepare("SELECT draft_id FROM prompt_drafts WHERE draft_id = ?").get(draftId);
   if (!existing) throw new Error(`draft ${draftId} not found`);
 
-  if (patch.specJson !== undefined) {
-    const result = DraftSpecSchema.safeParse(JSON.parse(patch.specJson));
-    if (!result.success) {
-      throw new Error(`invalid spec: ${result.error.issues.map((i) => i.message).join("; ")}`);
-    }
-  }
-
-  const keys = Object.keys(patch) as (keyof DraftPatch)[];
+  const keys = (Object.keys(patch) as (keyof DraftPatch)[]).filter((k) => patch[k] !== undefined);
+  const unknown = Object.keys(patch).filter((k) => !(k in COLUMN_BY_KEY));
+  if (unknown.length) throw new Error(`cannot update: ${unknown.join(", ")}`);
   if (keys.length > 0) {
     const assignments = keys.map((k) => `${COLUMN_BY_KEY[k]} = ?`).join(", ");
     const values = keys.map((k) => patch[k]);
     try {
-      raw
-        .prepare(`UPDATE prompt_drafts SET ${assignments}, updated_at = ? WHERE draft_id = ?`)
-        .run(...values, new Date().toISOString(), draftId);
+      raw.prepare(`UPDATE prompt_drafts SET ${assignments}, updated_at = ? WHERE draft_id = ?`).run(...values, new Date().toISOString(), draftId);
     } catch (err: any) {
       if (String(err.message).includes("CHECK constraint failed") && keys.includes("promptText")) {
         throw new Error("prompt_text must be 2000 characters or fewer");
@@ -133,5 +84,16 @@ export function updateDraft(raw: Database.Database, draftId: number, patch: Draf
       throw err;
     }
   }
+  return getDraft(raw, draftId)!;
+}
+
+// v5 program state is server-owned: only the prompt compiler writes it (see compileProgramDraft.ts).
+export function saveProgramState(raw: Database.Database, draftId: number, state: { program: ScreenProgram; clauses: ClauseView[] | null; normalised?: string | null }): DraftRow {
+  const existing = getDraft(raw, draftId);
+  if (!existing) throw new Error(`draft ${draftId} not found`);
+  const clauses = state.clauses ?? existing.programClauses;
+  raw.prepare(`UPDATE prompt_drafts SET program_json = ?, program_clauses_json = ?, program_normalised = ?, updated_at = ? WHERE draft_id = ?`)
+    .run(JSON.stringify(state.program), clauses ? JSON.stringify(clauses) : null,
+      state.normalised === undefined ? existing.programNormalised : state.normalised, new Date().toISOString(), draftId);
   return getDraft(raw, draftId)!;
 }

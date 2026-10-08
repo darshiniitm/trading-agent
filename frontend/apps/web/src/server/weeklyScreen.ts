@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import { programOf } from "@/server/programOf";
 import { screen } from "@/server/engine/client";
 
 function statusFor(membership: string): string {
@@ -42,6 +43,37 @@ const OPEN_STATUSES = ["pending_selection", "entered", "not_confirmed", "no_poin
 export const FROZEN_STATUSES = ["entered", "not_confirmed"];
 const DROPPABLE_STATUSES = OPEN_STATUSES.filter((s) => !FROZEN_STATUSES.includes(s));
 
+type ScreenResult = Awaited<ReturnType<typeof screen>>;
+
+// Data coverage, provenance and the stocks the engine could not decide (spec §7-§8). Written in the same
+// transaction as the run. An engine from before the data-resolution layer sends none of it; nothing is invented.
+function persistCoverage(raw: Database.Database, runId: number, r: ScreenResult) {
+  if (r.run_coverage) {
+    const ins = raw.prepare(`INSERT INTO run_condition_coverage (run_id, condition_id, coverage, unfeedable) VALUES (?, ?, ?, ?)`);
+    const unfeedable = new Set(r.run_coverage.unfeedable_conditions);
+    for (const [cid, c] of Object.entries(r.run_coverage.per_condition)) ins.run(runId, cid, c, unfeedable.has(cid) ? 1 : 0);
+  }
+  if (r.provenance) {
+    const ins = raw.prepare(`INSERT INTO run_provenance (run_id, data_type, symbol, source, as_of, quality, reason) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+    for (const s of r.provenance.summary) {
+      // a per-type counts block has no single source/quality: store the worst quality seen
+      const worst = s.counts ? (["missing", "approx", "stale", "fallback", "ok"].find((q) => (s.counts![q] ?? 0) > 0) ?? "ok") : s.quality;
+      ins.run(runId, s.data_type, null, s.source ?? null, s.as_of ?? null, worst ?? null, s.reason ?? null);
+    }
+    for (const row of r.provenance.rows) ins.run(runId, row.data_type, row.symbol, row.source, row.as_of, row.quality, row.reason);
+  }
+  if (r.unevaluated?.length) {
+    const ins = raw.prepare(
+      `INSERT OR REPLACE INTO run_unevaluated (run_id, symbol, set_id, unknown_count, met_count, reasons_json, cond_json) VALUES (?, ?, ?, ?, ?, ?, ?)`
+    );
+    const sym = raw.prepare(`INSERT OR IGNORE INTO symbols (symbol, active) VALUES (?, 1)`);
+    for (const u of r.unevaluated) {
+      sym.run(u.ticker);
+      ins.run(runId, u.ticker, u.set ?? "S1", u.unknown_count, u.met_count, JSON.stringify(u.reasons), u.conditions ? JSON.stringify(u.conditions) : null);
+    }
+  }
+}
+
 export async function runWeeklyScreen(
   raw: Database.Database,
   { promptId, asOf, kind }: { promptId: number; asOf: string; kind: "scheduled" | "catch_up" },
@@ -49,35 +81,38 @@ export async function runWeeklyScreen(
 ): Promise<{ runId: number }> {
   const prompt = raw.prepare("SELECT * FROM prompts WHERE prompt_id = ?").get(promptId) as any;
   if (!prompt) throw new Error(`prompt ${promptId} not found`);
-  const spec = JSON.parse(prompt.spec_json);
+  const program = programOf(prompt.spec_json);
 
   const idToCondNo: Record<string, number> = {};
   (raw.prepare("SELECT cond_no, name FROM prompt_conditions WHERE prompt_id = ? ORDER BY cond_no").all(promptId) as any[]).forEach((row, i) => {
     // The engine's own condition.id (e.g. "idMcap") is only known from the
     // spec, not from prompt_conditions (which stores name/cond_no, not the
-    // original id string) — spec.conditions is written in the same cond_no
+    // original id string) — program.conditions is written in the same cond_no
     // order at confirm time (Task 8, Phase 1), so zipping by index is exact.
-    idToCondNo[spec.conditions[i].id] = row.cond_no;
+    idToCondNo[program.conditions[i].id] = row.cond_no;
   });
 
-  const screenResult = await screen(spec, asOf, fetchFn);
+  const screenResult = await screen(program, asOf, fetchFn, { userId: prompt.owner_user_id, promptId });
   const now = new Date().toISOString();
+  const cov = screenResult.run_coverage;
 
   const txn = raw.transaction(() => {
     const runInfo = raw
       .prepare(
-        `INSERT INTO runs (prompt_id, as_of, kind, status, applied_steps_json, funnel_json, finished_at)
-         VALUES (?, ?, ?, 'done', ?, ?, ?)`
+        `INSERT INTO runs (prompt_id, as_of, kind, status, applied_steps_json, funnel_json, finished_at,
+                           coverage_status, coverage, universe_quality, scored)
+         VALUES (?, ?, ?, 'done', ?, ?, ?, ?, ?, ?, ?)`
       )
-      .run(promptId, asOf, kind, JSON.stringify(screenResult.applied_steps), JSON.stringify(screenResult.funnel), now);
+      .run(promptId, asOf, kind, JSON.stringify(screenResult.applied_steps), JSON.stringify(screenResult.funnel), now,
+        cov?.status ?? null, cov?.coverage ?? null, cov?.universe_quality ?? null, cov ? (cov.scored ? 1 : 0) : null);
     const runId = Number(runInfo.lastInsertRowid);
 
     const insertSymbol = raw.prepare(`INSERT OR IGNORE INTO symbols (symbol, active) VALUES (?, 1)`);
     const insertRunResult = raw.prepare(
       `INSERT INTO run_results
          (run_id, symbol, membership, in_forward_record, failed_conds_json, cond_json, metrics_json,
-          ep, sl, ref_price, confidence, entry_status)
-       VALUES (?, ?, ?, 0, ?, ?, NULL, ?, ?, ?, NULL, ?)`
+          ep, sl, ref_price, confidence, entry_status, outcome, unknown_count)
+       VALUES (?, ?, ?, 0, ?, ?, NULL, ?, ?, ?, NULL, ?, ?, 0)`
     );
     const watchlistIds = (raw.prepare("SELECT watchlist_id FROM watchlists WHERE prompt_id = ? AND archived_at IS NULL").all(promptId) as { watchlist_id: number }[]).map((r) => r.watchlist_id);
 
@@ -98,6 +133,8 @@ export async function runWeeklyScreen(
       `INSERT INTO entry_events (entry_id, run_id, type, from_value, to_value, at) VALUES (?, ?, ?, ?, ?, ?)`
     );
 
+    persistCoverage(raw, runId, screenResult);
+
     const seenSymbols = new Set<string>();
     for (const candidate of screenResult.candidates) {
       seenSymbols.add(candidate.ticker);
@@ -112,7 +149,9 @@ export async function runWeeklyScreen(
         candidate.membership === "full_match" ? candidate.ep : null,
         candidate.membership === "full_match" ? candidate.sl : null,
         candidate.membership === "full_match" ? null : candidate.ep,
-        entryStatus
+        entryStatus,
+        // a near miss failed a known condition ("0 beats ?"); everything else passed the screen
+        candidate.membership === "near_miss" ? "rejected" : "qualified"
       );
 
       for (const watchlistId of watchlistIds) {

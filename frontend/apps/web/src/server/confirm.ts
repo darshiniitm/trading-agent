@@ -4,7 +4,13 @@ import { getDraft } from "@/server/drafts";
 import { runWeeklyScreen } from "@/server/weeklyScreen";
 import { registerArm, retireArm } from "@/server/engine/client";
 import { runSelectEntry } from "@/server/selectEntry";
-import { traceableLeafPaths } from "@/server/compiler/traceability";
+import { programConfirmProblems } from "@/server/compiler/v5/answer";
+import { tracedLeafPaths } from "@/server/compiler/v5/verify";
+import { structureOf } from "@/server/programOf";
+import { resolveProgram } from "@/server/compiler/v5/resolve";
+import { resolvedJson } from "@/server/compiler/v5/slots";
+import { saveAccepted } from "@/server/learning";
+import { getUserDefaults } from "@/server/userDefaults";
 
 export async function confirmDraft(
   raw: Database.Database,
@@ -17,17 +23,25 @@ export async function confirmDraft(
   if (draft.status === "confirmed") throw new Error("draft already confirmed");
   if (draft.status === "abandoned") throw new Error("draft is abandoned");
 
+  // Nothing the interpreter had to assume blocks this (docs/prompt-interpreter-spec.md §2); hypothesis and
+  // kill criterion are optional add-ons. The only block is a prompt that produced no rule at all.
+  const defaults = getUserDefaults(raw, draft.userId);
   const problems: string[] = [];
-  if (!draft.spec) problems.push("no spec");
-  if (!draft.structure) problems.push("no structure");
-  if (!draft.hypothesis) problems.push("no hypothesis");
-  if (!draft.killCriterion) problems.push("no kill criterion");
-  if (draft.needsInput && draft.needsInput.length > 0) problems.push(`needs_input is not empty (${draft.needsInput.length} question(s) unanswered)`);
-  if (draft.unsupported && draft.unsupported.length > 0) problems.push(`unsupported conditions are still present (${draft.unsupported.map((u) => u.text).join(", ")})`);
+  if (!draft.program) problems.push("no interpreted program (use Interpret my prompt first)");
+  else problems.push(...programConfirmProblems(resolveProgram(draft.program, defaults)));
   if (problems.length > 0) throw new Error(`confirm blocked: ${problems.join(", ")}`);
 
-  const specJson = JSON.stringify(draft.spec);
-  const specHash = createHash("sha256").update(specJson).digest("hex");
+  const program = resolveProgram(draft.program!, defaults);
+  const resolved = JSON.stringify(resolvedJson(program, defaults));
+  const structure = structureOf(program);
+  // The program as stored is what the engine screens. Its identity (for "you already have this prompt") is
+  // the semantics only — universe, sets, conditions, actions — not the wording, spans or answer log.
+  const specJson = JSON.stringify(program);
+  const semantic = JSON.stringify({
+    universe: program.universe, sets: program.sets, actions: program.actions,
+    conditions: program.conditions.map(({ phrase: _phrase, ...c }) => c),
+  });
+  const specHash = createHash("sha256").update(semantic).digest("hex");
 
   // Excludes the draft's own parent (if any) from the duplicate-spec check:
   // an unedited version bump reuses the parent's exact spec_hash on purpose,
@@ -68,13 +82,13 @@ export async function confirmDraft(
         .prepare(
           `INSERT INTO prompts
              (owner_user_id, draft_id, title, prompt_text, structure, spec_json, spec_hash,
-              status, parent_prompt_id, version, hypothesis, kill_criterion, confirmed_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 'confirmed', ?, ?, ?, ?, ?)`
+              status, parent_prompt_id, version, hypothesis, kill_criterion, copied_from_prompt_id, confirmed_at, resolved_json)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'confirmed', ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
           draft.userId, draftId, draft.title ?? `Prompt from draft ${draftId}`, draft.promptText,
-          draft.structure, specJson, specHash, parent ? parent.prompt_id : null, parent ? parent.version + 1 : 1,
-          draft.hypothesis, draft.killCriterion, now
+          structure, specJson, specHash, parent ? parent.prompt_id : null, parent ? parent.version + 1 : 1,
+          draft.hypothesis ?? "", draft.killCriterion ?? "", draft.copiedFromPromptId, now, resolved
         );
     } catch (err: any) {
       // Closes the gap between the pre-check above and this transaction: two
@@ -104,38 +118,25 @@ export async function confirmDraft(
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
 
-    const sourcePhrases = draft.sourcePhrases ?? [];
-    const answers = (JSON.parse(
-      (raw.prepare("SELECT answers_json FROM prompt_drafts WHERE draft_id = ?").get(draftId) as { answers_json: string | null }).answers_json ?? "[]"
-    ) as { path: string }[]).map((a) => a.path);
-    const knownPhrasePaths = new Set(sourcePhrases.map((s) => s.path));
-    const knownAnswerPaths = new Set(answers);
+    const sourcePhrases = program.source_phrases;
+    const knownPhrasePaths = new Set(sourcePhrases.map((sp) => sp.path));
+    const knownAnswerPaths = new Set(program.answers.map((a) => a.path));
+    const leaves = tracedLeafPaths(program).map((l) => l.path);
 
-    // A condition is 'prompt'-origin only if every one of its traceable
-    // leaves (each param value and value, number or text — see
-    // traceableLeafPaths) has a source phrase; one answered or untraced leaf
-    // makes the whole row 'user_answer'.
-    draft.spec!.conditions.forEach((cond, i) => {
-      const thisConditionLeaves = traceableLeafPaths({ conditions: [cond], risk_cap_pct: null, near_miss: null, selection_point: null, t1_window: null })
-        .map((p) => p.replace(/^conditions\.0\./, `conditions.${i}.`));
-      const allFromPrompt = thisConditionLeaves.length > 0 && thisConditionLeaves.every((p) => knownPhrasePaths.has(p));
-      const anyFromAnswer = thisConditionLeaves.some((p) => knownAnswerPaths.has(p));
-
-      let valueOrigin: "prompt" | "user_answer" = "user_answer";
-      let sourcePhrase: string | null = null;
-      if (allFromPrompt) {
-        valueOrigin = "prompt";
-        sourcePhrase = sourcePhrases.filter((s) => thisConditionLeaves.includes(s.path)).map((s) => s.phrase).join(" / ") || null;
-      } else if (anyFromAnswer || thisConditionLeaves.length === 0) {
-        // thisConditionLeaves.length === 0 covers both: a condition with no
-        // param/value leaves at all (nothing to trace either way — Phase 1/2's
-        // manual-form behavior, always user_answer/NULL), and a
-        // compiler-sourced condition answered purely by the user.
-        valueOrigin = "user_answer";
-        sourcePhrase = null;
-      }
-
-      insertCondition.run(promptId, i + 1, cond.role, cond.kind, cond.name, JSON.stringify(cond.params ?? {}), cond.op, JSON.stringify(cond.value ?? null), valueOrigin, sourcePhrase);
+    // A condition is 'prompt'-origin only if every one of its traceable leaves (each param value and value,
+    // number or text) has a source phrase and none was answered by the user; anything else — an answered
+    // leaf, or the app's own liquidity floor — makes the whole row 'user_answer'.
+    program.conditions.forEach((cond, i) => {
+      const mine = leaves.filter((p) => p.startsWith(`conditions.${cond.id}.`));
+      const allFromPrompt = mine.length > 0 && mine.every((p) => knownPhrasePaths.has(p)) && !mine.some((p) => knownAnswerPaths.has(p));
+      const valueOrigin: "prompt" | "user_answer" = allFromPrompt ? "prompt" : "user_answer";
+      const sourcePhrase = allFromPrompt ? sourcePhrases.filter((sp) => mine.includes(sp.path)).map((sp) => sp.phrase).join(" / ") || null : null;
+      const lhs: any = cond.lhs;
+      const isEvent = ["flip", "cross_above", "cross_below", "cross_any"].includes(cond.op ?? "");
+      insertCondition.run(
+        promptId, i + 1, isEvent ? "event" : "filter", "field" in lhs ? "field" : "indicator", "field" in lhs ? lhs.field : lhs.ind,
+        JSON.stringify(lhs.params ?? {}), cond.op, JSON.stringify(cond.value ?? null), valueOrigin, sourcePhrase
+      );
     });
 
     const watchlistInfo = raw
@@ -183,7 +184,7 @@ export async function confirmDraft(
 
   let selectionWarning: string | null = null;
   try {
-    await registerArm(promptId, draft.spec!, fetchFn);
+    await registerArm(promptId, program, fetchFn);
     await runSelectEntry(raw, { promptId, runId }, fetchFn);
   } catch (err) {
     // The prompt/watchlist/run are already committed and real; a transient
@@ -209,5 +210,7 @@ export async function confirmDraft(
     }
   }
 
+  // only a prompt that was really saved feeds the Reader's examples (plan §6); sharing it with the golden set needs the user's own OK
+  saveAccepted(raw, { userId: draft.userId, promptText: draft.promptText, program });
   return { promptId, watchlistId, selectionWarning };
 }

@@ -1,5 +1,6 @@
 import type Database from "better-sqlite3";
 import { retireArm } from "@/server/engine/client";
+import { programOf } from "@/server/programOf";
 
 export function createEditDraft(raw: Database.Database, { promptId, userId }: { promptId: number; userId: number }): { draftId: number } {
   const prompt = raw.prepare("SELECT * FROM prompts WHERE prompt_id = ?").get(promptId) as any;
@@ -11,10 +12,10 @@ export function createEditDraft(raw: Database.Database, { promptId, userId }: { 
   const info = raw
     .prepare(
       `INSERT INTO prompt_drafts
-         (user_id, parent_prompt_id, title, prompt_text, structure, spec_json, hypothesis, kill_criterion, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)`
+         (user_id, parent_prompt_id, title, prompt_text, program_json, hypothesis, kill_criterion, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)`
     )
-    .run(userId, promptId, prompt.title, prompt.prompt_text, prompt.structure, prompt.spec_json, prompt.hypothesis, prompt.kill_criterion, now, now);
+    .run(userId, promptId, prompt.title, prompt.prompt_text, JSON.stringify(programOf(prompt.spec_json)), prompt.hypothesis, prompt.kill_criterion, now, now);
   return { draftId: Number(info.lastInsertRowid) };
 }
 

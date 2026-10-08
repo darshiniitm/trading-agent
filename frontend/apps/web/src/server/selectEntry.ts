@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import { programOf } from "@/server/programOf";
 import { selectCandidates, type SelectCandidate } from "@/server/engine/client";
 import { FROZEN_STATUSES } from "@/server/weeklyScreen";
 
@@ -28,9 +29,9 @@ export async function runSelectEntry(
   if (!prompt) throw new Error(`prompt ${promptId} not found`);
   const run = raw.prepare("SELECT * FROM runs WHERE run_id = ? AND prompt_id = ?").get(runId, promptId) as any;
   if (!run) throw new Error(`run ${runId} not found for prompt ${promptId}`);
-  const spec = JSON.parse(prompt.spec_json);
+  const program = programOf(prompt.spec_json);
 
-  const result = await selectCandidates(spec, run.as_of, promptId, run.kind === "dry_run" ? "dry_run" : "scheduled", fetchFn);
+  const result = await selectCandidates(program, run.as_of, promptId, run.kind === "dry_run" ? "dry_run" : "scheduled", fetchFn);
 
   const byTicker = new Map<string, Outcome>();
   for (const c of result.entered) byTicker.set(c.ticker, outcomeFor("entered", c));

@@ -25,8 +25,12 @@ export const promptDrafts = sqliteTable("prompt_drafts", {
   confirmedPromptId: integer("confirmed_prompt_id"),
   sourcePhrasesJson: text("source_phrases_json"),
   unsupportedJson: text("unsupported_json"),
+  copiedFromPromptId: integer("copied_from_prompt_id"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
+  programJson: text("program_json"),
+  programClausesJson: text("program_clauses_json"),
+  programNormalised: text("program_normalised"),
 });
 
 export const prompts = sqliteTable("prompts", {
@@ -43,6 +47,8 @@ export const prompts = sqliteTable("prompts", {
   version: integer("version").notNull(),
   hypothesis: text("hypothesis").notNull(),
   killCriterion: text("kill_criterion").notNull(),
+  visibility: text("visibility").notNull(),
+  copiedFromPromptId: integer("copied_from_prompt_id"),
   trackStockArm: text("tracks_stock_arm"),
   reviewWeek: integer("review_week"),
   confirmedAt: text("confirmed_at").notNull(),
@@ -72,6 +78,11 @@ export const runs = sqliteTable("runs", {
   startedAt: text("started_at"),
   finishedAt: text("finished_at"),
   error: text("error"),
+  // data-resolution layer (migration 0010)
+  coverageStatus: text("coverage_status"),
+  coverage: real("coverage"),
+  universeQuality: text("universe_quality"),
+  scored: integer("scored"),
 });
 
 export const symbols = sqliteTable("symbols", {
@@ -102,6 +113,10 @@ export const runResults = sqliteTable("run_results", {
   // `ep`, which stays the screen-time draft value. See migration
   // 0003_run_results_entry_price.sql.
   entryPrice: real("entry_price"),
+  // data-resolution layer (migration 0010)
+  outcome: text("outcome"),
+  unknownCount: integer("unknown_count"),
+  reasonsJson: text("reasons_json"),
 });
 
 export const watchlistEntries = sqliteTable("watchlist_entries", {
@@ -159,5 +174,6 @@ export const compilations = sqliteTable("compilations", {
   model: text("model").notNull(),
   rawJson: text("raw_json").notNull(),
   errorsJson: text("errors_json"),
+  attempt: integer("attempt"),
   createdAt: text("created_at").notNull(),
 });

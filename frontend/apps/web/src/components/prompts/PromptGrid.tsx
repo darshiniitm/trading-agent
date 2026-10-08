@@ -10,7 +10,7 @@ export type PromptRow = {
   lastHorizon1Return: number | null; lastHorizon1Control?: number | null; followers?: number; ownerName?: string; watchlistId?: number | null;
 };
 
-const MINE_COLS = "70px minmax(180px,2fr) 90px 150px 100px 150px 90px 170px";
+const MINE_COLS = "70px minmax(180px,2fr) 90px 150px 100px 150px 90px 270px";
 const FOLLOW_COLS = "70px minmax(180px,2fr) 130px 100px 150px 170px";
 
 function ArmVsControl({ arm, control }: { arm: number | null; control: number | null | undefined }) {
@@ -36,7 +36,7 @@ export function PromptGrid({ rows, mode, selectedId, onSelect, onEdit, onRetire,
     );
   }
   return (
-    <GridTable label="Your prompts" cols={MINE_COLS} minWidth={1080} rows={rows} rowKey={(r) => r.promptId} empty="You haven't saved a prompt yet."
+    <GridTable label="Your prompts" cols={MINE_COLS} minWidth={1200} rows={rows} rowKey={(r) => r.promptId} empty="You haven't saved a prompt yet."
       columns={[["id", "Prompt #"], ["title", "Title"], ["owner", "Owner"], ["status", "Status"], ["graded", "Graded"], ["arm", "Arm vs Control"], ["fol", "Followers"], ["act", ""]].map(([key, header]) => ({ key, header }))}
       renderRow={(r) => {
         const inactive = r.status === "superseded" || r.status === "retired";

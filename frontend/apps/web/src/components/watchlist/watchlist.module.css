@@ -6,15 +6,15 @@
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 10px 0 0; font-size: 12px; color: var(--muted); }
 .whatRuns { margin: 10px 0 0; font-size: 13px; color: var(--text-2); }
-.runItem { margin-right: 12px; white-space: nowrap; }
+.runItem { margin-right: 12px; display: inline-block; }
 .pricesBar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 8px 14px; background: var(--surface-0); border: 1px solid var(--border); border-radius: var(--r-lg); margin-bottom: 16px; font-size: 13px; color: var(--muted); }
 .pricesBar strong { color: var(--text); font-family: var(--font-mono); }
 .liveRegion { font-size: 12px; }
 .err { color: var(--negative); }
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; }
 .layout { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; margin-bottom: 16px; }
-.main { flex: 999 1 640px; min-width: 0; }
-.aside { flex: 1 1 340px; min-width: 0; }
+.main { flex: 999 1 min(640px, 100%); min-width: 0; }
+.aside { flex: 1 1 min(340px, 100%); min-width: 0; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .search { min-width: 220px; }
 .sub { color: var(--muted); font-size: 12.5px; }
