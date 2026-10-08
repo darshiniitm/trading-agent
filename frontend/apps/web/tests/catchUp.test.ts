@@ -279,7 +279,7 @@ describe("runCatchUp", () => {
   });
 
   // --- Final-review I2: arm registration is retried on every catch-up.
-  it("re-registers the prompt's arm with its spec on every catch-up", async () => {
+  it("re-registers the prompt's arm with its program on every catch-up", async () => {
     const raw = createTestDb();
     seedPromptWithOneRun(raw, "2026-10-16");
     const fetchFn = fakeFetch();
@@ -287,7 +287,11 @@ describe("runCatchUp", () => {
     expect(armRegistrationError).toBeNull();
     const registerCalls = fetchFn.mock.calls.filter(([url]: any[]) => String(url).endsWith("/arms/register"));
     expect(registerCalls).toHaveLength(1);
-    expect(JSON.parse(registerCalls[0][1].body)).toEqual({ prompt_id: 1, spec: SPEC });
+    const sent = JSON.parse(registerCalls[0][1].body);
+    expect(sent.prompt_id).toBe(1);
+    expect(sent.spec).toBeUndefined();
+    expect(sent.program.program_version).toBe(5);   // the stored v4 spec is upgraded on read
+    expect(sent.program.conditions.map((c: any) => c.id)).toEqual(SPEC.conditions.map((c: any) => c.id));
   });
 
   it("still screens, selects and grades the week when arm registration fails, and reports the failure", async () => {

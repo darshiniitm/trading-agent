@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { EngineError, getConditions, screen } from "@/server/engine/client";
+import { EngineError, getConditionsV5, screen } from "@/server/engine/client";
+import { program } from "./helpers/program";
 
 // Mirrors the real Fetch API constraint that a Response body can only be
 // read once: text() throws on a second call, and there is no separate
@@ -19,27 +20,24 @@ function fakeFetch(status: number, rawText: string) {
   });
 }
 
-describe("getConditions", () => {
+describe("getConditionsV5", () => {
   it("returns the parsed catalog on 200", async () => {
-    const fetchFn = fakeFetch(200, JSON.stringify([{ kind: "indicator", name: "vstop" }]));
-    const result = await getConditions(fetchFn as any);
-    expect(result).toEqual([{ kind: "indicator", name: "vstop" }]);
-    expect(fetchFn).toHaveBeenCalledWith("http://127.0.0.1:8001/conditions", expect.anything());
+    const fetchFn = fakeFetch(200, JSON.stringify({ indicators: [{ kind: "indicator", name: "vstop" }] }));
+    const result = await getConditionsV5(fetchFn as any);
+    expect(result).toEqual({ indicators: [{ kind: "indicator", name: "vstop" }] });
+    expect(fetchFn).toHaveBeenCalledWith("http://127.0.0.1:8001/conditions/v5", expect.anything());
   });
 });
 
 describe("screen", () => {
-  const spec = {
-    spec_version: 4, structure: "literal" as const, timeframe: "1W" as const,
-    selection_point: null, conditions: [], stop: null, risk_cap_pct: null, near_miss: null,
-  };
+  const spec = program();
 
-  it("posts the spec and as_of, returns the parsed body on 200", async () => {
+  it("posts the program and as_of, returns the parsed body on 200", async () => {
     const fetchFn = fakeFetch(200, JSON.stringify({ candidates: [], applied_steps: [], funnel: [], sector_view: [] }));
     const result = await screen(spec, "2026-10-02", fetchFn as any);
     expect(result.candidates).toEqual([]);
     const [, init] = fetchFn.mock.calls[0];
-    expect(JSON.parse(init.body)).toEqual({ spec, as_of: "2026-10-02" });
+    expect(JSON.parse(init.body)).toEqual({ program: spec, as_of: "2026-10-02" });
   });
 
   it("throws EngineError with the status and body on 422 (engine's own {detail: [...]} shape, from HTTPException)", async () => {

@@ -1,0 +1,5 @@
+.chain { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.box { font-family: var(--font-mono); font-size: 13px; padding: 4px 10px; border-radius: var(--r-md); border: 1px solid var(--border-strong); background: var(--surface-0); }
+.current { border-color: var(--blue); background: var(--selected-blue-bg); }
+.arrow { color: var(--muted); }
+.note { color: var(--muted); font-size: 12.5px; }

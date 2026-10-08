@@ -1,3 +1,4 @@
+import { program } from "./helpers/program";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { createTestDb } from "@/server/db/test-db";
 import { ensureOwnerUser } from "@/server/db/seed";
@@ -18,8 +19,8 @@ function seedConfirmedPrompt() {
   raw.prepare(`INSERT INTO prompt_drafts (draft_id, user_id, prompt_text, status, created_at, updated_at) VALUES (?, ?, 'x', 'confirmed', ?, ?)`).run(promptId, ownerId, now, now);
   raw.prepare(
     `INSERT INTO prompts (prompt_id, owner_user_id, draft_id, title, prompt_text, structure, spec_json, spec_hash, status, version, hypothesis, kill_criterion, confirmed_at)
-     VALUES (?, ?, ?, 'Test Prompt', 'x', 'literal', '{}', ?, 'confirmed', 1, 'h', 'k', ?)`
-  ).run(promptId, ownerId, promptId, `hash${promptId}`, now);
+     VALUES (?, ?, ?, 'Test Prompt', 'x', 'literal', ?, ?, 'confirmed', 1, 'h', 'k', ?)`
+  ).run(promptId, ownerId, promptId, JSON.stringify(program()), `hash${promptId}`, now);
   return promptId;
 }
 

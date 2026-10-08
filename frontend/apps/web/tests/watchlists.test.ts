@@ -5,21 +5,17 @@ import { createDraft, updateDraft } from "@/server/drafts";
 import { confirmDraft } from "@/server/confirm";
 import { getWatchlistView } from "@/server/watchlists";
 
-const SPEC = {
-  spec_version: 4, structure: "literal" as const, timeframe: "1W" as const,
-  selection_point: { session_of_week: 1, at: "open" as const },
-  conditions: [{ id: "C1", role: "filter" as const, kind: "field" as const, name: "mcap_cr", params: {}, op: "between", value: [10000, 50000] }],
-  stop: null, risk_cap_pct: null, near_miss: { max_failed: 1 },
-};
+import { program, readyDraft } from "./helpers/program";
+
+const MCAP_ONLY = program({
+  sets: [{ id: "S1", from: "universe", where: { all: ["C1"] }, near_miss: { max_failed: 1 } }],
+  conditions: [{ id: "C1", lhs: { field: "mcap_cr" }, op: "between", value: [10000, 50000] }],
+  actions: [],
+});
 
 async function confirmedWatchlist(fetchFn: any) {
   const raw = createTestDb();
-  const userId = ensureOwnerUser(raw);
-  const { draftId } = createDraft(raw, { userId });
-  updateDraft(raw, draftId, {
-    title: "My brief", structure: "literal", specJson: JSON.stringify(SPEC),
-    hypothesis: "h", killCriterion: "k",
-  });
+  const draftId = readyDraft(raw, { prog: MCAP_ONLY, title: "My brief", hypothesis: "h", killCriterion: "k" });
   const { watchlistId } = await confirmDraft(raw, draftId, "2026-10-02", fetchFn);
   return { raw, watchlistId };
 }

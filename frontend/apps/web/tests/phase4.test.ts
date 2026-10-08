@@ -98,3 +98,15 @@ describe("listExplore condition labels (G8)", () => {
     expect(listExplore(raw, { userId: ownerId })[0].conditionLabels).toEqual(["Market cap (cr) · ≥ 100"]);
   });
 });
+
+describe("listExplore vs-control and own watchlist", () => {
+  it("is null without a graded run, and carries the owner's own watchlist id", () => {
+    const raw = createTestDb(); const { ownerId } = seedPrompt(raw, "shared");
+    raw.prepare("INSERT INTO watchlists (watchlist_id, user_id, prompt_id, name, created_at) VALUES (9, ?, 15, 'w', 'x')").run(ownerId);
+    const row = listExplore(raw, { userId: ownerId })[0];
+    expect(row.vsControl).toBeNull();
+    expect(row.watchlistId).toBe(9);
+    raw.prepare("INSERT INTO validations (run_id, horizon_w, n, ew_return, control_ew_return, hit_rate, computed_at) VALUES (1, 1, 3, 2.5, 1.0, 0.5, 'x')").run();
+    expect(listExplore(raw, { userId: ownerId })[0].vsControl).toBeCloseTo(1.5);
+  });
+});

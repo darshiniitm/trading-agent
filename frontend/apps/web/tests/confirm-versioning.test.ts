@@ -5,18 +5,16 @@ import { createDraft, updateDraft } from "@/server/drafts";
 import { confirmDraft } from "@/server/confirm";
 import { createEditDraft } from "@/server/prompts";
 
-const SPEC = {
-  spec_version: 4, structure: "literal" as const, timeframe: "1W" as const,
-  selection_point: { session_of_week: 1, at: "open" as const },
-  conditions: [{ id: "idMcap", role: "filter" as const, kind: "field" as const, name: "mcap_cr", params: {}, op: "between", value: [10000, 50000] }],
-  stop: null, risk_cap_pct: null, near_miss: null,
-};
+import { program, readyDraft as makeReady } from "./helpers/program";
+
+const MCAP_ONLY = program({
+  sets: [{ id: "S1", from: "universe", where: { all: ["C1"] } }],
+  conditions: [{ id: "C1", lhs: { field: "mcap_cr" }, op: "between", value: [10000, 50000] }],
+  actions: [],
+});
 
 function readyDraft(raw: ReturnType<typeof createTestDb>) {
-  const userId = ensureOwnerUser(raw);
-  const { draftId } = createDraft(raw, { userId });
-  updateDraft(raw, draftId, { title: "Original brief", structure: "literal", specJson: JSON.stringify(SPEC), hypothesis: "h", killCriterion: "k" });
-  return draftId;
+  return makeReady(raw, { prog: MCAP_ONLY, hypothesis: "h", killCriterion: "k" });
 }
 
 describe("confirmDraft — selection failure tolerance", () => {

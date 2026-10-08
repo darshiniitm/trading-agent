@@ -305,3 +305,33 @@ describe("runValidatePrior", () => {
     expect(done.complete).toBe(true);
   });
 });
+
+describe("runValidatePrior and unscored runs (data-fallback spec §7)", () => {
+  it("does not grade a partial/low-coverage run: no engine call, no validations row, nothing left to retry", async () => {
+    const raw = createTestDb();
+    const { runId } = seedGradableRun(raw, { gradedRunsBefore: 0 });
+    raw.prepare("UPDATE runs SET coverage_status = 'partial', scored = 0 WHERE run_id = ?").run(runId);
+    const fetchFn = fakeValidateFetch({ graded_weeks: 14, maturity: "first_look", rows: [] });
+    const out = await runValidatePrior(raw, { promptId: 1, runId }, fetchFn as any);
+    expect(fetchFn).not.toHaveBeenCalled();
+    expect(out.complete).toBe(true);
+    expect(raw.prepare("SELECT COUNT(*) AS n FROM validations").get()).toEqual({ n: 0 });
+  });
+
+  it("unscored runs do not count toward the graded-weeks maturity gate", async () => {
+    const raw = createTestDb();
+    const { runId } = seedGradableRun(raw, { gradedRunsBefore: 3 });
+    raw.prepare("UPDATE runs SET scored = 0 WHERE prompt_id = 1 AND run_id <> ?").run(runId);   // the 3 earlier runs were partial
+    const fetchFn = fakeValidateFetch({ graded_weeks: 1, maturity: "not_first_look", rows: [] });
+    await runValidatePrior(raw, { promptId: 1, runId }, fetchFn as any);
+    expect(JSON.parse((fetchFn.mock.calls[0][1] as any).body).graded_weeks_so_far).toBe(1);
+  });
+
+  it("scored=1 and legacy null runs are graded as before", async () => {
+    const raw = createTestDb();
+    const { runId } = seedGradableRun(raw, { gradedRunsBefore: 0 });
+    const fetchFn = fakeValidateFetch({ graded_weeks: 1, maturity: "not_first_look", rows: [] });
+    await runValidatePrior(raw, { promptId: 1, runId }, fetchFn as any);
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+});

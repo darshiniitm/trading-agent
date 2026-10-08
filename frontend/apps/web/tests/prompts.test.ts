@@ -28,8 +28,8 @@ describe("createEditDraft", () => {
     const { draftId } = createEditDraft(raw, { promptId: 1, userId: ownerId });
     const draft = getDraft(raw, draftId)!;
     expect(draft.status).toBe("open");
-    expect(draft.structure).toBe("literal");
-    expect(draft.spec).toEqual(SPEC);
+    expect(draft.program).toMatchObject({ program_version: 5, universe: { source: "nse_all" } });
+    expect(draft.program!.sets[0].where).toEqual({ all: [] });   // the stored v4 spec, upgraded on read
     expect(draft.hypothesis).toBe("hyp");
     const row = raw.prepare("SELECT parent_prompt_id, prompt_text FROM prompt_drafts WHERE draft_id = ?").get(draftId) as any;
     expect(row.parent_prompt_id).toBe(1);

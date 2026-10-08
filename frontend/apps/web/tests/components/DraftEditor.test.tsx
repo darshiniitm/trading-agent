@@ -1,161 +1,122 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
+// The Interpret view has its own tests; here it just reports a view upward, as it does after a compile.
+let reportView: (v: any) => void = () => undefined;
+vi.mock("@/components/InterpretationView", () => ({
+  InterpretationView: (props: any) => {
+    reportView = props.onViewChange;
+    return <div data-testid="interpretation" data-has-program={String(props.hasProgram)} data-prompt={props.promptText}>{props.addonsExtra}</div>;
+  },
+}));
 import { DraftEditor } from "@/components/DraftEditor";
 
-const SAVED_DRAFT = {
-  draftId: 5, userId: 1, parentPromptId: 3, title: "v2", promptText: "", status: "open",
-  structure: "literal",
-  spec: {
-    spec_version: 4, structure: "literal", timeframe: "1W",
-    selection_point: { session_of_week: 1, at: "open" },
-    conditions: [
-      { id: "C1", role: "filter", kind: "field", name: "mcap_cr", params: {}, op: "between", value: [10000, 50000] },
-      { id: "C2", role: "filter", kind: "field", name: "traded_value_cr", params: { window: "1W" }, op: ">=", value: 10 },
-    ],
-    stop: null, risk_cap_pct: null, near_miss: null,
-  },
-  hypothesis: "mid caps trend", killCriterion: "negative after 13 weeks",
-};
+const READY = { ready: true, problems: [], clauses: [], chips: [], conditions: [], notEvaluable: [], normalised: "" };
+const NO_RULES = { ...READY, ready: false, problems: ["no part of the prompt could be turned into a rule to screen on"] };
 
-type Route = { ok?: boolean; status?: number; body: unknown } | Error;
-
-function routedFetch(routes: Record<string, Route>) {
-  return vi.fn().mockImplementation(async (url: string, init?: { method?: string }) => {
-    const key = `${init?.method ?? "GET"} ${url}`;
-    const route = routes[key];
-    if (!route) throw new Error(`unexpected fetch ${key}`);
-    if (route instanceof Error) throw route;
-    return { ok: route.ok ?? true, status: route.status ?? 200, json: async () => route.body };
+function stub(routes: Record<string, (init?: any) => any>) {
+  const f = vi.fn(async (url: string, init?: any) => {
+    const key = Object.keys(routes).find((k) => (init?.method ?? "GET") + " " + url === k);
+    if (!key) throw new Error(`unexpected fetch ${(init?.method ?? "GET")} ${url}`);
+    const r = routes[key](init);
+    return { ok: r.ok ?? true, status: r.status ?? 200, json: async () => r.body ?? r };
   });
+  vi.stubGlobal("fetch", f);
+  return f;
 }
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); push.mockReset(); });
 
-function callsTo(fetchFn: ReturnType<typeof vi.fn>, key: string) {
-  return fetchFn.mock.calls.filter(([url, init]) => `${init?.method ?? "GET"} ${url}` === key);
-}
-
-describe("DraftEditor", () => {
-  beforeEach(() => {
-    push.mockReset();
-    vi.stubGlobal("alert", vi.fn());
-  });
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it("creates a fresh draft on mount when no draft id is given (/drafts/new)", async () => {
-    const fetchFn = routedFetch({ "POST /api/drafts": { body: { draft_id: 9 } } });
-    vi.stubGlobal("fetch", fetchFn);
+describe("DraftEditor (v5)", () => {
+  it("creates a draft; saving needs only a read prompt — no answers, hypothesis or kill criterion", async () => {
+    stub({ "POST /api/drafts": () => ({ body: { draft_id: 5 } }) });
     render(<DraftEditor />);
-    await screen.findByText(/Draft 9/);
-    expect(callsTo(fetchFn, "POST /api/drafts")).toHaveLength(1);
-  });
-
-  it("loads an existing draft (edit-as-new-version / Continue) instead of creating one, and populates the form", async () => {
-    const fetchFn = routedFetch({ "GET /api/drafts/5": { body: SAVED_DRAFT } });
-    vi.stubGlobal("fetch", fetchFn);
-    render(<DraftEditor initialDraftId={5} />);
-
     await screen.findByText(/Draft 5/);
-    expect(callsTo(fetchFn, "POST /api/drafts")).toHaveLength(0);
-    expect(screen.getByLabelText("hypothesis")).toHaveValue("mid caps trend");
-    expect(screen.getByLabelText("kill criterion")).toHaveValue("negative after 13 weeks");
-    expect(screen.getByLabelText("structure")).toHaveValue("literal");
-    // The trailing liquidity filter comes back as the liquidity answer, not a free condition row.
-    expect(screen.getAllByLabelText("condition name")).toHaveLength(1);
-    expect(screen.getByLabelText("condition name")).toHaveValue("mcap_cr");
-    expect(screen.getByLabelText(/Yes, ₹10 cr\/week/)).toBeChecked();
-    expect(screen.getByLabelText("session of week")).toHaveValue(1);
+    const confirm = screen.getByRole("button", { name: /Save and assign Prompt ID/ });
+    expect(confirm).toBeDisabled();
+    expect(screen.getByRole("alert")).toHaveTextContent("Read your prompt first");
+
+    reportView(NO_RULES);
+    await screen.findByText(/no part of the prompt could be turned into a rule/);
+    expect(screen.getByRole("button", { name: /Save and assign Prompt ID/ })).toBeDisabled();
+    reportView(READY);
+    await waitFor(() => expect(screen.getByRole("button", { name: /Save and assign Prompt ID/ })).toBeEnabled());
+    expect(screen.queryByText(/Add a hypothesis|Add a kill criterion|Still open/)).not.toBeInTheDocument();
   });
 
-  it("shows an error instead of the form when the draft can't be loaded", async () => {
-    vi.stubGlobal("fetch", routedFetch({ "GET /api/drafts/404": { ok: false, status: 404, body: { error: "draft not found" } } }));
-    render(<DraftEditor initialDraftId={404} />);
-    expect(await screen.findByText(/draft not found/)).toHaveAttribute("role", "alert");
-    expect(screen.queryByRole("button", { name: /Confirm and assign Prompt ID/ })).not.toBeInTheDocument();
-  });
-
-  it("confirms with the engine's last_bar_date as as_of, alerts the selection warning, then navigates", async () => {
-    const fetchFn = routedFetch({
-      "GET /api/drafts/5": { body: SAVED_DRAFT },
-      "PATCH /api/drafts/5": { body: SAVED_DRAFT },
-      "GET /api/health": { body: { status: "ok", last_bar_date: "2026-10-02" } },
-      "POST /api/drafts/5/confirm": { status: 201, body: { prompt_id: 4, watchlist_id: 7, selection_warning: "prompt confirmed, but selection could not run yet: engine down" } },
+  it("saves hypothesis and kill criterion first, then confirms on the engine's latest bar date, then opens the watchlist", async () => {
+    const calls: string[] = [];
+    stub({
+      "POST /api/drafts": () => ({ body: { draft_id: 5 } }),
+      "PATCH /api/drafts/5": (init) => { calls.push("save:" + init.body); return { body: {} }; },
+      "GET /api/health": () => ({ body: { last_bar_date: "2026-10-05" } }),
+      "POST /api/drafts/5/confirm": (init) => { calls.push("confirm:" + init.body); return { status: 201, body: { prompt_id: 9, watchlist_id: 4, selection_warning: null } }; },
     });
-    vi.stubGlobal("fetch", fetchFn);
-    render(<DraftEditor initialDraftId={5} />);
+    render(<DraftEditor />);
     await screen.findByText(/Draft 5/);
-
-    fireEvent.click(screen.getByRole("button", { name: /Confirm and assign Prompt ID/ }));
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/watchlists/7"));
-
-    const [[, confirmInit]] = callsTo(fetchFn, "POST /api/drafts/5/confirm");
-    expect(JSON.parse(confirmInit.body)).toEqual({ as_of: "2026-10-02" });
-    expect(window.alert).toHaveBeenCalledWith("prompt confirmed, but selection could not run yet: engine down");
+    reportView(READY);
+    fireEvent.change(screen.getByLabelText("hypothesis"), { target: { value: "mid-caps in an uptrend" } });
+    fireEvent.change(screen.getByLabelText("kill criterion"), { target: { value: "negative after 13 weeks" } });
+    fireEvent.click(await screen.findByRole("button", { name: /Save and assign Prompt ID/ }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/watchlists/4"));
+    expect(calls).toEqual([
+      'save:{"hypothesis":"mid-caps in an uptrend","killCriterion":"negative after 13 weeks"}',
+      'confirm:{"as_of":"2026-10-05"}',
+    ]);
   });
 
-  it("does not alert when confirm returns no selection warning", async () => {
-    vi.stubGlobal("fetch", routedFetch({
-      "GET /api/drafts/5": { body: SAVED_DRAFT },
-      "PATCH /api/drafts/5": { body: SAVED_DRAFT },
-      "GET /api/health": { body: { status: "ok", last_bar_date: "2026-10-02" } },
-      "POST /api/drafts/5/confirm": { status: 201, body: { prompt_id: 4, watchlist_id: 7, selection_warning: null } },
-    }));
-    render(<DraftEditor initialDraftId={5} />);
-    await screen.findByText(/Draft 5/);
-    fireEvent.click(screen.getByRole("button", { name: /Confirm and assign Prompt ID/ }));
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/watchlists/7"));
-    expect(window.alert).not.toHaveBeenCalled();
-  });
-
-  it("stops and shows the save error instead of confirming when the spec PATCH fails (never confirms a stale server spec)", async () => {
-    const fetchFn = routedFetch({
-      "GET /api/drafts/5": { body: SAVED_DRAFT },
-      "PATCH /api/drafts/5": { ok: false, status: 400, body: { error: "invalid spec: condition ids must be unique" } },
-      "GET /api/health": { body: { status: "ok", last_bar_date: "2026-10-02" } },
-      "POST /api/drafts/5/confirm": { status: 201, body: { prompt_id: 4, watchlist_id: 7, selection_warning: null } },
+  it("does not confirm on top of a save that failed, and shows the server's reason", async () => {
+    const f = stub({
+      "POST /api/drafts": () => ({ body: { draft_id: 5 } }),
+      "PATCH /api/drafts/5": () => ({ ok: false, status: 400, body: { error: "prompt_text must be 2000 characters or fewer" } }),
     });
-    vi.stubGlobal("fetch", fetchFn);
-    render(<DraftEditor initialDraftId={5} />);
+    render(<DraftEditor />);
     await screen.findByText(/Draft 5/);
-
-    fireEvent.click(screen.getByRole("button", { name: /Confirm and assign Prompt ID/ }));
-    expect(await screen.findByText(/Could not save the draft: invalid spec: condition ids must be unique/)).toHaveAttribute("role", "alert");
-    expect(callsTo(fetchFn, "POST /api/drafts/5/confirm")).toHaveLength(0);
+    reportView(READY);
+    fireEvent.change(screen.getByLabelText("hypothesis"), { target: { value: "h" } });
+    fireEvent.change(screen.getByLabelText("kill criterion"), { target: { value: "k" } });
+    fireEvent.click(await screen.findByRole("button", { name: /Save and assign Prompt ID/ }));
+    expect(await screen.findByText(/Could not save the draft: prompt_text must be 2000/)).toBeInTheDocument();
+    expect(f.mock.calls.some(([u]) => String(u).endsWith("/confirm"))).toBe(false);
     expect(push).not.toHaveBeenCalled();
   });
 
-  it("stops and shows the save error instead of dry-running when the spec PATCH fails", async () => {
-    const fetchFn = routedFetch({
-      "GET /api/drafts/5": { body: SAVED_DRAFT },
-      "PATCH /api/drafts/5": { ok: false, status: 400, body: { error: "invalid spec: boom" } },
+  it("shows a confirm failure (e.g. a duplicate prompt) instead of leaving the page", async () => {
+    stub({
+      "POST /api/drafts": () => ({ body: { draft_id: 5 } }),
+      "PATCH /api/drafts/5": () => ({ body: {} }),
+      "GET /api/health": () => ({ ok: false, status: 503, body: {} }),
+      "POST /api/drafts/5/confirm": () => ({ ok: false, status: 409, body: { error: "you already have a confirmed prompt with these exact conditions (Prompt 3)" } }),
     });
-    vi.stubGlobal("fetch", fetchFn);
-    render(<DraftEditor initialDraftId={5} />);
+    render(<DraftEditor />);
     await screen.findByText(/Draft 5/);
-
-    fireEvent.click(screen.getByRole("button", { name: /Dry run/ }));
-    expect(await screen.findByText(/Could not save the draft: invalid spec: boom/)).toBeInTheDocument();
-    expect(fetchFn.mock.calls.some(([url]) => String(url).endsWith("/dry-run"))).toBe(false);
+    reportView(READY);
+    fireEvent.change(screen.getByLabelText("hypothesis"), { target: { value: "h" } });
+    fireEvent.change(screen.getByLabelText("kill criterion"), { target: { value: "k" } });
+    fireEvent.click(await screen.findByRole("button", { name: /Save and assign Prompt ID/ }));
+    expect(await screen.findByText(/already have a confirmed prompt.*Prompt 3/)).toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
   });
 
-  it("falls back to today's date as as_of for a dry run when the health check fails", async () => {
-    const fetchFn = routedFetch({
-      "GET /api/drafts/5": { body: SAVED_DRAFT },
-      "PATCH /api/drafts/5": { body: SAVED_DRAFT },
-      "GET /api/health": new Error("network down"),
-      "POST /api/drafts/5/dry-run": { body: { candidates: [] } },
-    });
-    vi.stubGlobal("fetch", fetchFn);
-    render(<DraftEditor initialDraftId={5} />);
-    await screen.findByText(/Draft 5/);
+  it("reopening a draft loads its prompt, hypothesis and kill criterion, and tells the view a program exists", async () => {
+    stub({ "GET /api/drafts/8": () => ({ body: { draftId: 8, status: "open", promptText: "my prompt", hypothesis: "hh", killCriterion: "kk", program: { program_version: 5 } } }) });
+    render(<DraftEditor initialDraftId={8} />);
+    await screen.findByText(/Draft 8/);
+    expect(screen.getByLabelText("prompt text")).toHaveValue("my prompt");
+    expect(screen.getByLabelText("hypothesis")).toHaveValue("hh");
+    expect(screen.getByLabelText("kill criterion")).toHaveValue("kk");
+    expect(screen.getByTestId("interpretation")).toHaveAttribute("data-has-program", "true");
+  });
 
-    fireEvent.click(screen.getByRole("button", { name: /Dry run/ }));
-    await screen.findByText(/Dry run \(not recorded/);
-    const [[, init]] = callsTo(fetchFn, "POST /api/drafts/5/dry-run");
-    expect(JSON.parse(init.body)).toEqual({ as_of: new Date().toISOString().slice(0, 10) });
+  it("says so when a draft is not open, and shows a load error plainly", async () => {
+    stub({ "GET /api/drafts/8": () => ({ body: { draftId: 8, status: "confirmed", promptText: "", program: null } }) });
+    render(<DraftEditor initialDraftId={8} />);
+    expect(await screen.findByText(/This draft is confirmed/)).toBeInTheDocument();
+    cleanup();
+    stub({ "GET /api/drafts/9": () => ({ ok: false, status: 404, body: { error: "draft not found" } }) });
+    render(<DraftEditor initialDraftId={9} />);
+    expect(await screen.findByText("draft not found")).toBeInTheDocument();
   });
 });

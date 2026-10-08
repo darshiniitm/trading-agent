@@ -1,0 +1,460 @@
+[
+ {
+  "name": "literal",
+  "spec": {
+   "spec_version": 4,
+   "structure": "literal",
+   "timeframe": "1W",
+   "selection_point": null,
+   "conditions": [
+    {
+     "id": "C1",
+     "role": "filter",
+     "kind": "field",
+     "name": "mcap_cr",
+     "params": {},
+     "op": "between",
+     "value": [
+      10000,
+      50000
+     ],
+     "dir": null
+    },
+    {
+     "id": "C2",
+     "role": "filter",
+     "kind": "field",
+     "name": "traded_value_cr",
+     "params": {
+      "window": "8W"
+     },
+     "op": ">=",
+     "value": 10,
+     "dir": null
+    },
+    {
+     "id": "C3",
+     "role": "event",
+     "kind": "indicator",
+     "name": "vstop",
+     "params": {
+      "length": 10,
+      "mult": 2.0,
+      "source": "close"
+     },
+     "op": "flip",
+     "value": null,
+     "dir": "long"
+    },
+    {
+     "id": "C4",
+     "role": "filter",
+     "kind": "indicator",
+     "name": "rsi",
+     "params": {
+      "length": 14
+     },
+     "op": "between",
+     "value": [
+      50,
+      65
+     ],
+     "dir": null
+    }
+   ],
+   "stop": {
+    "from": "C3"
+   },
+   "risk_cap_pct": null,
+   "near_miss": null,
+   "t1_window": null
+  },
+  "program": {
+   "program_version": 5,
+   "universe": {
+    "source": "nse_all"
+   },
+   "sets": [
+    {
+     "id": "S1",
+     "from": "universe",
+     "label": "v4 spec",
+     "eval": {
+      "mode": "literal",
+      "timeframe": "1W",
+      "bar": "last_completed"
+     },
+     "where": {
+      "all": [
+       "C1",
+       "C2",
+       "C3",
+       "C4"
+      ]
+     }
+    }
+   ],
+   "conditions": [
+    {
+     "id": "C1",
+     "lhs": {
+      "field": "mcap_cr",
+      "params": {}
+     },
+     "op": "between",
+     "value": [
+      10000,
+      50000
+     ]
+    },
+    {
+     "id": "C2",
+     "lhs": {
+      "field": "traded_value_cr",
+      "params": {
+       "window": "8W"
+      }
+     },
+     "op": ">=",
+     "value": 10
+    },
+    {
+     "id": "C3",
+     "lhs": {
+      "ind": "vstop",
+      "params": {
+       "length": 10,
+       "mult": 2.0,
+       "source": "close"
+      },
+      "tf": "1W"
+     },
+     "op": "flip",
+     "dir": "long",
+     "within_bars": 1
+    },
+    {
+     "id": "C4",
+     "lhs": {
+      "ind": "rsi",
+      "params": {
+       "length": 14
+      },
+      "tf": "1W"
+     },
+     "op": "between",
+     "value": [
+      50,
+      65
+     ]
+    }
+   ],
+   "actions": [
+    {
+     "id": "A1",
+     "type": "trade_plan",
+     "set": "S1",
+     "entry": {
+      "at": "signal_close"
+     },
+     "stop": {
+      "from": "C3"
+     },
+     "confidence": {
+      "method": "conditions_met_count"
+     }
+    }
+   ]
+  }
+ },
+ {
+  "name": "t1_literal_full",
+  "spec": {
+   "spec_version": 4,
+   "structure": "t1_literal",
+   "timeframe": "1W",
+   "selection_point": {
+    "session_of_week": 3,
+    "at": "close"
+   },
+   "conditions": [
+    {
+     "id": "C1",
+     "role": "filter",
+     "kind": "field",
+     "name": "mcap_cr",
+     "params": {},
+     "op": "between",
+     "value": [
+      10000,
+      50000
+     ],
+     "dir": null
+    },
+    {
+     "id": "C2",
+     "role": "event",
+     "kind": "indicator",
+     "name": "vstop",
+     "params": {
+      "length": 14,
+      "mult": 3,
+      "source": "close"
+     },
+     "op": "flip",
+     "value": null,
+     "dir": "long"
+    }
+   ],
+   "stop": {
+    "from": "C2"
+   },
+   "risk_cap_pct": 15.0,
+   "near_miss": {
+    "max_failed": 1
+   },
+   "t1_window": {
+    "length_sessions": 3,
+    "offsets": [
+     0,
+     1,
+     2
+    ]
+   }
+  },
+  "program": {
+   "program_version": 5,
+   "universe": {
+    "source": "nse_all"
+   },
+   "sets": [
+    {
+     "id": "S1",
+     "from": "universe",
+     "label": "v4 spec",
+     "eval": {
+      "mode": "t1_literal",
+      "timeframe": "1W",
+      "bar": "last_completed",
+      "t1_window": {
+       "length_sessions": 3,
+       "offsets": [
+        0,
+        1,
+        2
+       ]
+      }
+     },
+     "where": {
+      "all": [
+       "C1",
+       "C2"
+      ]
+     },
+     "near_miss": {
+      "max_failed": 1
+     }
+    }
+   ],
+   "conditions": [
+    {
+     "id": "C1",
+     "lhs": {
+      "field": "mcap_cr",
+      "params": {}
+     },
+     "op": "between",
+     "value": [
+      10000,
+      50000
+     ]
+    },
+    {
+     "id": "C2",
+     "lhs": {
+      "ind": "vstop",
+      "params": {
+       "length": 14,
+       "mult": 3,
+       "source": "close"
+      },
+      "tf": "1W"
+     },
+     "op": "flip",
+     "dir": "long",
+     "within_bars": 1
+    }
+   ],
+   "actions": [
+    {
+     "id": "A1",
+     "type": "trade_plan",
+     "set": "S1",
+     "entry": {
+      "at": "session",
+      "session_of_week": 3,
+      "session_at": "close"
+     },
+     "stop": {
+      "from": "C2"
+     },
+     "confidence": {
+      "method": "conditions_met_count"
+     },
+     "risk_cap_pct": 15.0
+    }
+   ]
+  }
+ },
+ {
+  "name": "literal_no_stop",
+  "spec": {
+   "spec_version": 4,
+   "structure": "literal",
+   "timeframe": "1W",
+   "selection_point": null,
+   "conditions": [
+    {
+     "id": "C1",
+     "role": "filter",
+     "kind": "field",
+     "name": "mcap_cr",
+     "params": {},
+     "op": "between",
+     "value": [
+      10000,
+      50000
+     ],
+     "dir": null
+    },
+    {
+     "id": "C2",
+     "role": "filter",
+     "kind": "field",
+     "name": "traded_value_cr",
+     "params": {
+      "window": "8W"
+     },
+     "op": ">=",
+     "value": 10,
+     "dir": null
+    },
+    {
+     "id": "C3",
+     "role": "event",
+     "kind": "indicator",
+     "name": "vstop",
+     "params": {
+      "length": 10,
+      "mult": 2.0,
+      "source": "close"
+     },
+     "op": "flip",
+     "value": null,
+     "dir": "long"
+    },
+    {
+     "id": "C4",
+     "role": "filter",
+     "kind": "indicator",
+     "name": "rsi",
+     "params": {
+      "length": 14
+     },
+     "op": "between",
+     "value": [
+      50,
+      65
+     ],
+     "dir": null
+    }
+   ],
+   "stop": null,
+   "risk_cap_pct": null,
+   "near_miss": null,
+   "t1_window": null
+  },
+  "program": {
+   "program_version": 5,
+   "universe": {
+    "source": "nse_all"
+   },
+   "sets": [
+    {
+     "id": "S1",
+     "from": "universe",
+     "label": "v4 spec",
+     "eval": {
+      "mode": "literal",
+      "timeframe": "1W",
+      "bar": "last_completed"
+     },
+     "where": {
+      "all": [
+       "C1",
+       "C2",
+       "C3",
+       "C4"
+      ]
+     }
+    }
+   ],
+   "conditions": [
+    {
+     "id": "C1",
+     "lhs": {
+      "field": "mcap_cr",
+      "params": {}
+     },
+     "op": "between",
+     "value": [
+      10000,
+      50000
+     ]
+    },
+    {
+     "id": "C2",
+     "lhs": {
+      "field": "traded_value_cr",
+      "params": {
+       "window": "8W"
+      }
+     },
+     "op": ">=",
+     "value": 10
+    },
+    {
+     "id": "C3",
+     "lhs": {
+      "ind": "vstop",
+      "params": {
+       "length": 10,
+       "mult": 2.0,
+       "source": "close"
+      },
+      "tf": "1W"
+     },
+     "op": "flip",
+     "dir": "long",
+     "within_bars": 1
+    },
+    {
+     "id": "C4",
+     "lhs": {
+      "ind": "rsi",
+      "params": {
+       "length": 14
+      },
+      "tf": "1W"
+     },
+     "op": "between",
+     "value": [
+      50,
+      65
+     ]
+    }
+   ],
+   "actions": []
+  }
+ }
+]
