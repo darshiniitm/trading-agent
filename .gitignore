@@ -6,3 +6,7 @@ results/
 .DS_Store
 .pytest_cache/
 .claude/
+
+# secrets
+.env.local
+frontend/apps/web/.env.local

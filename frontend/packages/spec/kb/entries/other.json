@@ -1,0 +1,312 @@
+{
+ "entries": [
+  {
+   "kind": "trigger",
+   "id": "trig_last_completed_bar",
+   "label": "Last completed bar",
+   "aliases": [],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   },
+   "phrases": [
+    "latest completed bar",
+    "last completed bar",
+    "latest close",
+    "today",
+    "as of now"
+   ],
+   "bar_rule": "last_completed",
+   "window_rule": null
+  },
+  {
+   "kind": "trigger",
+   "id": "trig_within_last_n",
+   "label": "Within the last N bars",
+   "aliases": [],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   },
+   "phrases": [
+    "in the last",
+    "within the last",
+    "over the last",
+    "within"
+   ],
+   "bar_rule": "last_completed",
+   "window_rule": "within_bars = N"
+  },
+  {
+   "kind": "trigger",
+   "id": "trig_friday_close",
+   "label": "Friday close",
+   "aliases": [],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "proposed"
+   },
+   "phrases": [
+    "friday close",
+    "weekly close",
+    "at the weekly close"
+   ],
+   "bar_rule": "last_completed weekly bar",
+   "window_rule": null
+  },
+  {
+   "kind": "trigger",
+   "id": "trig_monday_open",
+   "label": "Monday open",
+   "aliases": [],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "proposed"
+   },
+   "phrases": [
+    "monday open",
+    "at monday open",
+    "next open"
+   ],
+   "bar_rule": "next_open",
+   "window_rule": null
+  },
+  {
+   "kind": "data_range",
+   "id": "dr_daily",
+   "label": "Daily candles",
+   "aliases": [],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   },
+   "phrases": [
+    "daily",
+    "daily candles",
+    "daily timeframe",
+    "on daily"
+   ],
+   "timeframe": "1D",
+   "lookback": null
+  },
+  {
+   "kind": "data_range",
+   "id": "dr_weekly",
+   "label": "Weekly candles",
+   "aliases": [],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   },
+   "phrases": [
+    "weekly",
+    "weekly candles",
+    "weekly timeframe"
+   ],
+   "timeframe": "1W",
+   "lookback": null
+  },
+  {
+   "kind": "data_range",
+   "id": "dr_monthly",
+   "label": "Monthly candles",
+   "aliases": [],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   },
+   "phrases": [
+    "monthly",
+    "monthly candles",
+    "monthly timeframe"
+   ],
+   "timeframe": "1M",
+   "lookback": null
+  },
+  {
+   "kind": "data_range",
+   "id": "dr_historical",
+   "label": "Historical candles",
+   "aliases": [],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   },
+   "phrases": [
+    "historical candles",
+    "historical data",
+    "fetch candles"
+   ],
+   "timeframe": null,
+   "lookback": "warmup_bars of the indicators in use"
+  },
+  {
+   "kind": "data_range",
+   "id": "dr_since",
+   "label": "Since a year",
+   "aliases": [],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "proposed"
+   },
+   "phrases": [
+    "since 2019",
+    "last 2 years",
+    "last 52 weeks"
+   ],
+   "timeframe": null,
+   "lookback": "explicit window"
+  },
+  {
+   "kind": "rank",
+   "id": "rank_event_date",
+   "label": "Rank by event date",
+   "aliases": [],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   },
+   "phrases": [
+    "most recent crossover first",
+    "by crossover date",
+    "most recent first",
+    "newest first",
+    "latest first"
+   ],
+   "key": "event_date",
+   "order": "desc",
+   "limit": false
+  },
+  {
+   "kind": "rank",
+   "id": "rank_oldest_first",
+   "label": "Oldest first",
+   "aliases": [],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   },
+   "phrases": [
+    "oldest first",
+    "earliest first"
+   ],
+   "key": "event_date",
+   "order": "asc",
+   "limit": false
+  },
+  {
+   "kind": "rank",
+   "id": "rank_top_n",
+   "label": "Top N",
+   "aliases": [],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   },
+   "phrases": [
+    "top 10",
+    "top n",
+    "first n"
+   ],
+   "key": null,
+   "order": null,
+   "limit": true
+  },
+  {
+   "kind": "rank",
+   "id": "rank_strongest",
+   "label": "Strongest",
+   "aliases": [],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "proposed"
+   },
+   "phrases": [
+    "strongest",
+    "highest rsi",
+    "best performing"
+   ],
+   "key": null,
+   "order": "desc",
+   "limit": false
+  }
+ ]
+}

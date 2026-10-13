@@ -1,0 +1,49 @@
+{
+ "TC02": [
+  "Find Nifty 100 names where the 50-day SMA has just crossed over the 200-day SMA, within the last 10 trading days",
+  "Nifty 100: 50 DMA breaks above 200 DMA during the last 10 sessions"
+ ],
+ "TC03": [
+  "Nifty 500 stocks setting a new 52-week high today on volume that is at least 2x the 20-day average",
+  "Today's new 52 week highs in Nifty 500 where volume is twice the 20 day average"
+ ],
+ "TC04": [
+  "Nifty 100 pullback buys: price above the 200-day average and 2-period RSI under 10",
+  "RSI(2) below 10 and price above 200 SMA, Nifty 100 stocks"
+ ],
+ "TC05": [
+  "Nifty 200 stocks where Supertrend(10,3) flipped to bullish in the last 3 days and ADX is above 25",
+  "Nifty 200: ADX over 25 plus a Supertrend (10,3) buy signal in the past 3 sessions"
+ ],
+ "TC06": [
+  "Nifty 200 stocks where MACD(12,26,9) crossed up through the signal line within the last 2 sessions, MACD below zero",
+  "MACD 12,26,9 bullish crossover below the zero line in the last 2 days on Nifty 200"
+ ],
+ "TC08": [
+  "Nifty 200 stocks that formed an NR7 and are also an inside day"
+ ],
+ "TC09": [
+  "Nifty 200: the 9 EMA moved above the 21 EMA within 3 sessions and price is over the 200 EMA"
+ ],
+ "TC13": [
+  "Nifty 500 near 52-week lows (within 10%) with RSI 14 back above 30 after crossing in the last 3 sessions"
+ ],
+ "TC14": [
+  "Nifty 500 stocks gapping up by 2% over the previous high, closing above their open on 1.5 times the 20 day average volume"
+ ],
+ "TC15": [
+  "Nifty 500 weekly: close over the rising 30 week MA, clearing the prior 26-week high, volume at least double the 10-week average"
+ ],
+ "TC17": [
+  "Nifty 50 stocks trading above both the 20 and 50 EMA with RSI over 55. Entry at next day's open, stop 2 ATR below entry, target 2R."
+ ],
+ "TC18": [
+  "Nifty 200 stocks in a strong uptrend that have pulled back to their 20 EMA"
+ ],
+ "TC19": [
+  "Midcaps 10,000-50,000 crore, average daily turnover above 25 crore, weekly RSI above 60, price above the 20-week EMA"
+ ],
+ "TC20": [
+  "Nifty 100 stocks with P/E below 25, ROE above 15% and price above 200 DMA"
+ ]
+}

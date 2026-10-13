@@ -1,0 +1,3515 @@
+{
+  "entries": [
+    {
+      "id": "mcap_cr",
+      "label": "Market cap (cr)",
+      "aliases": [
+        "market cap",
+        "mcap",
+        "market capitalisation",
+        "cap"
+      ],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "field",
+      "unit": "crore",
+      "params": [],
+      "data_source": "NSE market cap (engine universe table)",
+      "update_frequency": "daily",
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "traded_value_cr",
+      "label": "Median traded value (cr)",
+      "aliases": [
+        "traded value",
+        "turnover",
+        "median traded value",
+        "liquidity"
+      ],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "field",
+      "unit": "crore",
+      "params": [
+        {
+          "name": "window",
+          "type": "week_window_str",
+          "label": "window",
+          "min": "1W",
+          "max": "52W",
+          "aliases": [
+            "over",
+            "for the last"
+          ],
+          "common_values": [
+            "8W"
+          ]
+        }
+      ],
+      "data_source": "NSE daily bars (price x volume)",
+      "update_frequency": "daily",
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "price",
+      "label": "Price",
+      "aliases": [
+        "price",
+        "close",
+        "closing price",
+        "ltp"
+      ],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "field",
+      "unit": "rupees",
+      "params": [],
+      "data_source": "NSE daily bars",
+      "update_frequency": "daily",
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "volume",
+      "label": "Volume",
+      "aliases": [
+        "volume",
+        "shares traded"
+      ],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "field",
+      "unit": "shares",
+      "params": [],
+      "data_source": "NSE daily bars",
+      "update_frequency": "daily",
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "sector",
+      "label": "Sector",
+      "aliases": [
+        "sector",
+        "industry"
+      ],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "field",
+      "unit": "category",
+      "params": [],
+      "data_source": "NSE sector classification",
+      "update_frequency": "quarterly",
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "pe",
+      "label": "P/E ratio",
+      "aliases": [
+        "pe",
+        "p/e",
+        "price to earnings"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "proposed",
+        "notes": "No data source in the engine yet (plan decision 3)."
+      },
+      "kind": "field",
+      "unit": "ratio",
+      "params": [],
+      "data_source": null,
+      "update_frequency": null,
+      "engine": {
+        "implemented": false
+      }
+    },
+    {
+      "id": "roe",
+      "label": "Return on equity",
+      "aliases": [
+        "roe",
+        "return on equity"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "proposed",
+        "notes": "No data source in the engine yet (plan decision 3)."
+      },
+      "kind": "field",
+      "unit": "percent",
+      "params": [],
+      "data_source": null,
+      "update_frequency": null,
+      "engine": {
+        "implemented": false
+      }
+    },
+    {
+      "id": "promoter_holding_pct",
+      "label": "Promoter holding (%)",
+      "aliases": [
+        "promoter holding",
+        "promoter stake"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "proposed",
+        "notes": "No data source in the engine yet (plan decision 3)."
+      },
+      "kind": "field",
+      "unit": "percent",
+      "params": [],
+      "data_source": null,
+      "update_frequency": null,
+      "engine": {
+        "implemented": false
+      }
+    },
+    {
+      "id": "delivery_pct",
+      "label": "Delivery (%)",
+      "aliases": [
+        "delivery %",
+        "delivery percentage",
+        "delivery volume"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "proposed",
+        "notes": "No data source in the engine yet (plan decision 3)."
+      },
+      "kind": "field",
+      "unit": "percent",
+      "params": [],
+      "data_source": null,
+      "update_frequency": null,
+      "engine": {
+        "implemented": false
+      }
+    },
+    {
+      "id": "high_52w",
+      "label": "52-week high",
+      "aliases": [
+        "52 week high",
+        "52w high",
+        "yearly high"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "proposed",
+        "notes": "No data source in the engine yet (plan decision 3)."
+      },
+      "kind": "field",
+      "unit": "rupees",
+      "params": [],
+      "data_source": null,
+      "update_frequency": null,
+      "engine": {
+        "implemented": false
+      }
+    },
+    {
+      "id": "low_52w",
+      "label": "52-week low",
+      "aliases": [
+        "52 week low",
+        "52w low",
+        "yearly low"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "proposed",
+        "notes": "No data source in the engine yet (plan decision 3)."
+      },
+      "kind": "field",
+      "unit": "rupees",
+      "params": [],
+      "data_source": null,
+      "update_frequency": null,
+      "engine": {
+        "implemented": false
+      }
+    },
+    {
+      "id": "rs_rating",
+      "label": "RS rating",
+      "aliases": [
+        "rs rating",
+        "relative strength rating"
+      ],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed",
+        "notes": "No NSE standard; 12-month return percentile within the universe."
+      },
+      "kind": "field",
+      "unit": "percentile",
+      "params": [
+        {
+          "name": "lookback",
+          "type": "int",
+          "label": "lookback bars",
+          "min": 20,
+          "max": 1000,
+          "positional": 0,
+          "aliases": [],
+          "common_values": [
+            252
+          ]
+        }
+      ],
+      "data_source": "percentile rank of the N-bar return within the screened universe",
+      "update_frequency": "daily",
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "sma",
+      "label": "SMA",
+      "aliases": [
+        "sma",
+        "simple moving average",
+        "simple moving avg",
+        "simple ma",
+        "moving average",
+        "moving avg",
+        "ma",
+        "dma"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "trend",
+      "unit": "price",
+      "params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 1,
+          "max": 500,
+          "positional": 0,
+          "aliases": [
+            "period",
+            "length",
+            "days",
+            "bars"
+          ],
+          "common_values": [
+            5,
+            10,
+            20,
+            50,
+            100,
+            200
+          ]
+        },
+        {
+          "name": "source",
+          "type": "enum",
+          "label": "price source",
+          "values": [
+            "open",
+            "high",
+            "low",
+            "close"
+          ],
+          "aliases": [
+            "on",
+            "of",
+            "price"
+          ],
+          "common_values": [
+            "close"
+          ]
+        }
+      ],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside",
+        "cross_above",
+        "cross_any",
+        "cross_below"
+      ],
+      "events": [
+        "cross_above",
+        "cross_any",
+        "cross_below"
+      ],
+      "warmup_bars": "length",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {
+        "pine": "ta.sma(source, length)",
+        "talib": "SMA",
+        "pandas_ta": "sma"
+      },
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.sma"
+      }
+    },
+    {
+      "id": "ema",
+      "label": "EMA",
+      "aliases": [
+        "ema",
+        "exponential moving average"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "trend",
+      "unit": "price",
+      "params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 1,
+          "max": 500,
+          "positional": 0,
+          "aliases": [
+            "period",
+            "length",
+            "days",
+            "bars"
+          ],
+          "common_values": [
+            9,
+            20,
+            50,
+            200
+          ]
+        },
+        {
+          "name": "source",
+          "type": "enum",
+          "label": "price source",
+          "values": [
+            "open",
+            "high",
+            "low",
+            "close"
+          ],
+          "aliases": [
+            "on",
+            "of",
+            "price"
+          ],
+          "common_values": [
+            "close"
+          ]
+        }
+      ],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside",
+        "cross_above",
+        "cross_any",
+        "cross_below"
+      ],
+      "events": [
+        "cross_above",
+        "cross_any",
+        "cross_below"
+      ],
+      "warmup_bars": "length",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {
+        "pine": "ta.ema(source, length)",
+        "talib": "EMA",
+        "pandas_ta": "ema"
+      },
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.ema"
+      }
+    },
+    {
+      "id": "rsi",
+      "label": "RSI",
+      "aliases": [
+        "rsi",
+        "relative strength index"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "momentum",
+      "unit": "oscillator_0_100",
+      "params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 2,
+          "max": 100,
+          "positional": 0,
+          "aliases": [
+            "period",
+            "length",
+            "days",
+            "bars"
+          ],
+          "common_values": [
+            7,
+            14,
+            21
+          ]
+        }
+      ],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside",
+        "cross_above",
+        "cross_any",
+        "cross_below"
+      ],
+      "events": [
+        "cross_above",
+        "cross_any",
+        "cross_below"
+      ],
+      "warmup_bars": "length + 1",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {
+        "pine": "ta.rsi(source, length)",
+        "talib": "RSI",
+        "pandas_ta": "rsi"
+      },
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.rsi"
+      }
+    },
+    {
+      "id": "vstop",
+      "label": "VStop",
+      "aliases": [
+        "vstop",
+        "v-stop",
+        "volatility stop"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "trend",
+      "unit": "price",
+      "params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 2,
+          "max": 100,
+          "positional": 0,
+          "aliases": [
+            "period",
+            "length",
+            "days",
+            "bars"
+          ],
+          "common_values": [
+            10
+          ]
+        },
+        {
+          "name": "mult",
+          "type": "float",
+          "label": "multiplier",
+          "min": 0.1,
+          "max": 10,
+          "positional": 1,
+          "aliases": [
+            "multiplier",
+            "factor"
+          ],
+          "common_values": [
+            2
+          ]
+        },
+        {
+          "name": "source",
+          "type": "enum",
+          "label": "price source",
+          "values": [
+            "open",
+            "high",
+            "low",
+            "close"
+          ],
+          "aliases": [
+            "on",
+            "of",
+            "price"
+          ],
+          "common_values": [
+            "close"
+          ]
+        }
+      ],
+      "outputs": [
+        "value",
+        "stop_line"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside",
+        "cross_above",
+        "cross_any",
+        "cross_below",
+        "flip"
+      ],
+      "events": [
+        "cross_above",
+        "cross_any",
+        "cross_below",
+        "flip"
+      ],
+      "warmup_bars": "length + 1",
+      "supports_partial_bar": false,
+      "can_supply_stop": true,
+      "references": {
+        "pine": "custom (VStop parity reference used by the weekly screener)"
+      },
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.vstop"
+      }
+    },
+    {
+      "id": "atr",
+      "label": "ATR",
+      "aliases": [
+        "atr",
+        "average true range"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "volatility",
+      "unit": "price",
+      "params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 1,
+          "max": 200,
+          "positional": 0,
+          "aliases": [
+            "period",
+            "length",
+            "days",
+            "bars"
+          ],
+          "common_values": [
+            14
+          ]
+        }
+      ],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside"
+      ],
+      "events": [],
+      "warmup_bars": "length + 1",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {
+        "pine": "ta.atr(length)",
+        "talib": "ATR",
+        "pandas_ta": "atr"
+      },
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.atr"
+      }
+    },
+    {
+      "id": "macd",
+      "label": "MACD",
+      "aliases": [
+        "macd",
+        "moving average convergence divergence"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "momentum",
+      "unit": "oscillator",
+      "params": [
+        {
+          "name": "fast",
+          "type": "int",
+          "label": "fast length",
+          "min": 1,
+          "max": 200,
+          "positional": 0,
+          "aliases": [],
+          "common_values": [
+            12
+          ]
+        },
+        {
+          "name": "slow",
+          "type": "int",
+          "label": "slow length",
+          "min": 2,
+          "max": 400,
+          "positional": 1,
+          "aliases": [],
+          "common_values": [
+            26
+          ]
+        },
+        {
+          "name": "signal",
+          "type": "int",
+          "label": "signal length",
+          "min": 1,
+          "max": 100,
+          "positional": 2,
+          "aliases": [],
+          "common_values": [
+            9
+          ]
+        },
+        {
+          "name": "source",
+          "type": "enum",
+          "label": "price source",
+          "values": [
+            "open",
+            "high",
+            "low",
+            "close"
+          ],
+          "aliases": [
+            "on",
+            "of",
+            "price"
+          ],
+          "common_values": [
+            "close"
+          ]
+        }
+      ],
+      "outputs": [
+        "value",
+        "signal",
+        "hist"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside",
+        "cross_above",
+        "cross_any",
+        "cross_below"
+      ],
+      "events": [
+        "cross_above",
+        "cross_any",
+        "cross_below"
+      ],
+      "warmup_bars": "slow + signal",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {
+        "pine": "ta.macd(source, fast, slow, signal)",
+        "talib": "MACD",
+        "pandas_ta": "macd"
+      },
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.macd"
+      }
+    },
+    {
+      "id": "supertrend",
+      "label": "Supertrend",
+      "aliases": [
+        "supertrend",
+        "super trend"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "trend",
+      "unit": "price",
+      "params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 2,
+          "max": 100,
+          "positional": 0,
+          "aliases": [
+            "period",
+            "length",
+            "days",
+            "bars"
+          ],
+          "common_values": [
+            10
+          ]
+        },
+        {
+          "name": "mult",
+          "type": "float",
+          "label": "multiplier",
+          "min": 0.1,
+          "max": 10,
+          "positional": 1,
+          "aliases": [
+            "multiplier",
+            "factor"
+          ],
+          "common_values": [
+            3
+          ]
+        }
+      ],
+      "outputs": [
+        "value",
+        "stop_line"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside",
+        "cross_above",
+        "cross_any",
+        "cross_below",
+        "flip"
+      ],
+      "events": [
+        "cross_above",
+        "cross_any",
+        "cross_below",
+        "flip"
+      ],
+      "warmup_bars": "length + 1",
+      "supports_partial_bar": false,
+      "can_supply_stop": true,
+      "references": {
+        "pine": "ta.supertrend(factor, atrPeriod)",
+        "pandas_ta": "supertrend"
+      },
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.supertrend"
+      }
+    },
+    {
+      "id": "bollinger",
+      "label": "Bollinger Bands",
+      "aliases": [
+        "bollinger",
+        "bollinger bands",
+        "bbands"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "volatility",
+      "unit": "price",
+      "params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 1,
+          "max": 500,
+          "positional": 0,
+          "aliases": [
+            "period",
+            "length",
+            "days",
+            "bars"
+          ],
+          "common_values": [
+            20
+          ]
+        },
+        {
+          "name": "mult",
+          "type": "float",
+          "label": "multiplier",
+          "min": 0.1,
+          "max": 10,
+          "positional": 1,
+          "aliases": [
+            "multiplier",
+            "factor"
+          ],
+          "common_values": [
+            2
+          ]
+        },
+        {
+          "name": "source",
+          "type": "enum",
+          "label": "price source",
+          "values": [
+            "open",
+            "high",
+            "low",
+            "close"
+          ],
+          "aliases": [
+            "on",
+            "of",
+            "price"
+          ],
+          "common_values": [
+            "close"
+          ]
+        }
+      ],
+      "outputs": [
+        "value",
+        "upper",
+        "lower"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside",
+        "cross_above",
+        "cross_any",
+        "cross_below"
+      ],
+      "events": [
+        "cross_above",
+        "cross_any",
+        "cross_below"
+      ],
+      "warmup_bars": "length",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {
+        "pine": "ta.bb(source, length, mult)",
+        "talib": "BBANDS",
+        "pandas_ta": "bbands"
+      },
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.bollinger"
+      }
+    },
+    {
+      "id": "volume_avg",
+      "label": "Average volume",
+      "aliases": [
+        "average volume",
+        "avg volume",
+        "volume average"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "volume",
+      "unit": "volume",
+      "params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 1,
+          "max": 500,
+          "positional": 0,
+          "aliases": [
+            "period",
+            "length",
+            "days",
+            "bars"
+          ],
+          "common_values": [
+            10,
+            20,
+            50
+          ]
+        },
+        {
+          "name": "skip",
+          "type": "int",
+          "label": "bars to skip (1 = exclude the current bar)",
+          "min": 0,
+          "max": 5,
+          "aliases": [],
+          "common_values": [
+            0,
+            1
+          ]
+        }
+      ],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside"
+      ],
+      "events": [],
+      "warmup_bars": "length",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {
+        "pine": "ta.sma(volume, length)",
+        "pandas_ta": "sma (on volume)"
+      },
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.volume_avg"
+      }
+    },
+    {
+      "id": "return_n",
+      "label": "N-bar return %",
+      "aliases": [
+        "n-bar return",
+        "price return",
+        "rate of change",
+        "roc"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "return",
+      "unit": "percent",
+      "params": [
+        {
+          "name": "bars",
+          "type": "int",
+          "label": "number of bars",
+          "min": 1,
+          "max": 500,
+          "positional": 0,
+          "aliases": [],
+          "common_values": [
+            1,
+            5,
+            10,
+            20
+          ]
+        },
+        {
+          "name": "source",
+          "type": "enum",
+          "label": "price source",
+          "values": [
+            "open",
+            "high",
+            "low",
+            "close"
+          ],
+          "aliases": [
+            "on",
+            "of",
+            "price"
+          ],
+          "common_values": [
+            "close"
+          ]
+        }
+      ],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside"
+      ],
+      "events": [],
+      "warmup_bars": "bars + 1",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {
+        "pine": "ta.roc(source, length)",
+        "talib": "ROC",
+        "pandas_ta": "roc"
+      },
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.return_n"
+      }
+    },
+    {
+      "id": "dist_52w_high",
+      "label": "Distance from 52-bar high %",
+      "aliases": [
+        "distance from 52 week high",
+        "distance from 52w high",
+        "away from 52 week high"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "return",
+      "unit": "percent",
+      "params": [
+        {
+          "name": "lookback",
+          "type": "int",
+          "label": "lookback bars",
+          "min": 2,
+          "max": 1000,
+          "positional": 0,
+          "aliases": [],
+          "common_values": [
+            52
+          ]
+        }
+      ],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside"
+      ],
+      "events": [],
+      "warmup_bars": "lookback",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {},
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.dist_52w_high"
+      }
+    },
+    {
+      "id": "adx",
+      "label": "ADX",
+      "aliases": [
+        "adx",
+        "average directional index"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "trend",
+      "unit": "oscillator_0_100",
+      "params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 2,
+          "max": 100,
+          "positional": 0,
+          "aliases": [
+            "period",
+            "length"
+          ],
+          "common_values": [
+            14
+          ]
+        }
+      ],
+      "outputs": [
+        "value",
+        "plus_di",
+        "minus_di"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside",
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "events": [
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "warmup_bars": "length * 2 + 1",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {
+        "pine": "ta.dmi(diLength, adxSmoothing)"
+      },
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.adx"
+      }
+    },
+    {
+      "id": "stochastic",
+      "label": "Stochastic",
+      "aliases": [
+        "stochastic",
+        "stochastic oscillator",
+        "stoch"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "proposed",
+        "notes": "Written from the reference docs, not machine-fetched; ranges and defaults need review."
+      },
+      "kind": "indicator",
+      "category": "momentum",
+      "unit": "oscillator_0_100",
+      "params": [
+        {
+          "name": "k",
+          "type": "int",
+          "label": "%K length",
+          "min": 2,
+          "max": 100,
+          "positional": 0,
+          "aliases": [],
+          "common_values": [
+            14
+          ]
+        },
+        {
+          "name": "d",
+          "type": "int",
+          "label": "%D smoothing",
+          "min": 1,
+          "max": 50,
+          "positional": 1,
+          "aliases": [],
+          "common_values": [
+            3
+          ]
+        }
+      ],
+      "outputs": [
+        "k",
+        "d"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside",
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "events": [
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "warmup_bars": "k + d",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {
+        "pine": "ta.stoch(close, high, low, length)",
+        "talib": "STOCH",
+        "pandas_ta": "stoch"
+      },
+      "engine": {
+        "implemented": false
+      }
+    },
+    {
+      "id": "obv",
+      "label": "On-Balance Volume",
+      "aliases": [
+        "obv",
+        "on balance volume",
+        "on-balance volume"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "proposed",
+        "notes": "Written from the reference docs, not machine-fetched; ranges and defaults need review."
+      },
+      "kind": "indicator",
+      "category": "volume",
+      "unit": "volume",
+      "params": [],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside",
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "events": [
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "warmup_bars": "2",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {
+        "pine": "ta.obv",
+        "talib": "OBV",
+        "pandas_ta": "obv"
+      },
+      "engine": {
+        "implemented": false
+      }
+    },
+    {
+      "id": "vwap",
+      "label": "VWAP",
+      "aliases": [
+        "vwap",
+        "volume weighted average price"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "proposed",
+        "notes": "Written from the reference docs, not machine-fetched; ranges and defaults need review."
+      },
+      "kind": "indicator",
+      "category": "volume",
+      "unit": "price",
+      "params": [],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside",
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "events": [
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "warmup_bars": "1",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {
+        "pine": "ta.vwap(source)",
+        "pandas_ta": "vwap"
+      },
+      "engine": {
+        "implemented": false
+      }
+    },
+    {
+      "id": "ichimoku",
+      "label": "Ichimoku Cloud",
+      "aliases": [
+        "ichimoku",
+        "ichimoku cloud",
+        "tenkan-sen",
+        "tenkan sen",
+        "tenkan",
+        "kijun-sen",
+        "kijun sen",
+        "kijun"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/"
+        ],
+        "fetched_at": null,
+        "status": "reviewed",
+        "notes": "TradingView plots the cloud 25 bars ahead; the value read at a bar comes from the bar shift-1 earlier."
+      },
+      "kind": "indicator",
+      "category": "trend",
+      "unit": "price",
+      "params": [
+        {
+          "name": "tenkan",
+          "type": "int",
+          "label": "conversion line length",
+          "min": 1,
+          "max": 200,
+          "positional": 0,
+          "aliases": [],
+          "common_values": [
+            9
+          ]
+        },
+        {
+          "name": "kijun",
+          "type": "int",
+          "label": "base line length",
+          "min": 1,
+          "max": 400,
+          "positional": 1,
+          "aliases": [],
+          "common_values": [
+            26
+          ]
+        },
+        {
+          "name": "span_b",
+          "type": "int",
+          "label": "span B length",
+          "min": 1,
+          "max": 400,
+          "positional": 2,
+          "aliases": [],
+          "common_values": [
+            52
+          ]
+        },
+        {
+          "name": "shift",
+          "type": "int",
+          "label": "cloud displacement",
+          "min": 1,
+          "max": 100,
+          "positional": 3,
+          "aliases": [],
+          "common_values": [
+            26
+          ]
+        }
+      ],
+      "outputs": [
+        "value",
+        "tenkan",
+        "kijun",
+        "span_a",
+        "span_b",
+        "cloud_top",
+        "cloud_bottom"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside",
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "events": [
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "warmup_bars": "span_b + shift",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {
+        "pine": "ta.ichimoku (via built-in script)",
+        "pandas_ta": "ichimoku"
+      },
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.ichimoku"
+      }
+    },
+    {
+      "id": "donchian",
+      "label": "Donchian Channel",
+      "aliases": [
+        "donchian",
+        "donchian channel",
+        "donchian channels"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "proposed",
+        "notes": "Written from the reference docs, not machine-fetched; ranges and defaults need review."
+      },
+      "kind": "indicator",
+      "category": "volatility",
+      "unit": "price",
+      "params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 2,
+          "max": 300,
+          "positional": 0,
+          "aliases": [],
+          "common_values": [
+            20,
+            55
+          ]
+        }
+      ],
+      "outputs": [
+        "upper",
+        "lower",
+        "middle"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside",
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "events": [
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "warmup_bars": "length",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {
+        "pine": "ta.highest/ta.lowest",
+        "pandas_ta": "donchian"
+      },
+      "engine": {
+        "implemented": false
+      }
+    },
+    {
+      "id": "cci",
+      "label": "CCI",
+      "aliases": [
+        "cci",
+        "commodity channel index"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "proposed",
+        "notes": "Written from the reference docs, not machine-fetched; ranges and defaults need review."
+      },
+      "kind": "indicator",
+      "category": "momentum",
+      "unit": "oscillator",
+      "params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 2,
+          "max": 200,
+          "positional": 0,
+          "aliases": [],
+          "common_values": [
+            20
+          ]
+        }
+      ],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside",
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "events": [
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "warmup_bars": "length",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {
+        "pine": "ta.cci(source, length)",
+        "talib": "CCI",
+        "pandas_ta": "cci"
+      },
+      "engine": {
+        "implemented": false
+      }
+    },
+    {
+      "id": "mfi",
+      "label": "Money Flow Index",
+      "aliases": [
+        "mfi",
+        "money flow index"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "proposed",
+        "notes": "Written from the reference docs, not machine-fetched; ranges and defaults need review."
+      },
+      "kind": "indicator",
+      "category": "momentum",
+      "unit": "oscillator_0_100",
+      "params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 2,
+          "max": 100,
+          "positional": 0,
+          "aliases": [],
+          "common_values": [
+            14
+          ]
+        }
+      ],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside",
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "events": [
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "warmup_bars": "length + 1",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {
+        "pine": "ta.mfi(series, length)",
+        "talib": "MFI",
+        "pandas_ta": "mfi"
+      },
+      "engine": {
+        "implemented": false
+      }
+    },
+    {
+      "id": "williams_r",
+      "label": "Williams %R",
+      "aliases": [
+        "williams %r",
+        "williams r",
+        "%r"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "proposed",
+        "notes": "Written from the reference docs, not machine-fetched; ranges and defaults need review."
+      },
+      "kind": "indicator",
+      "category": "momentum",
+      "unit": "oscillator",
+      "params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 2,
+          "max": 100,
+          "positional": 0,
+          "aliases": [],
+          "common_values": [
+            14
+          ]
+        }
+      ],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside",
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "events": [
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "warmup_bars": "length",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {
+        "pine": "ta.wpr(length)",
+        "talib": "WILLR",
+        "pandas_ta": "willr"
+      },
+      "engine": {
+        "implemented": false
+      }
+    },
+    {
+      "id": "parabolic_sar",
+      "label": "Parabolic SAR",
+      "aliases": [
+        "parabolic sar",
+        "psar",
+        "sar"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "proposed",
+        "notes": "Written from the reference docs, not machine-fetched; ranges and defaults need review."
+      },
+      "kind": "indicator",
+      "category": "trend",
+      "unit": "price",
+      "params": [
+        {
+          "name": "start",
+          "type": "float",
+          "label": "start",
+          "min": 0.001,
+          "max": 0.5,
+          "positional": 0,
+          "aliases": [],
+          "common_values": [
+            0.02
+          ]
+        },
+        {
+          "name": "increment",
+          "type": "float",
+          "label": "increment",
+          "min": 0.001,
+          "max": 0.5,
+          "positional": 1,
+          "aliases": [],
+          "common_values": [
+            0.02
+          ]
+        },
+        {
+          "name": "maximum",
+          "type": "float",
+          "label": "maximum",
+          "min": 0.01,
+          "max": 1,
+          "positional": 2,
+          "aliases": [],
+          "common_values": [
+            0.2
+          ]
+        }
+      ],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside",
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "events": [
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "warmup_bars": "2",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {
+        "pine": "ta.sar(start, inc, max)",
+        "talib": "SAR",
+        "pandas_ta": "psar"
+      },
+      "engine": {
+        "implemented": false
+      }
+    },
+    {
+      "id": "keltner",
+      "label": "Keltner Channel",
+      "aliases": [
+        "keltner",
+        "keltner channel",
+        "keltner channels"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/",
+          "https://ta-lib.org/functions/",
+          "https://github.com/twopirllc/pandas-ta"
+        ],
+        "fetched_at": null,
+        "status": "proposed",
+        "notes": "Written from the reference docs, not machine-fetched; ranges and defaults need review."
+      },
+      "kind": "indicator",
+      "category": "volatility",
+      "unit": "price",
+      "params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 2,
+          "max": 200,
+          "positional": 0,
+          "aliases": [],
+          "common_values": [
+            20
+          ]
+        },
+        {
+          "name": "mult",
+          "type": "float",
+          "label": "multiplier",
+          "min": 0.1,
+          "max": 10,
+          "positional": 1,
+          "aliases": [],
+          "common_values": [
+            2
+          ]
+        }
+      ],
+      "outputs": [
+        "upper",
+        "lower",
+        "middle"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside",
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "events": [
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "warmup_bars": "length + 1",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {
+        "pine": "ta.kc(series, length, mult)",
+        "pandas_ta": "kc"
+      },
+      "engine": {
+        "implemented": false
+      }
+    },
+    {
+      "id": "bar",
+      "label": "Price bar",
+      "aliases": [
+        "price bar"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "other",
+      "unit": "price",
+      "params": [
+        {
+          "name": "source",
+          "type": "enum",
+          "label": "bar field",
+          "values": [
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume"
+          ],
+          "aliases": [
+            "of",
+            "on"
+          ],
+          "common_values": [
+            "close"
+          ]
+        }
+      ],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside"
+      ],
+      "events": [],
+      "warmup_bars": "1",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {},
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.bar"
+      }
+    },
+    {
+      "id": "high_n",
+      "label": "Highest high of N bars",
+      "aliases": [
+        "highest high",
+        "n-bar high",
+        "52 week high",
+        "52-week high"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "other",
+      "unit": "price",
+      "params": [
+        {
+          "name": "lookback",
+          "type": "int",
+          "label": "lookback bars",
+          "min": 2,
+          "max": 1000,
+          "positional": 0,
+          "aliases": [
+            "period",
+            "bars",
+            "days"
+          ],
+          "common_values": [
+            252
+          ]
+        },
+        {
+          "name": "skip",
+          "type": "int",
+          "label": "bars to skip (1 = exclude the current bar)",
+          "min": 0,
+          "max": 5,
+          "aliases": [],
+          "common_values": [
+            0,
+            1
+          ]
+        }
+      ],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside"
+      ],
+      "events": [],
+      "warmup_bars": "lookback + skip",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {},
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.high_n"
+      }
+    },
+    {
+      "id": "low_n",
+      "label": "Lowest low of N bars",
+      "aliases": [
+        "lowest low",
+        "n-bar low",
+        "52 week low",
+        "52-week low"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "other",
+      "unit": "price",
+      "params": [
+        {
+          "name": "lookback",
+          "type": "int",
+          "label": "lookback bars",
+          "min": 2,
+          "max": 1000,
+          "positional": 0,
+          "aliases": [
+            "period",
+            "bars",
+            "days"
+          ],
+          "common_values": [
+            252
+          ]
+        },
+        {
+          "name": "skip",
+          "type": "int",
+          "label": "bars to skip (1 = exclude the current bar)",
+          "min": 0,
+          "max": 5,
+          "aliases": [],
+          "common_values": [
+            0,
+            1
+          ]
+        }
+      ],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside"
+      ],
+      "events": [],
+      "warmup_bars": "lookback + skip",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {},
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.low_n"
+      }
+    },
+    {
+      "id": "gap_up",
+      "label": "Gap above previous high",
+      "aliases": [
+        "gap up",
+        "gapped up",
+        "gap-up"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "other",
+      "unit": "ratio",
+      "params": [],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside"
+      ],
+      "events": [],
+      "warmup_bars": "2",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {},
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.gap_up"
+      }
+    },
+    {
+      "id": "narrow_range",
+      "label": "Narrowest range of N bars",
+      "aliases": [
+        "nr7",
+        "narrow range"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "volatility",
+      "unit": "price",
+      "params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "bars",
+          "min": 2,
+          "max": 50,
+          "positional": 0,
+          "aliases": [
+            "bars"
+          ],
+          "common_values": [
+            7
+          ]
+        }
+      ],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        "=="
+      ],
+      "events": [],
+      "warmup_bars": "length",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {},
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.narrow_range"
+      }
+    },
+    {
+      "id": "inside_day",
+      "label": "Inside bar",
+      "aliases": [
+        "inside day",
+        "inside bar"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "other",
+      "unit": "ratio",
+      "params": [],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        "=="
+      ],
+      "events": [],
+      "warmup_bars": "2",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {},
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.inside_day"
+      }
+    },
+    {
+      "id": "bb_squeeze",
+      "label": "Bollinger squeeze (bandwidth at its N-bar low)",
+      "aliases": [
+        "bollinger squeeze",
+        "band squeeze",
+        "bb squeeze"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "volatility",
+      "unit": "ratio",
+      "params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 1,
+          "max": 500,
+          "positional": 0,
+          "aliases": [
+            "period"
+          ],
+          "common_values": [
+            20
+          ]
+        },
+        {
+          "name": "mult",
+          "type": "float",
+          "label": "multiplier",
+          "min": 0.1,
+          "max": 10,
+          "positional": 1,
+          "aliases": [
+            "factor"
+          ],
+          "common_values": [
+            2
+          ]
+        },
+        {
+          "name": "lookback",
+          "type": "int",
+          "label": "lookback bars",
+          "min": 2,
+          "max": 1000,
+          "aliases": [],
+          "common_values": [
+            126
+          ]
+        },
+        {
+          "name": "within",
+          "type": "int",
+          "label": "within the last N bars",
+          "min": 1,
+          "max": 100,
+          "aliases": [],
+          "common_values": [
+            5
+          ]
+        }
+      ],
+      "outputs": [
+        "value",
+        "bandwidth"
+      ],
+      "operators": [
+        "=="
+      ],
+      "events": [],
+      "warmup_bars": "length + lookback + 1",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {},
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.bb_squeeze"
+      }
+    },
+    {
+      "id": "momentum_skip",
+      "label": "Return skipping recent bars",
+      "aliases": [
+        "12-1 momentum",
+        "12 month return excluding the most recent month"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "return",
+      "unit": "percent",
+      "params": [
+        {
+          "name": "lookback",
+          "type": "int",
+          "label": "bars back",
+          "min": 2,
+          "max": 1000,
+          "positional": 0,
+          "aliases": [],
+          "common_values": [
+            252
+          ]
+        },
+        {
+          "name": "skip",
+          "type": "int",
+          "label": "recent bars to skip",
+          "min": 0,
+          "max": 500,
+          "positional": 1,
+          "aliases": [],
+          "common_values": [
+            21
+          ]
+        }
+      ],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside"
+      ],
+      "events": [],
+      "warmup_bars": "lookback + 1",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {},
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.momentum_skip"
+      }
+    },
+    {
+      "id": "turnover_avg",
+      "label": "Average traded value (cr)",
+      "aliases": [
+        "average daily turnover",
+        "avg turnover",
+        "average turnover",
+        "traded value"
+      ],
+      "provenance": {
+        "sources": [
+          "https://www.tradingview.com/pine-script-reference/v6/"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "indicator",
+      "category": "volume",
+      "unit": "ratio",
+      "params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 1,
+          "max": 500,
+          "positional": 0,
+          "aliases": [
+            "period",
+            "days"
+          ],
+          "common_values": [
+            20
+          ]
+        }
+      ],
+      "outputs": [
+        "value"
+      ],
+      "operators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "between",
+        "outside"
+      ],
+      "events": [],
+      "warmup_bars": "length",
+      "supports_partial_bar": false,
+      "can_supply_stop": false,
+      "references": {},
+      "engine": {
+        "implemented": true,
+        "function": "engine.v5.indicators.turnover_avg"
+      }
+    },
+    {
+      "id": "op_gt",
+      "label": ">",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "operator",
+      "op": ">",
+      "phrases": [
+        "above",
+        "over",
+        "greater than",
+        "more than"
+      ],
+      "applies_to": [
+        "indicator",
+        "field"
+      ],
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "op_ge",
+      "label": ">=",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "operator",
+      "op": ">=",
+      "phrases": [
+        "at least",
+        "minimum",
+        "min"
+      ],
+      "applies_to": [
+        "indicator",
+        "field"
+      ],
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "op_lt",
+      "label": "<",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "operator",
+      "op": "<",
+      "phrases": [
+        "below",
+        "under",
+        "less than"
+      ],
+      "applies_to": [
+        "indicator",
+        "field"
+      ],
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "op_le",
+      "label": "<=",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "operator",
+      "op": "<=",
+      "phrases": [
+        "at most",
+        "up to",
+        "maximum",
+        "max"
+      ],
+      "applies_to": [
+        "indicator",
+        "field"
+      ],
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "op_between",
+      "label": "between",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "operator",
+      "op": "between",
+      "phrases": [
+        "between",
+        "in the range",
+        "range",
+        "from"
+      ],
+      "applies_to": [
+        "indicator",
+        "field"
+      ],
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "op_outside",
+      "label": "outside",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "proposed"
+      },
+      "kind": "operator",
+      "op": "outside",
+      "phrases": [
+        "outside",
+        "outside the range"
+      ],
+      "applies_to": [
+        "indicator",
+        "field"
+      ],
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "op_cross_above",
+      "label": "cross_above",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "operator",
+      "op": "cross_above",
+      "phrases": [
+        "crosses above",
+        "crossed above",
+        "bullish crossover",
+        "crosses over"
+      ],
+      "applies_to": [
+        "indicator"
+      ],
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "op_cross_below",
+      "label": "cross_below",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "operator",
+      "op": "cross_below",
+      "phrases": [
+        "crosses below",
+        "crossed below",
+        "bearish crossover"
+      ],
+      "applies_to": [
+        "indicator"
+      ],
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "op_cross_any",
+      "label": "cross_any",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "operator",
+      "op": "cross_any",
+      "phrases": [
+        "crossover",
+        "crossovers",
+        "crosses",
+        "bullish and bearish crossovers"
+      ],
+      "applies_to": [
+        "indicator"
+      ],
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "op_flip",
+      "label": "flip",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "operator",
+      "op": "flip",
+      "phrases": [
+        "flips",
+        "flipped",
+        "turned long",
+        "turns bullish",
+        "turned bullish"
+      ],
+      "applies_to": [
+        "indicator"
+      ],
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "op_rising",
+      "label": "rising",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "proposed",
+        "notes": "No recogniser consumes this phrase yet."
+      },
+      "kind": "operator",
+      "op": "rising",
+      "phrases": [
+        "rising",
+        "going up",
+        "increasing"
+      ],
+      "applies_to": [
+        "indicator"
+      ],
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "op_falling",
+      "label": "falling",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "proposed",
+        "notes": "No recogniser consumes this phrase yet."
+      },
+      "kind": "operator",
+      "op": "falling",
+      "phrases": [
+        "falling",
+        "going down",
+        "decreasing"
+      ],
+      "applies_to": [
+        "indicator"
+      ],
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "op_golden_cross",
+      "label": "cross_above",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "proposed",
+        "notes": "A golden cross is SMA 50 crossing above SMA 200 — needs an implied-indicators rule, not just an operator."
+      },
+      "kind": "operator",
+      "op": "cross_above",
+      "phrases": [
+        "golden cross"
+      ],
+      "applies_to": [
+        "indicator"
+      ],
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "op_death_cross",
+      "label": "cross_below",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "proposed",
+        "notes": "A death cross is SMA 50 crossing below SMA 200 — needs an implied-indicators rule, not just an operator."
+      },
+      "kind": "operator",
+      "op": "cross_below",
+      "phrases": [
+        "death cross"
+      ],
+      "applies_to": [
+        "indicator"
+      ],
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "trig_last_completed_bar",
+      "label": "Last completed bar",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "trigger",
+      "phrases": [
+        "latest completed bar",
+        "last completed bar",
+        "latest close",
+        "today",
+        "as of now"
+      ],
+      "bar_rule": "last_completed",
+      "window_rule": null,
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "trig_within_last_n",
+      "label": "Within the last N bars",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "trigger",
+      "phrases": [
+        "in the last",
+        "within the last",
+        "over the last",
+        "within"
+      ],
+      "bar_rule": "last_completed",
+      "window_rule": "within_bars = N",
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "trig_friday_close",
+      "label": "Friday close",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "proposed"
+      },
+      "kind": "trigger",
+      "phrases": [
+        "friday close",
+        "weekly close",
+        "at the weekly close"
+      ],
+      "bar_rule": "last_completed weekly bar",
+      "window_rule": null,
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "trig_monday_open",
+      "label": "Monday open",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "proposed"
+      },
+      "kind": "trigger",
+      "phrases": [
+        "monday open",
+        "at monday open",
+        "next open"
+      ],
+      "bar_rule": "next_open",
+      "window_rule": null,
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "dr_daily",
+      "label": "Daily candles",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "data_range",
+      "phrases": [
+        "daily",
+        "daily candles",
+        "daily timeframe",
+        "on daily"
+      ],
+      "timeframe": "1D",
+      "lookback": null,
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "dr_weekly",
+      "label": "Weekly candles",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "data_range",
+      "phrases": [
+        "weekly",
+        "weekly candles",
+        "weekly timeframe"
+      ],
+      "timeframe": "1W",
+      "lookback": null,
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "dr_monthly",
+      "label": "Monthly candles",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "data_range",
+      "phrases": [
+        "monthly",
+        "monthly candles",
+        "monthly timeframe"
+      ],
+      "timeframe": "1M",
+      "lookback": null,
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "dr_historical",
+      "label": "Historical candles",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "data_range",
+      "phrases": [
+        "historical candles",
+        "historical data",
+        "fetch candles"
+      ],
+      "timeframe": null,
+      "lookback": "warmup_bars of the indicators in use",
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "dr_since",
+      "label": "Since a year",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "proposed"
+      },
+      "kind": "data_range",
+      "phrases": [
+        "since 2019",
+        "last 2 years",
+        "last 52 weeks"
+      ],
+      "timeframe": null,
+      "lookback": "explicit window",
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "rank_event_date",
+      "label": "Rank by event date",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "rank",
+      "phrases": [
+        "most recent crossover first",
+        "by crossover date",
+        "most recent first",
+        "newest first",
+        "latest first"
+      ],
+      "key": "event_date",
+      "order": "desc",
+      "limit": false,
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "rank_oldest_first",
+      "label": "Oldest first",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "rank",
+      "phrases": [
+        "oldest first",
+        "earliest first"
+      ],
+      "key": "event_date",
+      "order": "asc",
+      "limit": false,
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "rank_top_n",
+      "label": "Top N",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "rank",
+      "phrases": [
+        "top 10",
+        "top n",
+        "first n"
+      ],
+      "key": null,
+      "order": null,
+      "limit": true,
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "rank_strongest",
+      "label": "Strongest",
+      "aliases": [],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "proposed"
+      },
+      "kind": "rank",
+      "phrases": [
+        "strongest",
+        "highest rsi",
+        "best performing"
+      ],
+      "key": null,
+      "order": "desc",
+      "limit": false,
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "nse_all",
+      "label": "All NSE stocks",
+      "aliases": [
+        "all stocks",
+        "all nse stocks",
+        "nse",
+        "entire market"
+      ],
+      "provenance": {
+        "sources": [
+          "engine registry"
+        ],
+        "fetched_at": null,
+        "status": "reviewed"
+      },
+      "kind": "universe",
+      "source": "nse_all",
+      "list_url": null,
+      "snapshot_date": null,
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "nifty_50",
+      "label": "NIFTY 50",
+      "aliases": [
+        "nifty 50",
+        "nifty50"
+      ],
+      "provenance": {
+        "sources": [
+          "https://niftyindices.com/indices/equity/broad-based-indices"
+        ],
+        "fetched_at": null,
+        "status": "reviewed",
+        "notes": "Index name accepted by the universe recogniser; constituent CSV URL follows the niftyindices.com naming pattern and has not been machine-fetched."
+      },
+      "kind": "universe",
+      "source": "index",
+      "index": "NIFTY 50",
+      "list_url": "https://niftyindices.com/IndexConstituent/ind_nifty50list.csv",
+      "snapshot_date": null,
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "nifty_next_50",
+      "label": "NIFTY NEXT 50",
+      "aliases": [
+        "nifty next 50"
+      ],
+      "provenance": {
+        "sources": [
+          "https://niftyindices.com/indices/equity/broad-based-indices"
+        ],
+        "fetched_at": null,
+        "status": "reviewed",
+        "notes": "Index name accepted by the universe recogniser; constituent CSV URL follows the niftyindices.com naming pattern and has not been machine-fetched."
+      },
+      "kind": "universe",
+      "source": "index",
+      "index": "NIFTY NEXT 50",
+      "list_url": "https://niftyindices.com/IndexConstituent/ind_niftynext50list.csv",
+      "snapshot_date": null,
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "nifty_100",
+      "label": "NIFTY 100",
+      "aliases": [
+        "nifty 100",
+        "nifty100"
+      ],
+      "provenance": {
+        "sources": [
+          "https://niftyindices.com/indices/equity/broad-based-indices"
+        ],
+        "fetched_at": null,
+        "status": "reviewed",
+        "notes": "Index name accepted by the universe recogniser; constituent CSV URL follows the niftyindices.com naming pattern and has not been machine-fetched."
+      },
+      "kind": "universe",
+      "source": "index",
+      "index": "NIFTY 100",
+      "list_url": "https://niftyindices.com/IndexConstituent/ind_nifty100list.csv",
+      "snapshot_date": null,
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "nifty_200",
+      "label": "NIFTY 200",
+      "aliases": [
+        "nifty 200",
+        "nifty200"
+      ],
+      "provenance": {
+        "sources": [
+          "https://niftyindices.com/indices/equity/broad-based-indices"
+        ],
+        "fetched_at": null,
+        "status": "reviewed",
+        "notes": "Index name accepted by the universe recogniser; constituent CSV URL follows the niftyindices.com naming pattern and has not been machine-fetched."
+      },
+      "kind": "universe",
+      "source": "index",
+      "index": "NIFTY 200",
+      "list_url": "https://niftyindices.com/IndexConstituent/ind_nifty200list.csv",
+      "snapshot_date": null,
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "nifty_500",
+      "label": "NIFTY 500",
+      "aliases": [
+        "nifty 500",
+        "nifty500"
+      ],
+      "provenance": {
+        "sources": [
+          "https://niftyindices.com/indices/equity/broad-based-indices"
+        ],
+        "fetched_at": null,
+        "status": "reviewed",
+        "notes": "Index name accepted by the universe recogniser; constituent CSV URL follows the niftyindices.com naming pattern and has not been machine-fetched."
+      },
+      "kind": "universe",
+      "source": "index",
+      "index": "NIFTY 500",
+      "list_url": "https://niftyindices.com/IndexConstituent/ind_nifty500list.csv",
+      "snapshot_date": null,
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "nifty_midcap_100",
+      "label": "NIFTY MIDCAP 100",
+      "aliases": [
+        "nifty midcap 100"
+      ],
+      "provenance": {
+        "sources": [
+          "https://niftyindices.com/indices/equity/broad-based-indices"
+        ],
+        "fetched_at": null,
+        "status": "reviewed",
+        "notes": "Index name accepted by the universe recogniser; constituent CSV URL follows the niftyindices.com naming pattern and has not been machine-fetched."
+      },
+      "kind": "universe",
+      "source": "index",
+      "index": "NIFTY MIDCAP 100",
+      "list_url": "https://niftyindices.com/IndexConstituent/ind_niftymidcap100list.csv",
+      "snapshot_date": null,
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "nifty_midcap_150",
+      "label": "NIFTY MIDCAP 150",
+      "aliases": [
+        "nifty midcap 150"
+      ],
+      "provenance": {
+        "sources": [
+          "https://niftyindices.com/indices/equity/broad-based-indices"
+        ],
+        "fetched_at": null,
+        "status": "reviewed",
+        "notes": "Index name accepted by the universe recogniser; constituent CSV URL follows the niftyindices.com naming pattern and has not been machine-fetched."
+      },
+      "kind": "universe",
+      "source": "index",
+      "index": "NIFTY MIDCAP 150",
+      "list_url": "https://niftyindices.com/IndexConstituent/ind_niftymidcap150list.csv",
+      "snapshot_date": null,
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "nifty_smallcap_100",
+      "label": "NIFTY SMALLCAP 100",
+      "aliases": [
+        "nifty smallcap 100"
+      ],
+      "provenance": {
+        "sources": [
+          "https://niftyindices.com/indices/equity/broad-based-indices"
+        ],
+        "fetched_at": null,
+        "status": "reviewed",
+        "notes": "Index name accepted by the universe recogniser; constituent CSV URL follows the niftyindices.com naming pattern and has not been machine-fetched."
+      },
+      "kind": "universe",
+      "source": "index",
+      "index": "NIFTY SMALLCAP 100",
+      "list_url": "https://niftyindices.com/IndexConstituent/ind_niftysmallcap100list.csv",
+      "snapshot_date": null,
+      "engine": {
+        "implemented": true
+      }
+    },
+    {
+      "id": "nifty_smallcap_250",
+      "label": "NIFTY SMALLCAP 250",
+      "aliases": [
+        "nifty smallcap 250"
+      ],
+      "provenance": {
+        "sources": [
+          "https://niftyindices.com/indices/equity/broad-based-indices"
+        ],
+        "fetched_at": null,
+        "status": "reviewed",
+        "notes": "Index name accepted by the universe recogniser; constituent CSV URL follows the niftyindices.com naming pattern and has not been machine-fetched."
+      },
+      "kind": "universe",
+      "source": "index",
+      "index": "NIFTY SMALLCAP 250",
+      "list_url": "https://niftyindices.com/IndexConstituent/ind_niftysmallcap250list.csv",
+      "snapshot_date": null,
+      "engine": {
+        "implemented": true
+      }
+    }
+  ]
+}

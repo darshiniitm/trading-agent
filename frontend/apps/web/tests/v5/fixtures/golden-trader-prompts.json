@@ -1,0 +1,22 @@
+{
+ "TC01": "Scan Nifty 500 for Mark Minervini's trend template: price above the 150 and 200 day SMA, 150 SMA above 200 SMA, 200 SMA trending up for at least 1 month, 50 SMA above both 150 and 200 SMA, price above 50 SMA, at least 30% above the 52-week low, within 25% of the 52-week high, and RS rating of 70 or more.",
+ "TC02": "Nifty 100 stocks where the 50 DMA crossed above the 200 DMA in the last 10 trading sessions",
+ "TC03": "Nifty 500 stocks closing at a new 52-week high today with volume at least 2 times the 20-day average",
+ "TC15": "Stan Weinstein stage 2 breakout on the weekly chart in Nifty 500: weekly close above a rising 30-week moving average, breaking above the 26-week high, on at least twice the 10-week average volume",
+ "TC12": "Rank Nifty 200 by 12-month return excluding the most recent month and give me the top 20",
+ "TC04": "Larry Connors RSI 2 strategy on Nifty 100: price above 200 SMA and 2-period RSI below 10. Exit when price closes above the 5-day SMA.",
+ "TC05": "Nifty 200 stocks where Supertrend (10,3) turned green in the last 3 days and ADX is above 25",
+ "TC06": "MACD (12,26,9) bullish crossover below the zero line in the last 2 sessions, Nifty 200",
+ "TC07": "Nifty 500 Bollinger Band squeeze breakout: band width at a 6-month low within the last 5 days and today's close above the upper band",
+ "TC08": "Toby Crabel NR7 inside day setups in Nifty 200 for tomorrow's breakout",
+ "TC09": "9 EMA crossing above 21 EMA in the last 3 sessions with price above 200 EMA, Nifty 200",
+ "TC10": "Nifty 200 stocks where Tenkan-sen crossed above Kijun-sen in the last 3 sessions and price is above the Ichimoku cloud",
+ "TC18": "Nifty 200 stocks in a strong uptrend that are pulling back to the 20 EMA",
+ "TC13": "Nifty 500 stocks within 10% of their 52-week low where RSI 14 has just crossed back above 30 (last 3 sessions)",
+ "TC14": "Nifty 500 stocks that gapped up at least 2% above yesterday's high today, closed above the open, on 1.5x average volume",
+ "TC11": "All stocks between 10K- 50K cr Market Cap \"from 1, stocks whose friday closing Weekly timeframe\nflipped on VStop 10,2\nRSI Range 50 to 65\" Backtest and validate with same strategy on previous week data and validate with their returns in this week",
+ "TC16": "Which sectors in the Nifty 500 have outperformed the index over the last 4 weeks? Show the top 3 stocks in each.",
+ "TC17": "Nifty 50 stocks above the 20 and 50 EMA with RSI above 55. Entry at next day's open, stop loss 2 ATR below entry, target 2R.",
+ "TC19": "Midcaps between 10,000 and 50,000 crore with average daily turnover above 25 crore, weekly RSI above 60 and price above the 20-week EMA",
+ "TC20": "Nifty 100 stocks with P/E below 25, ROE above 15% and price above the 200 DMA"
+}

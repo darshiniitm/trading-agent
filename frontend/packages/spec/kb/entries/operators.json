@@ -1,0 +1,366 @@
+{
+ "entries": [
+  {
+   "kind": "operator",
+   "id": "op_gt",
+   "label": ">",
+   "aliases": [],
+   "op": ">",
+   "phrases": [
+    "above",
+    "over",
+    "greater than",
+    "more than"
+   ],
+   "applies_to": [
+    "indicator",
+    "field"
+   ],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   }
+  },
+  {
+   "kind": "operator",
+   "id": "op_ge",
+   "label": ">=",
+   "aliases": [],
+   "op": ">=",
+   "phrases": [
+    "at least",
+    "minimum",
+    "min"
+   ],
+   "applies_to": [
+    "indicator",
+    "field"
+   ],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   }
+  },
+  {
+   "kind": "operator",
+   "id": "op_lt",
+   "label": "<",
+   "aliases": [],
+   "op": "<",
+   "phrases": [
+    "below",
+    "under",
+    "less than"
+   ],
+   "applies_to": [
+    "indicator",
+    "field"
+   ],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   }
+  },
+  {
+   "kind": "operator",
+   "id": "op_le",
+   "label": "<=",
+   "aliases": [],
+   "op": "<=",
+   "phrases": [
+    "at most",
+    "up to",
+    "maximum",
+    "max"
+   ],
+   "applies_to": [
+    "indicator",
+    "field"
+   ],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   }
+  },
+  {
+   "kind": "operator",
+   "id": "op_between",
+   "label": "between",
+   "aliases": [],
+   "op": "between",
+   "phrases": [
+    "between",
+    "in the range",
+    "range",
+    "from"
+   ],
+   "applies_to": [
+    "indicator",
+    "field"
+   ],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   }
+  },
+  {
+   "kind": "operator",
+   "id": "op_outside",
+   "label": "outside",
+   "aliases": [],
+   "op": "outside",
+   "phrases": [
+    "outside",
+    "outside the range"
+   ],
+   "applies_to": [
+    "indicator",
+    "field"
+   ],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "proposed"
+   }
+  },
+  {
+   "kind": "operator",
+   "id": "op_cross_above",
+   "label": "cross_above",
+   "aliases": [],
+   "op": "cross_above",
+   "phrases": [
+    "crosses above",
+    "crossed above",
+    "bullish crossover",
+    "crosses over"
+   ],
+   "applies_to": [
+    "indicator"
+   ],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   }
+  },
+  {
+   "kind": "operator",
+   "id": "op_cross_below",
+   "label": "cross_below",
+   "aliases": [],
+   "op": "cross_below",
+   "phrases": [
+    "crosses below",
+    "crossed below",
+    "bearish crossover"
+   ],
+   "applies_to": [
+    "indicator"
+   ],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   }
+  },
+  {
+   "kind": "operator",
+   "id": "op_cross_any",
+   "label": "cross_any",
+   "aliases": [],
+   "op": "cross_any",
+   "phrases": [
+    "crossover",
+    "crossovers",
+    "crosses",
+    "bullish and bearish crossovers"
+   ],
+   "applies_to": [
+    "indicator"
+   ],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   }
+  },
+  {
+   "kind": "operator",
+   "id": "op_flip",
+   "label": "flip",
+   "aliases": [],
+   "op": "flip",
+   "phrases": [
+    "flips",
+    "flipped",
+    "turned long",
+    "turns bullish",
+    "turned bullish"
+   ],
+   "applies_to": [
+    "indicator"
+   ],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   }
+  },
+  {
+   "kind": "operator",
+   "id": "op_rising",
+   "label": "rising",
+   "aliases": [],
+   "op": "rising",
+   "phrases": [
+    "rising",
+    "going up",
+    "increasing"
+   ],
+   "applies_to": [
+    "indicator"
+   ],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "proposed",
+    "notes": "No recogniser consumes this phrase yet."
+   }
+  },
+  {
+   "kind": "operator",
+   "id": "op_falling",
+   "label": "falling",
+   "aliases": [],
+   "op": "falling",
+   "phrases": [
+    "falling",
+    "going down",
+    "decreasing"
+   ],
+   "applies_to": [
+    "indicator"
+   ],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "proposed",
+    "notes": "No recogniser consumes this phrase yet."
+   }
+  },
+  {
+   "kind": "operator",
+   "id": "op_golden_cross",
+   "label": "cross_above",
+   "aliases": [],
+   "op": "cross_above",
+   "phrases": [
+    "golden cross"
+   ],
+   "applies_to": [
+    "indicator"
+   ],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "proposed",
+    "notes": "A golden cross is SMA 50 crossing above SMA 200 \u2014 needs an implied-indicators rule, not just an operator."
+   }
+  },
+  {
+   "kind": "operator",
+   "id": "op_death_cross",
+   "label": "cross_below",
+   "aliases": [],
+   "op": "cross_below",
+   "phrases": [
+    "death cross"
+   ],
+   "applies_to": [
+    "indicator"
+   ],
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "proposed",
+    "notes": "A death cross is SMA 50 crossing below SMA 200 \u2014 needs an implied-indicators rule, not just an operator."
+   }
+  }
+ ]
+}

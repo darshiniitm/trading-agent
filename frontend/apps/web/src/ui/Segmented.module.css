@@ -1,0 +1,5 @@
+.group { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; background: var(--surface-0); border: 1px solid var(--border); border-radius: var(--r-md); }
+.seg { background: none; border: 0; border-radius: var(--r-sm); color: var(--muted); padding: 6px 12px; font-weight: 500; }
+.seg:hover { color: var(--text); }
+.seg[aria-pressed="true"] { background: var(--surface-chip); color: var(--text); }
+.count { font-family: var(--font-mono); font-size: 12px; margin-left: 6px; color: var(--muted); }

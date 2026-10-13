@@ -1,0 +1,194 @@
+import type Database from "better-sqlite3";
+import { programOf } from "@/server/programOf";
+import { screen } from "@/server/engine/client";
+
+function statusFor(membership: string): string {
+  return membership === "full_match" ? "pending_selection" : "watching";
+}
+
+function remapKeysToCondNo(values: Record<string, unknown>, idToCondNo: Record<string, number>) {
+  const out: Record<string, unknown> = {};
+  for (const [id, value] of Object.entries(values)) {
+    const condNo = idToCondNo[id];
+    if (condNo !== undefined) out[`C${condNo}`] = value;
+  }
+  return out;
+}
+
+function remapIdsToCondNo(ids: string[], idToCondNo: Record<string, number>): string[] {
+  return ids.filter((id) => idToCondNo[id] !== undefined).map((id) => `C${idToCondNo[id]}`);
+}
+
+const OPEN_STATUSES = ["pending_selection", "entered", "not_confirmed", "no_point_data", "watching"];
+
+// Once an entry reaches one of these, it is a resolved historical fact (the
+// selection point was priced and `entry_price`/`stop` are written): no later
+// weekly screen may touch its membership/status/last_run_id/prices again.
+// Two reasons, both load-bearing:
+//  - `watchlist_entries`' CHECK (membership = 'full_match' OR entry_price IS
+//    NULL): flipping a priced entry's membership to near_miss /
+//    rejected_risk_cap would violate it, abort the whole weekly transaction,
+//    and make runCatchUp retry (and fail on) that same week forever.
+//  - `last_run_id` of a frozen entry is the run it was resolved in — the
+//    "signal run" runValidatePrior grades it under. Bumping it would move the
+//    pick to a run whose as_of it was never bought at.
+// Frozen entries still count as "open" for ux_entries_open (they hold the
+// (watchlist, symbol) slot), so they must stay findable by selectOpenEntry —
+// otherwise a re-seen symbol would fall into the insert branch and violate
+// that unique index. They are simply skipped once found, and they are never
+// marked dropped_from_screen either (a live position doesn't end because the
+// screen stopped matching it). A new entry for the same symbol can only be
+// created after the frozen one reaches a terminal status (backend plan §8.3:
+// a symbol that leaves and later re-qualifies gets a NEW entry).
+export const FROZEN_STATUSES = ["entered", "not_confirmed"];
+const DROPPABLE_STATUSES = OPEN_STATUSES.filter((s) => !FROZEN_STATUSES.includes(s));
+
+type ScreenResult = Awaited<ReturnType<typeof screen>>;
+
+// Data coverage, provenance and the stocks the engine could not decide (spec §7-§8). Written in the same
+// transaction as the run. An engine from before the data-resolution layer sends none of it; nothing is invented.
+function persistCoverage(raw: Database.Database, runId: number, r: ScreenResult) {
+  if (r.run_coverage) {
+    const ins = raw.prepare(`INSERT INTO run_condition_coverage (run_id, condition_id, coverage, unfeedable) VALUES (?, ?, ?, ?)`);
+    const unfeedable = new Set(r.run_coverage.unfeedable_conditions);
+    for (const [cid, c] of Object.entries(r.run_coverage.per_condition)) ins.run(runId, cid, c, unfeedable.has(cid) ? 1 : 0);
+  }
+  if (r.provenance) {
+    const ins = raw.prepare(`INSERT INTO run_provenance (run_id, data_type, symbol, source, as_of, quality, reason) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+    for (const s of r.provenance.summary) {
+      // a per-type counts block has no single source/quality: store the worst quality seen
+      const worst = s.counts ? (["missing", "approx", "stale", "fallback", "ok"].find((q) => (s.counts![q] ?? 0) > 0) ?? "ok") : s.quality;
+      ins.run(runId, s.data_type, null, s.source ?? null, s.as_of ?? null, worst ?? null, s.reason ?? null);
+    }
+    for (const row of r.provenance.rows) ins.run(runId, row.data_type, row.symbol, row.source, row.as_of, row.quality, row.reason);
+  }
+  if (r.unevaluated?.length) {
+    const ins = raw.prepare(
+      `INSERT OR REPLACE INTO run_unevaluated (run_id, symbol, set_id, unknown_count, met_count, reasons_json, cond_json) VALUES (?, ?, ?, ?, ?, ?, ?)`
+    );
+    const sym = raw.prepare(`INSERT OR IGNORE INTO symbols (symbol, active) VALUES (?, 1)`);
+    for (const u of r.unevaluated) {
+      sym.run(u.ticker);
+      ins.run(runId, u.ticker, u.set ?? "S1", u.unknown_count, u.met_count, JSON.stringify(u.reasons), u.conditions ? JSON.stringify(u.conditions) : null);
+    }
+  }
+}
+
+export async function runWeeklyScreen(
+  raw: Database.Database,
+  { promptId, asOf, kind }: { promptId: number; asOf: string; kind: "scheduled" | "catch_up" },
+  fetchFn?: typeof fetch
+): Promise<{ runId: number }> {
+  const prompt = raw.prepare("SELECT * FROM prompts WHERE prompt_id = ?").get(promptId) as any;
+  if (!prompt) throw new Error(`prompt ${promptId} not found`);
+  const program = programOf(prompt.spec_json);
+
+  const idToCondNo: Record<string, number> = {};
+  (raw.prepare("SELECT cond_no, name FROM prompt_conditions WHERE prompt_id = ? ORDER BY cond_no").all(promptId) as any[]).forEach((row, i) => {
+    // The engine's own condition.id (e.g. "idMcap") is only known from the
+    // spec, not from prompt_conditions (which stores name/cond_no, not the
+    // original id string) — program.conditions is written in the same cond_no
+    // order at confirm time (Task 8, Phase 1), so zipping by index is exact.
+    idToCondNo[program.conditions[i].id] = row.cond_no;
+  });
+
+  const screenResult = await screen(program, asOf, fetchFn, { userId: prompt.owner_user_id, promptId });
+  const now = new Date().toISOString();
+  const cov = screenResult.run_coverage;
+
+  const txn = raw.transaction(() => {
+    const runInfo = raw
+      .prepare(
+        `INSERT INTO runs (prompt_id, as_of, kind, status, applied_steps_json, funnel_json, finished_at,
+                           coverage_status, coverage, universe_quality, scored)
+         VALUES (?, ?, ?, 'done', ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(promptId, asOf, kind, JSON.stringify(screenResult.applied_steps), JSON.stringify(screenResult.funnel), now,
+        cov?.status ?? null, cov?.coverage ?? null, cov?.universe_quality ?? null, cov ? (cov.scored ? 1 : 0) : null);
+    const runId = Number(runInfo.lastInsertRowid);
+
+    const insertSymbol = raw.prepare(`INSERT OR IGNORE INTO symbols (symbol, active) VALUES (?, 1)`);
+    const insertRunResult = raw.prepare(
+      `INSERT INTO run_results
+         (run_id, symbol, membership, in_forward_record, failed_conds_json, cond_json, metrics_json,
+          ep, sl, ref_price, confidence, entry_status, outcome, unknown_count)
+       VALUES (?, ?, ?, 0, ?, ?, NULL, ?, ?, ?, NULL, ?, ?, 0)`
+    );
+    const watchlistIds = (raw.prepare("SELECT watchlist_id FROM watchlists WHERE prompt_id = ? AND archived_at IS NULL").all(promptId) as { watchlist_id: number }[]).map((r) => r.watchlist_id);
+
+    const selectOpenEntry = raw.prepare(
+      `SELECT entry_id, membership, status FROM watchlist_entries WHERE watchlist_id = ? AND symbol = ? AND status IN (${OPEN_STATUSES.map(() => "?").join(",")})`
+    );
+    const insertEntry = raw.prepare(
+      `INSERT INTO watchlist_entries (watchlist_id, symbol, first_run_id, last_run_id, membership, status, ref_price, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+    const updateEntryMembership = raw.prepare(
+      `UPDATE watchlist_entries SET last_run_id = ?, membership = ?, updated_at = ? WHERE entry_id = ?`
+    );
+    const dropEntry = raw.prepare(
+      `UPDATE watchlist_entries SET status = 'dropped_from_screen', last_run_id = ?, updated_at = ? WHERE entry_id = ?`
+    );
+    const insertEvent = raw.prepare(
+      `INSERT INTO entry_events (entry_id, run_id, type, from_value, to_value, at) VALUES (?, ?, ?, ?, ?, ?)`
+    );
+
+    persistCoverage(raw, runId, screenResult);
+
+    const seenSymbols = new Set<string>();
+    for (const candidate of screenResult.candidates) {
+      seenSymbols.add(candidate.ticker);
+      insertSymbol.run(candidate.ticker);
+
+      const entryStatus = statusFor(candidate.membership);
+      const condJson = remapKeysToCondNo(candidate.values, idToCondNo);
+      const failedCondsJson = remapIdsToCondNo(candidate.failed_ids, idToCondNo);
+
+      insertRunResult.run(
+        runId, candidate.ticker, candidate.membership, JSON.stringify(failedCondsJson), JSON.stringify(condJson),
+        candidate.membership === "full_match" ? candidate.ep : null,
+        candidate.membership === "full_match" ? candidate.sl : null,
+        candidate.membership === "full_match" ? null : candidate.ep,
+        entryStatus,
+        // a near miss failed a known condition ("0 beats ?"); everything else passed the screen
+        candidate.membership === "near_miss" ? "rejected" : "qualified"
+      );
+
+      for (const watchlistId of watchlistIds) {
+        const existing = selectOpenEntry.get(watchlistId, candidate.ticker, ...OPEN_STATUSES) as any;
+        if (!existing) {
+          insertEntry.run(watchlistId, candidate.ticker, runId, runId, candidate.membership, entryStatus,
+            candidate.membership === "full_match" ? null : candidate.ep, now, now);
+        } else if (FROZEN_STATUSES.includes(existing.status)) {
+          // Resolved position — leave it exactly as it is (see FROZEN_STATUSES).
+          continue;
+        } else {
+          if (existing.membership !== candidate.membership) {
+            insertEvent.run(existing.entry_id, runId, "membership_changed", existing.membership, candidate.membership, now);
+          }
+          updateEntryMembership.run(runId, candidate.membership, now, existing.entry_id);
+        }
+      }
+    }
+
+    // Open, not-yet-resolved entries not re-seen this run: dropped, per
+    // watchlist. Frozen (entered/not_confirmed) entries are excluded whether
+    // or not their symbol was re-seen.
+    const selectDroppable = raw.prepare(
+      `SELECT entry_id, symbol, status FROM watchlist_entries WHERE watchlist_id = ? AND status IN (${DROPPABLE_STATUSES.map(() => "?").join(",")})`
+    );
+    for (const watchlistId of watchlistIds) {
+      const openEntries = selectDroppable.all(watchlistId, ...DROPPABLE_STATUSES) as { entry_id: number; symbol: string; status: string }[];
+      for (const entry of openEntries) {
+        if (!seenSymbols.has(entry.symbol)) {
+          dropEntry.run(runId, now, entry.entry_id);
+          insertEvent.run(entry.entry_id, runId, "dropped_from_screen", entry.status, "dropped_from_screen", now);
+        }
+      }
+    }
+
+    return runId;
+  });
+
+  return { runId: txn() };
+}
