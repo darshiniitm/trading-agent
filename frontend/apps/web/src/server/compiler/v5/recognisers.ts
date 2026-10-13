@@ -4,16 +4,21 @@
 // into a question later (gap analysis).
 import { INDICATORS } from "./registry";
 import type { Clause } from "./segment";
+import { patterns, type PatternResult } from "./patterns";
 
 export type Span = [number, number];
 export type Tf = "1D" | "1W" | "1M";
 export type Leaf = { path: string; phrase: string; span: Span };       // path is relative to the owning node
 export type Need = { path: string; reason: "missing" | "placeholder" | "ambiguous" | "contradiction"; token?: string; phrase?: string; options?: { label: string; value: unknown }[] };
 
+// A value the phrase only implies (252 sessions for "52-week", x1.30 for "30% above", the daily timeframe): never
+// silent — assemble lists each one as an editable assumption with this reason.
+export type Implied = { path: string; label: string; value?: unknown };
 export type CondFrag = {
   kind: "condition";
-  lhs: { field: string; params?: Record<string, unknown> } | { ind: string; params: Record<string, number | string | null>; tf: Tf | null };
-  rhs?: { ind: string; params: Record<string, number | string | null>; tf: Tf | null } | null;
+  lhs: { field: string; params?: Record<string, unknown> } | { ind: string; params: Record<string, number | string | null>; tf: Tf | null; output?: string };
+  rhs?: { ind: string; params: Record<string, number | string | null>; tf: Tf | null; output?: string } | null;
+  rhs_mult?: number; implied?: Implied[];
   op: string | null; value?: unknown; dir?: "long" | "short"; within_bars?: number | null; bars?: number;
   emit?: ("direction" | "event_date")[];
   phrase: string; span: Span; leaves: Leaf[]; needs: Need[];
@@ -26,7 +31,9 @@ export type ActionFrag = {
   kind: "action"; action: "group_by" | "trade_plan" | "validate" | "rank" | "limit"; ref: SetRef; clauseSpan: Span;
   highlight?: boolean; hasSL?: boolean; hasEP?: boolean; hasConfidence?: boolean;
   shift?: Leaf | null; horizons?: { value: number[]; leaf: Leaf } | null;
-  rankKey?: "event_date" | null; rankOrder?: "asc" | "desc"; n?: { value: number; leaf: Leaf };
+  rankKey?: "event_date" | "value" | null; rankOrder?: "asc" | "desc"; n?: { value: number; leaf: Leaf };
+  // fields the phrase fixed completely (e.g. an ATR stop and an R-multiple target), merged into the action as-is
+  preset?: Record<string, unknown>; implied?: Implied[];
 };
 // A line that only names series ("Calculate SMA 6 and SMA 30") and a line that only names an event
 // ("Detect bullish and bearish crossovers") mean nothing alone; link.ts joins them into one condition.
@@ -48,8 +55,8 @@ export function amount(num: string, suffix?: string): number {
   return s === "k" ? n * 1000 : s === "l" ? n * 100000 : n;
 }
 
-const at = (c: Clause, i: number, len: number): Span => [c.start + i, c.start + i + len];
-const leaf = (c: Clause, path: string, i: number, text: string): Leaf => ({ path, phrase: text, span: at(c, i, text.length) });
+export const at = (c: Clause, i: number, len: number): Span => [c.start + i, c.start + i + len];
+export const leaf = (c: Clause, path: string, i: number, text: string): Leaf => ({ path, phrase: text, span: at(c, i, text.length) });
 
 // ---------------------------------------------------------------- noise
 export function noise(c: Clause): Fragment[] {
@@ -353,15 +360,57 @@ export function actions(c: Clause): Fragment[] {
 }
 
 // ---------------------------------------------------------------- clause dispatcher
-export const RECOGNISER_NAMES = ["noise", "actions", "scope", "universe+mcap", "indicators"] as const;
+export const RECOGNISER_NAMES = ["noise", "patterns", "actions", "scope", "universe+mcap", "indicators"] as const;
 
 export function recognise(c: Clause, disabled: ReadonlySet<string> = new Set()): RawFragment[] {
+  return recogniseWithCoverage(c, disabled).fragments;
+}
+
+/** Which characters of the clause some recogniser turned into a rule (or a universe / scope / ignored sentence). */
+export function coveredBy(c: Clause, fragments: RawFragment[], patternUsed: boolean[] = []): boolean[] {
+  const used = Array.from({ length: c.text.length }, (_, k) => !!patternUsed[k]);
+  const mark = (a: number, b: number) => { for (let k = Math.max(0, a - c.start); k < Math.min(c.text.length, b - c.start); k++) used[k] = true; };
+  for (const f of fragments) {
+    if (f.kind === "condition") { mark(f.span[0], f.span[1]); f.leaves.forEach((l) => mark(l.span[0], l.span[1])); }
+    else if (f.kind === "universe") f.leaves.forEach((l) => mark(l.span[0], l.span[1]));
+    else if (f.kind === "scope") mark(f.span[0], f.span[1]);
+    else if (f.kind === "action") mark(f.clauseSpan[0], f.clauseSpan[1]);
+    else if (f.kind === "series" || f.kind === "event") { if ("span" in f) mark(f.span[0], f.span[1]); }
+  }
+  return used;
+}
+
+export type Recognised = { fragments: RawFragment[]; used: boolean[] };
+export function recogniseWithCoverage(c: Clause, disabled: ReadonlySet<string> = new Set()): Recognised {
+  const fragments = recogniseInner(c, disabled);
+  return { fragments: fragments.frags, used: coveredBy(c, fragments.frags, fragments.used) };
+}
+
+function recogniseInner(c: Clause, disabled: ReadonlySet<string>): { frags: RawFragment[]; used: boolean[] } {
   const on = (n: string) => !disabled.has(n);
-  if (on("noise")) { const f = noise(c); if (f.length) return f; }
-  if (on("actions")) { const f = actions(c); if (f.length) return f; }   // an action clause never also creates conditions
-  if (on("scope")) { const f = scope(c); if (f.length) return f; }
-  const out: RawFragment[] = [];
-  if (on("universe+mcap")) out.push(...universe(c), ...mcap(c));
-  if (on("indicators") && !out.some((f) => f.kind === "condition")) out.push(...indicators(c));
-  return out;
+  if (on("noise")) { const f = noise(c); if (f.length) return { frags: f, used: [] }; }
+  // trader phrases first: they read whole phrases (crosses, 52-week highs, volume multiples ...) and mask what they used
+  let pat: PatternResult = { frags: [], masked: c.text, claimsActions: false, used: [] };
+  if (on("patterns")) pat = patterns(c);
+  const rest: Clause = { ...c, text: pat.masked };
+  if (pat.claimsActions) {
+    const extra: RawFragment[] = [];
+    if (on("universe+mcap")) extra.push(...universe(rest), ...mcap(rest));
+    return { frags: [...pat.frags, ...extra], used: pat.used };
+  }
+  // '... RSI Range 50 to 65" Backtest and validate ...': the condition words before the action verb still count
+  if (on("actions") && pat.frags.length === 0) {
+    const verb = /\b(back-?test|validate|validation)\b/i.exec(c.text);
+    if (verb && verb.index > 0 && /\b(rsi|sma|ema|macd|vstop|supertrend|bollinger|atr)\b/i.test(c.text.slice(0, verb.index))) {
+      const head: Clause = { ...c, text: c.text.slice(0, verb.index) };
+      const cond = on("indicators") ? indicators(head) : [];
+      if (cond.some((f) => f.kind === "condition")) return { frags: [...universe(head), ...mcap(head), ...cond, ...actions(c)], used: pat.used };
+    }
+  }
+  if (on("actions") && !pat.frags.some((f) => f.kind === "condition")) { const f = actions(c); if (f.length) return { frags: [...(on("universe+mcap") ? universe(c) : []), ...f], used: pat.used }; }   // an action clause never also creates conditions
+  if (on("scope") && pat.frags.length === 0) { const f = scope(c); if (f.length) return { frags: f, used: pat.used }; }
+  const out: RawFragment[] = [...pat.frags];
+  if (on("universe+mcap")) out.push(...universe(rest), ...mcap(rest));
+  if (on("indicators") && !out.some((f) => f.kind === "condition")) out.push(...indicators(rest));
+  return { frags: out, used: pat.used };
 }

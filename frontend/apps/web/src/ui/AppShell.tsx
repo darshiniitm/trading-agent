@@ -1,9 +1,11 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
+import { EnginePill } from "@/components/EngineStatus";
 import styles from "./AppShell.module.css";
 
-type Me = { multiUser: boolean; currentUser: { userId: number; displayName: string; email: string | null } | null };
+type Me = { multiUser: boolean; currentUser: { userId: number; displayName: string; email: string | null; role?: string } | null };
+const AUTH_PAGES = ["/login", "/signup", "/forgot-password"];
 export type NavKey = "prompts" | "new" | "explore" | "data";
 
 export function activeNav(pathname: string | null): NavKey | null {
@@ -27,6 +29,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const active = activeNav(pathname);
   const { data: me } = useQuery<Me>({ queryKey: ["me"], queryFn: () => fetch("/api/auth/me").then((r) => r.json()) });
   const user = me?.currentUser ?? null;
+  if (AUTH_PAGES.includes(pathname ?? "")) return <>{children}</>;   // signed-out visitors get no app chrome
 
   async function signOut() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -45,11 +48,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <a key={n.key} href={n.href} aria-current={active === n.key ? "page" : undefined} className={`${styles.item} ${n.quiet ? styles.quiet : ""} ${active === n.key ? styles.active : ""}`}>{n.label}</a>
           ))}
         </nav>
+        <EnginePill />
         {user && (
           <div className={styles.user}>
             <span className={styles.avatar} aria-hidden="true">{user.userId}</span>
             <span>{user.displayName} (you)</span>
-            {me?.multiUser && <button type="button" className={styles.signout} onClick={() => void signOut()}>Sign out</button>}
+            <a href="/settings/account" className={styles.signout}>Account</a>
+            {user.role === "owner" && <a href="/settings/users" className={styles.signout}>Users</a>}
+            <button type="button" className={styles.signout} onClick={() => void signOut()}>Sign out</button>
           </div>
         )}
       </header>

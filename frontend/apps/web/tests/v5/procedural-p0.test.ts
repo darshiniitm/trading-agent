@@ -82,22 +82,22 @@ describe("P0 R3 — the model fallback may express a crossover of two indicators
 
 describe("P1 — recognised but not computable", () => {
   it("names the uncomputable indicator instead of 'not understood', and keeps the computable condition", async () => {
-    const d = await stage("Nifty 100 stocks\nWeekly\nRSI(14) above 60\nIchimoku cloud breakout");
+    const d = await stage("Nifty 100 stocks\nWeekly\nRSI(14) above 60\nStochastic oscillator crossover");
     expect(d.program.conditions).toHaveLength(1);
-    expect(d.program.unsupported).toEqual([{ text: "Ichimoku cloud breakout", reason: "recognised: Ichimoku Cloud, not computable yet" }]);
+    expect(d.program.unsupported).toEqual([{ text: "Stochastic oscillator crossover", reason: "recognised: Stochastic, not computable yet" }]);
     expect(d.program.unrecognised).toEqual([]);
-    expect(d.clauses[3].maps_to).toMatch(/Ichimoku Cloud, not computable yet/);
+    expect(d.clauses[3].maps_to).toMatch(/Stochastic, not computable yet/);
   });
 
   it("a mixed line keeps the computable part and reports the rest", async () => {
-    const d = await stage("Weekly\nRSI(14) above 60 and ADX above 25");
+    const d = await stage("Weekly\nRSI(14) above 60 and CCI above 100");
     expect(d.program.conditions.map((c) => (c.lhs as any).ind)).toEqual(["rsi"]);
-    expect(d.program.unsupported[0].reason).toBe("recognised: ADX, not computable yet");
+    expect(d.program.unsupported[0].reason).toBe("recognised: CCI, not computable yet");
   });
 
   it("the interpreter greys it out with that reason and the screen still runs", async () => {
-    const d = await compileProgram("Nifty 100 stocks\nWeekly\nRSI(14) above 60\nIchimoku cloud breakout");
-    expect(d.program.not_evaluable?.some((n) => /Ichimoku Cloud, not computable yet/.test(n.reason))).toBe(true);
+    const d = await compileProgram("Nifty 100 stocks\nWeekly\nRSI(14) above 60\nStochastic oscillator crossover");
+    expect(d.program.not_evaluable?.some((n) => /Stochastic, not computable yet/.test(n.reason))).toBe(true);
     expect(d.program.needs_input).toEqual([]);
   });
 });

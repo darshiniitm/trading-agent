@@ -26,7 +26,8 @@ for (const model of models) {
     const start = Date.now();
     try {
       const d = await compileProgram(g.text, {
-        disabledRecognisers: new Set(["universe+mcap", "indicators"]),
+        disabledRecognisers: new Set(["universe+mcap", "indicators", "patterns"]),
+        resolve: false,   // score what the model READ; defaults (RSI 14, VStop close) are filled in afterwards by resolveProgram
         fallback: makeClauseFallback(ollamaFor(model)),
       });
       modelCalls += d.modelCalls;

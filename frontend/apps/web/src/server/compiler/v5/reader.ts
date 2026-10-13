@@ -56,7 +56,7 @@ export function makeReader(callModel: CallModelFn = callClaude): ReaderFn {
     for (let attempt = 1; attempt <= 2; attempt++) {
       calls++;
       const u = attempt === 1 ? user : `${user}\n\nYour previous answer was rejected: ${errors.join("; ")}. Answer again with only the corrected JSON.`;
-      const raw = await callModel(system, u, READER_JSON_SCHEMA);
+      const raw = await callModel(system, u, READER_JSON_SCHEMA, { task: "reader" });
       let parsed: z.infer<typeof ReaderOutputSchema>;
       try {
         const r = ReaderOutputSchema.safeParse(JSON.parse(raw));

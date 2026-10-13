@@ -1,0 +1,239 @@
+{
+ "entries": [
+  {
+   "kind": "universe",
+   "id": "nse_all",
+   "label": "All NSE stocks",
+   "aliases": [
+    "all stocks",
+    "all nse stocks",
+    "nse",
+    "entire market"
+   ],
+   "source": "nse_all",
+   "list_url": null,
+   "snapshot_date": null,
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   }
+  },
+  {
+   "kind": "universe",
+   "id": "nifty_50",
+   "label": "NIFTY 50",
+   "aliases": [
+    "nifty 50",
+    "nifty50"
+   ],
+   "source": "index",
+   "list_url": "https://niftyindices.com/IndexConstituent/ind_nifty50list.csv",
+   "snapshot_date": null,
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "https://niftyindices.com/indices/equity/broad-based-indices"
+    ],
+    "fetched_at": null,
+    "status": "reviewed",
+    "notes": "Index name accepted by the universe recogniser; constituent CSV URL follows the niftyindices.com naming pattern and has not been machine-fetched."
+   },
+   "index": "NIFTY 50"
+  },
+  {
+   "kind": "universe",
+   "id": "nifty_next_50",
+   "label": "NIFTY NEXT 50",
+   "aliases": [
+    "nifty next 50"
+   ],
+   "source": "index",
+   "list_url": "https://niftyindices.com/IndexConstituent/ind_niftynext50list.csv",
+   "snapshot_date": null,
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "https://niftyindices.com/indices/equity/broad-based-indices"
+    ],
+    "fetched_at": null,
+    "status": "reviewed",
+    "notes": "Index name accepted by the universe recogniser; constituent CSV URL follows the niftyindices.com naming pattern and has not been machine-fetched."
+   },
+   "index": "NIFTY NEXT 50"
+  },
+  {
+   "kind": "universe",
+   "id": "nifty_100",
+   "label": "NIFTY 100",
+   "aliases": [
+    "nifty 100",
+    "nifty100"
+   ],
+   "source": "index",
+   "list_url": "https://niftyindices.com/IndexConstituent/ind_nifty100list.csv",
+   "snapshot_date": null,
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "https://niftyindices.com/indices/equity/broad-based-indices"
+    ],
+    "fetched_at": null,
+    "status": "reviewed",
+    "notes": "Index name accepted by the universe recogniser; constituent CSV URL follows the niftyindices.com naming pattern and has not been machine-fetched."
+   },
+   "index": "NIFTY 100"
+  },
+  {
+   "kind": "universe",
+   "id": "nifty_200",
+   "label": "NIFTY 200",
+   "aliases": [
+    "nifty 200",
+    "nifty200"
+   ],
+   "source": "index",
+   "list_url": "https://niftyindices.com/IndexConstituent/ind_nifty200list.csv",
+   "snapshot_date": null,
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "https://niftyindices.com/indices/equity/broad-based-indices"
+    ],
+    "fetched_at": null,
+    "status": "reviewed",
+    "notes": "Index name accepted by the universe recogniser; constituent CSV URL follows the niftyindices.com naming pattern and has not been machine-fetched."
+   },
+   "index": "NIFTY 200"
+  },
+  {
+   "kind": "universe",
+   "id": "nifty_500",
+   "label": "NIFTY 500",
+   "aliases": [
+    "nifty 500",
+    "nifty500"
+   ],
+   "source": "index",
+   "list_url": "https://niftyindices.com/IndexConstituent/ind_nifty500list.csv",
+   "snapshot_date": null,
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "https://niftyindices.com/indices/equity/broad-based-indices"
+    ],
+    "fetched_at": null,
+    "status": "reviewed",
+    "notes": "Index name accepted by the universe recogniser; constituent CSV URL follows the niftyindices.com naming pattern and has not been machine-fetched."
+   },
+   "index": "NIFTY 500"
+  },
+  {
+   "kind": "universe",
+   "id": "nifty_midcap_100",
+   "label": "NIFTY MIDCAP 100",
+   "aliases": [
+    "nifty midcap 100"
+   ],
+   "source": "index",
+   "list_url": "https://niftyindices.com/IndexConstituent/ind_niftymidcap100list.csv",
+   "snapshot_date": null,
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "https://niftyindices.com/indices/equity/broad-based-indices"
+    ],
+    "fetched_at": null,
+    "status": "reviewed",
+    "notes": "Index name accepted by the universe recogniser; constituent CSV URL follows the niftyindices.com naming pattern and has not been machine-fetched."
+   },
+   "index": "NIFTY MIDCAP 100"
+  },
+  {
+   "kind": "universe",
+   "id": "nifty_midcap_150",
+   "label": "NIFTY MIDCAP 150",
+   "aliases": [
+    "nifty midcap 150"
+   ],
+   "source": "index",
+   "list_url": "https://niftyindices.com/IndexConstituent/ind_niftymidcap150list.csv",
+   "snapshot_date": null,
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "https://niftyindices.com/indices/equity/broad-based-indices"
+    ],
+    "fetched_at": null,
+    "status": "reviewed",
+    "notes": "Index name accepted by the universe recogniser; constituent CSV URL follows the niftyindices.com naming pattern and has not been machine-fetched."
+   },
+   "index": "NIFTY MIDCAP 150"
+  },
+  {
+   "kind": "universe",
+   "id": "nifty_smallcap_100",
+   "label": "NIFTY SMALLCAP 100",
+   "aliases": [
+    "nifty smallcap 100"
+   ],
+   "source": "index",
+   "list_url": "https://niftyindices.com/IndexConstituent/ind_niftysmallcap100list.csv",
+   "snapshot_date": null,
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "https://niftyindices.com/indices/equity/broad-based-indices"
+    ],
+    "fetched_at": null,
+    "status": "reviewed",
+    "notes": "Index name accepted by the universe recogniser; constituent CSV URL follows the niftyindices.com naming pattern and has not been machine-fetched."
+   },
+   "index": "NIFTY SMALLCAP 100"
+  },
+  {
+   "kind": "universe",
+   "id": "nifty_smallcap_250",
+   "label": "NIFTY SMALLCAP 250",
+   "aliases": [
+    "nifty smallcap 250"
+   ],
+   "source": "index",
+   "list_url": "https://niftyindices.com/IndexConstituent/ind_niftysmallcap250list.csv",
+   "snapshot_date": null,
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "https://niftyindices.com/indices/equity/broad-based-indices"
+    ],
+    "fetched_at": null,
+    "status": "reviewed",
+    "notes": "Index name accepted by the universe recogniser; constituent CSV URL follows the niftyindices.com naming pattern and has not been machine-fetched."
+   },
+   "index": "NIFTY SMALLCAP 250"
+  }
+ ]
+}

@@ -1,6 +1,9 @@
 "use client";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { describeApiError } from "@/lib/apiError";
+import { isWarmingBody } from "@/lib/engineStatus";
+import { useEngineStatus } from "@/lib/useEngineStatus";
+import { EngineBuffer, RunningPanel } from "@/components/EngineStatus";
 import { FeasibilityChip, RunHeader, UnevaluatedSection, UploadControl, reasonText } from "@/components/DataStatus";
 import type { Feasibility } from "@/server/engine/client";
 import { ruleLine, type Slot } from "@/lib/conditionLabel";
@@ -11,7 +14,7 @@ import { ProvenanceDot } from "@/ui/ProvenanceDot";
 import styles from "./InterpretationView.module.css";
 
 type Clause = { id: string; text: string; status: "ok" | "question" | "ignored" | "not_understood" | "model"; maps_to: string; questions: number };
-type Chip = { path: string; label: string; value: unknown; provenance: "assumed" | "inferred"; options?: { label: string; value: unknown }[] };
+type Chip = { path: string; label: string; value: unknown; provenance: "assumed" | "inferred" | "edited"; options?: { label: string; value: unknown }[] };
 export type ProgramViewData = {
   clauses: Clause[]; chips: Chip[]; conditions: Slot[]; normalised: string; problems: string[]; ready: boolean;
   notEvaluable: { id: string; text: string; reason: string }[];
@@ -35,8 +38,10 @@ const show = (c: Chip) => {
 // "How your prompt was read": every line of the user's prompt next to the rule it became. Anything the
 // prompt left open was filled in automatically and shows as a chip you can click to change; a change
 // re-runs the screen. Nothing here asks a question or blocks the run (docs/prompt-interpreter-spec.md).
-export function InterpretationView({ draftId, promptText, hasProgram = false, onViewChange, addonsExtra }: {
-  draftId: number; promptText: string; hasProgram?: boolean; onViewChange?: (v: ProgramViewData | null) => void; addonsExtra?: ReactNode;
+const WARMING = Symbol("engine-warming");
+
+export function InterpretationView({ draftId, promptText, hasProgram = false, onViewChange, onPromptTextChange, addonsExtra }: {
+  draftId: number; promptText: string; hasProgram?: boolean; onViewChange?: (v: ProgramViewData | null) => void; onPromptTextChange?: (text: string) => void; addonsExtra?: ReactNode;
 }) {
   const [view, setViewState] = useState<ProgramViewData | null>(null);
   const setView = (v: ProgramViewData | null) => { setViewState(v); onViewChange?.(v); };
@@ -54,6 +59,30 @@ export function InterpretationView({ draftId, promptText, hasProgram = false, on
   const runId = useRef(0);
   const [feas, setFeas] = useState<Feasibility | null>(null);  // data availability chips; null = still checking / unavailable
 
+  // The engine loads ~2,300 stocks the first time. A run asked for meanwhile is queued — shown, cancellable, and started
+  // the moment the engine is ready — instead of failing with an error.
+  const eng = useEngineStatus();
+  // Unknown state (not loaded yet, or the status call failed) never blocks a run: the engine's own 503 is handled below.
+  const engineReady = !eng.status || eng.status.state === "ready";
+  const waiters = useRef<((go: boolean) => void)[]>([]);
+  const [queued, setQueued] = useState(false);
+  const [screening, setScreening] = useState(false);   // the screen request itself is in flight (engine ready, results not back yet)
+  useEffect(() => {
+    if (!engineReady) return;
+    const w = waiters.current.splice(0);
+    w.forEach((go) => go(true));
+  }, [engineReady]);
+  useEffect(() => () => { waiters.current.splice(0).forEach((go) => go(false)); }, []);   // leaving the page cancels a queued run
+  const readyNow = useRef(false);
+  readyNow.current = engineReady;
+  /** Resolves true when the engine is ready, false if the run was cancelled meanwhile. */
+  function whenEngineReady(): Promise<boolean> {
+    if (readyNow.current) return Promise.resolve(true);
+    setQueued(true);
+    return new Promise<boolean>((resolve) => { waiters.current.push(resolve); }).finally(() => setQueued(false));
+  }
+  function cancelQueued() { runId.current++; setScreening(false); waiters.current.splice(0).forEach((go) => go(false)); }
+
   // Reopening a draft (or a copied/edited prompt) that already has a program shows it straight away.
   useEffect(() => {
     if (!hasProgram) return;
@@ -66,6 +95,7 @@ export function InterpretationView({ draftId, promptText, hasProgram = false, on
     try {
       const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
       const json = await res.json();
+      if (res.status === 503 && isWarmingBody(json)) return WARMING;   // the engine is (still) loading: not an error, the caller queues
       if (!res.ok) { setError(describeApiError(json, "something went wrong")); return null; }
       return json;
     } finally { setBusy(false); }
@@ -86,11 +116,23 @@ export function InterpretationView({ draftId, promptText, hasProgram = false, on
   async function screenNow(v: ProgramViewData | null = view, date?: string) {
     if (v && !v.ready) { setRun(null); return; }
     setRunError(null);
-    const as_of = date ?? await latestAsOf();
     const mine = ++runId.current;
+    if (!(await whenEngineReady()) || mine !== runId.current) return;   // queued while the engine loads; cancelled or superseded -> stop
+    const as_of = date ?? await latestAsOf();   // after the wait: while loading, the engine cannot say which week has data
     setTable(null); setTableState("idle");
     void loadFeasibility(as_of);                  // never awaited: the chips fill in, the run is not held up
-    const r = await post(`/api/drafts/${draftId}/program/screen`, { as_of });
+    setScreening(true);
+    let r = await post(`/api/drafts/${draftId}/program/screen`, { as_of }).finally(() => { if (mine === runId.current) setScreening(false); });
+    // the engine answered "still loading" although the last status said ready (it restarted): queue again, a few times at most
+    for (let again = 0; r === WARMING && again < 3; again++) {
+      setScreening(false);
+      await eng.refetch();
+      await new Promise((go) => setTimeout(go, 1500));              // status may still say ready for a moment: don't spin
+      if (!(await whenEngineReady()) || mine !== runId.current) return;
+      setScreening(true);
+      r = await post(`/api/drafts/${draftId}/program/screen`, { as_of }).finally(() => { if (mine === runId.current) setScreening(false); });
+    }
+    if (r === WARMING) { setRunError("The data engine is still starting. Try Run again in a moment; the rules above are saved."); return; }
     if (!r) { setRunError("The screen could not run just now; the rules above are saved."); return; }
     setRun(r);
     void loadTable(as_of, mine);
@@ -138,7 +180,12 @@ export function InterpretationView({ draftId, promptText, hasProgram = false, on
     return change({ path: c.path, value: DECIMAL.test(t) ? Number(t) : t }, () => setChipEdit(null));
   };
   const pickChip = (c: Chip, idx: number) => change({ path: c.path, value: c.options![idx].value }, () => setChipEdit(null));
-  const saveEdit = () => editing && change({ edit: { clause_id: editing.id, text: editing.text } }, () => { setEditing(null); setChipEdit(null); });
+  // The server rewrites the draft's text for a line edit: pull it back so the textarea never holds a stale copy
+  // ("Read my prompt and run it" would otherwise save the stale text over the edit).
+  const syncPromptText = async () => {
+    try { const r = await fetch(`/api/drafts/${draftId}`); if (r.ok) { const d = await r.json(); if (typeof d.promptText === "string") onPromptTextChange?.(d.promptText); } } catch { /* the textarea keeps its text */ }
+  };
+  const saveEdit = () => editing && change({ edit: { clause_id: editing.id, text: editing.text } }, () => { setEditing(null); setChipEdit(null); void syncPromptText(); });
 
   const chipsFor = (c: Clause) => {
     const ids = [...c.maps_to.matchAll(/\b([CA]\d+)\b/g)].map((m) => m[1]);
@@ -147,13 +194,15 @@ export function InterpretationView({ draftId, promptText, hasProgram = false, on
   const shownChips = new Set(view ? view.clauses.flatMap((c) => chipsFor(c).map((k) => k.path)) : []);
   const strays = (view?.chips ?? []).filter((k) => !shownChips.has(k.path));
 
-  function ChipButton({ c }: { c: Chip }) {
+  // A plain render function, not a component: a component defined inside this one is a new type on every render,
+  // so React remounted it per keystroke and the text box lost focus after one character.
+  function chipButton(c: Chip) {
     const open = chipEdit?.path === c.path;
     return (
-      <span data-chip={c.path} data-provenance={c.provenance} className={styles.chipWrap}>
-        <button type="button" className={styles.chip} aria-label={`change ${c.label}`} disabled={busy} onClick={() => setChipEdit(open ? null : { path: c.path, text: "" })}>
+      <span key={c.path} data-chip={c.path} data-provenance={c.provenance} className={styles.chipWrap}>
+        <button type="button" className={styles.chip} aria-label={`change ${c.label}`} disabled={busy} onClick={() => setChipEdit(open ? null : { path: c.path, text: c.options || Array.isArray(c.value) ? "" : String(c.value ?? "") })}>
           <ProvenanceDot origin={c.provenance} />
-          {c.label}: {show(c)} · {c.provenance}
+          {c.label}: {show(c)} · {c.provenance === "edited" ? "edited by you" : c.provenance}
         </button>
         {open && (c.options ? (
           <select className={styles.inline} aria-label={`new value for ${c.label}`} value="" onChange={(e) => { if (e.target.value !== "") void pickChip(c, Number(e.target.value)); }}>
@@ -163,7 +212,8 @@ export function InterpretationView({ draftId, promptText, hasProgram = false, on
         ) : (
           <>
             <input className={styles.inline} aria-label={`new value for ${c.label}`} value={chipEdit!.text} onChange={(e) => setChipEdit({ path: c.path, text: e.target.value })} />
-            <Button size={36} disabled={busy || !chipEdit!.text.trim()} onClick={() => void saveChip(c)}>Apply</Button>
+            <Button size={36} disabled={busy || !chipEdit!.text.trim() || (typeof c.value === "number" && !DECIMAL.test(chipEdit!.text.trim()))} onClick={() => void saveChip(c)}>Apply</Button>
+            {typeof c.value === "number" && chipEdit!.text.trim() !== "" && !DECIMAL.test(chipEdit!.text.trim()) && <span role="alert" className={styles.refresh}>Enter a number</span>}
           </>
         ))}
       </span>
@@ -201,7 +251,7 @@ export function InterpretationView({ draftId, promptText, hasProgram = false, on
                       {c.status === "not_understood" ? <span>Not used: {c.maps_to}</span>
                         : slotsOf(c).length > 0 ? slotsOf(c).map((s) => <div key={s.id}>{ruleLine(s)}</div>)
                         : c.maps_to}
-                      <div className={styles.chips}>{chipsFor(c).map((k) => <ChipButton key={k.path} c={k} />)}</div>
+                      <div className={styles.chips}>{chipsFor(c).map((k) => chipButton(k))}</div>
                       {feas && <div>{[...c.maps_to.matchAll(/\b(C\d+)\b/g)].map((m) => m[1]).filter((id, i, a) => a.indexOf(id) === i && feas.conditions[id])
                         .map((id) => <FeasibilityChip key={id} entry={feas.conditions[id]} />)}</div>}
                     </td>
@@ -212,7 +262,7 @@ export function InterpretationView({ draftId, promptText, hasProgram = false, on
             </tbody>
           </table>
           </Card>
-          {strays.length > 0 && <div aria-label="other assumptions" className={styles.chips}>{strays.map((k) => <ChipButton key={k.path} c={k} />)}</div>}
+          {strays.length > 0 && <div aria-label="other assumptions" className={styles.chips}>{strays.map((k) => chipButton(k))}</div>}
 
           {view.notEvaluable.length > 0 && (
             <ul aria-label="not used" style={{ opacity: 0.55 }}>
@@ -256,10 +306,16 @@ export function InterpretationView({ draftId, promptText, hasProgram = false, on
         <div className={styles.right}>
           <div className={styles.runRow}>
             <label>Run on week of <input aria-label="as of date" type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} /></label>
-            <Button onClick={() => screenNow(view, asOf)} disabled={busy || !asOf || !view.ready}>Run again</Button>
+            <Button onClick={() => screenNow(view, asOf)} disabled={busy || !asOf} disabledReason={!view.ready ? "no line was read as a rule yet" : null}>Run again</Button>
           </div>
-          {runError && <Banner tone="warn" role="alert">{runError}</Banner>}
-          {feas && (
+          {eng.status && eng.status.state !== "ready" && !run && (
+            <EngineBuffer status={eng.status} queued={queued} onCancel={cancelQueued} onRetry={eng.retry} retrying={eng.retrying} />
+          )}
+          {screening && !queued && !run && eng.status?.state !== "warming" && eng.status?.state !== "starting" && <RunningPanel firstRun />}
+          {screening && !queued && run && <p className={styles.refresh} role="status" aria-live="polite">Updating results…</p>}
+          {runError && !queued && <Banner tone="warn" role="alert">{runError}</Banner>}
+          {!view.ready && <Banner role="status">Nothing to run yet: no line was read as a rule. Edit the line on the left (or reword the prompt) and it will run again.</Banner>}
+          {feas && view.ready && (
             <div aria-label="universe data status" className={styles.universe}>
               Universe: <FeasibilityChip entry={feas.universe} />{" "}
               {feas.universe.can_upload && <UploadControl draftId={draftId} onUploaded={() => void screenNow(view, asOf)} />}

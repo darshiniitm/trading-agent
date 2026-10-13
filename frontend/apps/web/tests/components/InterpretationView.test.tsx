@@ -1,6 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render as rtlRender, screen, waitFor, within } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactElement } from "react";
+import type { EngineStatus } from "@/lib/engineStatus";
 import { InterpretationView, ruleLine } from "@/components/InterpretationView";
+
+// The view reads the engine's state through react-query (as in the app, where app/providers.tsx supplies the client).
+// These tests don't stub /api/engine/status, so that call fails and the state stays unknown — which must never block a run.
+const render = (ui: ReactElement) => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return rtlRender(ui, { wrapper: ({ children }) => <QueryClientProvider client={client}>{children}</QueryClientProvider> });
+};
 
 const ADDONS = { liquidity: { enabled: false, cr: null, suggested_cr: 10 }, min_price: { enabled: false, price: null }, asm_gsm: { enabled: false, available: false, reason: "no ASM/GSM list in the data source yet" } };
 const RSI_SLOT = { id: "C2", source_text: "RSI Range 50 to 65", operator: "between", value: [50, 65], evaluable: true, not_evaluable_reason: null,
@@ -37,7 +47,7 @@ function stub(routes: Record<string, any>) {
     const r = routes[url];
     if (r === undefined) throw new Error(`unexpected fetch ${url}`);
     const x = typeof r === "function" ? r(init) : r;
-    return { ok: x.ok ?? true, json: async () => x.body ?? x };
+    return { ok: x.ok ?? true, status: x.status ?? (x.ok === false ? 500 : 200), json: async () => x.body ?? x };
   });
   vi.stubGlobal("fetch", f);
   return f;
@@ -160,6 +170,47 @@ describe("InterpretationView", () => {
     await waitFor(() => expect(bodyOf(f, "/api/drafts/7/program/answer")).toEqual({ edit: { clause_id: "L2", text: "RSI Range 40 to 70" } }));
   });
 
+  it("after a line edit, hands the server's rewritten prompt text back so the textarea can't go stale", async () => {
+    const onText = vi.fn();
+    const f = stub({ ...BASE, "/api/drafts/7": { body: { promptText: "RSI Range 40 to 70 (edited)" } }, "/api/drafts/7/program": VIEW,
+      "/api/drafts/7/program/screen": RESULT, "/api/drafts/7/program/answer": VIEW });
+    render(<InterpretationView draftId={7} promptText="some prompt" onPromptTextChange={onText} />);
+    fireEvent.click(screen.getByRole("button", { name: /Read my prompt and run it/ }));
+    await screen.findByLabelText("dry run result");
+    fireEvent.click(within(screen.getByText(/RSI Range 50 to 65/).closest("tr")!).getByRole("button", { name: "Edit" }));
+    fireEvent.change(screen.getByLabelText("edit line L2"), { target: { value: "RSI Range 40 to 70" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save line" }));
+    await waitFor(() => expect(onText).toHaveBeenCalledWith("RSI Range 40 to 70 (edited)"));
+    expect(f.mock.calls.some((c) => c[0] === "/api/drafts/7" && !c[1]?.method)).toBe(true);
+  });
+
+  it("when no line reads as a rule, explains why nothing ran instead of leaving the run column empty", async () => {
+    const NONE = { ...VIEW, ready: false, problems: ["no part of the prompt could be turned into a rule to screen on"], conditions: [] };
+    stub({ ...BASE, "/api/drafts/7/program": NONE });
+    render(<InterpretationView draftId={7} promptText="some prompt" />);
+    fireEvent.click(screen.getByRole("button", { name: /Read my prompt and run it/ }));
+    expect(await screen.findByText(/Nothing to run yet/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("universe data status")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Run again" })).toBeDisabled();
+  });
+
+  it("a numeric chip opens pre-filled, refuses non-numbers inline, and Apply re-runs the screen", async () => {
+    const f = await open();
+    fireEvent.click(screen.getByLabelText("change RSI length"));
+    const input = screen.getByLabelText("new value for RSI length") as HTMLInputElement;
+    expect(input.value).toBe("14");
+    fireEvent.change(input, { target: { value: "c" } });
+    expect(screen.getByLabelText("new value for RSI length")).toBe(input);   // the same element: typing never remounts the box
+    expect(screen.getByRole("alert")).toHaveTextContent("Enter a number");
+    expect(screen.getByRole("button", { name: "Apply" })).toBeDisabled();
+    fireEvent.change(input, { target: { value: "21" } });
+    const screens = () => f.mock.calls.filter((c) => c[0] === "/api/drafts/7/program/screen" && c[1]?.body && !JSON.parse(c[1].body).table).length;
+    const before = screens();
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    await waitFor(() => expect(bodyOf(f, "/api/drafts/7/program/answer")).toEqual({ path: "conditions.C2.params.length", value: 21 }));
+    await waitFor(() => expect(screens()).toBe(before + 1));
+  });
+
   it("reopening a draft that already has a program loads, shows and runs it without re-interpreting", async () => {
     const f = stub({ ...BASE, "/api/drafts/7/program": VIEW, "/api/drafts/7/program/screen": RESULT });
     const onView = vi.fn();
@@ -275,4 +326,132 @@ describe("all-stocks table tri-state", () => {
     expect(row.querySelector("td")!.getAttribute("title")).toMatch(/cache:yahoo.*2026-08-03/);
     expect(within(row).getByText("1 met · 1 unknown")).toBeInTheDocument();
   });
+});
+
+
+describe("InterpretationView while the engine loads", () => {
+  const PHASES = ["universe", "weekly_prices", "shares", "daily_bars", "reference_data"];
+  const WARMING: EngineStatus = { state: "warming", phase: "weekly_prices", phaseIndex: 1, phases: PHASES, done: null, total: null, elapsedS: 5, phaseElapsedS: 1, error: null, retryable: false, managed: true };
+  const READY: EngineStatus = { ...WARMING, state: "ready", phase: null, phaseIndex: null };
+  type Engine = { now: EngineStatus };
+  const routes = (engine: Engine, extra: Record<string, any> = {}) => ({
+    ...BASE, "/api/engine/status": () => ({ body: engine.now }), "/api/drafts/7/program": VIEW, "/api/drafts/7/program/feasibility": { body: {} },
+    // like the real engine: while it is loading, the screen answers 503 with its state
+    "/api/drafts/7/program/screen": (init: any) => engine.now.state !== "ready"
+      ? { ok: false, status: 503, body: { detail: { engine: { state: "warming", phase: engine.now.phase } } } }
+      : (JSON.parse(init.body).table ? { ...RESULT, table: TABLE } : RESULT),
+    ...extra,
+  });
+  const screenCalls = (f: any) => f.mock.calls.filter((c: any) => c[0] === "/api/drafts/7/program/screen").length;
+  // let the first status poll land, so the view knows the engine's state before the user acts
+  const statusKnown = (f: any) => waitFor(() => expect(f.mock.calls.some((c: any) => c[0] === "/api/engine/status")).toBe(true)).then(() => new Promise((r) => setTimeout(r, 60)));
+  const run = () => fireEvent.click(screen.getByRole("button", { name: /Read my prompt and run it/ }));
+
+  it("queues the run instead of failing, shows the loading panel, and runs by itself when the engine is ready", async () => {
+    const engine: Engine = { now: WARMING };
+    const f = stub(routes(engine));
+    render(<InterpretationView draftId={7} promptText="some prompt" />);
+    await statusKnown(f);
+    run();
+    expect(await screen.findByText(/your run is queued and will start automatically/i)).toBeInTheDocument();
+    expect(screen.getByRole("status", { name: /data engine status/i })).toBeInTheDocument();
+    expect(screenCalls(f)).toBe(0);                                         // nothing was sent to the loading engine
+    expect(screen.queryByText(/failed|Internal Server Error|could not run/i)).toBeNull();
+    engine.now = READY;
+    expect(await screen.findByLabelText("dry run result", {}, { timeout: 6000 })).toBeInTheDocument();
+    expect(screenCalls(f)).toBeGreaterThan(0);
+    expect(screen.queryByRole("status", { name: /data engine status/i })).toBeNull();   // the panel gives way to the results
+  }, 15000);
+
+  it("Cancel run drops the queued run: nothing is sent when the engine becomes ready", async () => {
+    const engine: Engine = { now: WARMING };
+    const f = stub(routes(engine));
+    render(<InterpretationView draftId={7} promptText="some prompt" />);
+    await statusKnown(f);
+    run();
+    fireEvent.click(await screen.findByRole("button", { name: /cancel run/i }));
+    engine.now = READY;
+    await new Promise((r) => setTimeout(r, 2200));
+    expect(screenCalls(f)).toBe(0);
+    expect(screen.queryByLabelText("dry run result")).toBeNull();
+  }, 15000);
+
+  it("an engine that answers 503 'loading' although it was said to be ready is queued and retried, not shown as an error", async () => {
+    const engine: Engine = { now: READY };
+    let first = true;
+    const f = stub(routes(engine, {
+      "/api/drafts/7/program/screen": (init: any) => {
+        if (JSON.parse(init.body).table) return { ...RESULT, table: TABLE };
+        if (first) {                                                         // the engine restarted behind the app's back
+          first = false; engine.now = WARMING; setTimeout(() => { engine.now = READY; }, 400);
+          return { ok: false, status: 503, body: { detail: { engine: { state: "warming", phase: "shares" } } } };
+        }
+        return RESULT;
+      },
+    }));
+    render(<InterpretationView draftId={7} promptText="some prompt" />);
+    await statusKnown(f);
+    run();
+    expect(await screen.findByLabelText("dry run result", {}, { timeout: 9000 })).toBeInTheDocument();
+    expect(screen.queryByText(/Internal Server Error|engine failed|could not run/i)).toBeNull();
+    expect(screenCalls(f)).toBeGreaterThanOrEqual(2);                        // asked again after the 503
+  }, 20000);
+
+  it("reopening a saved draft while the engine loads queues its run (the first status isn't known yet, so the 503 queues it) and runs it when ready", async () => {
+    const engine: Engine = { now: WARMING };
+    const f = stub(routes(engine));
+    render(<InterpretationView draftId={7} promptText="some prompt" hasProgram />);
+    expect(await screen.findByText(/your run is queued and will start automatically/i, {}, { timeout: 6000 })).toBeInTheDocument();
+    engine.now = READY;
+    expect(await screen.findByLabelText("dry run result", {}, { timeout: 6000 })).toBeInTheDocument();
+    expect(screen.queryByText(/Internal Server Error|engine failed|could not run/i)).toBeNull();
+    void f;
+  }, 20000);
+
+  it("once the engine is ready but the screen is still computing, says it is running (never an empty page), then shows the results", async () => {
+    const engine: Engine = { now: READY };
+    let release: (v: unknown) => void = () => {};
+    const slow = new Promise((r) => { release = r; });
+    const f = stub(routes(engine, {
+      "/api/drafts/7/program/screen": async (init: any) => {
+        if (JSON.parse(init.body).table) return { ...RESULT, table: TABLE };
+        await slow;                                                          // the first screen after a start takes ~30s
+        return RESULT;
+      },
+    }));
+    render(<InterpretationView draftId={7} promptText="some prompt" />);
+    await statusKnown(f);
+    run();
+    const panel = await screen.findByRole("status", { name: /running your screen/i });
+    expect(panel).toHaveAttribute("aria-busy", "true");
+    expect(within(panel).getByText(/the data is ready/i)).toBeInTheDocument();
+    expect(screen.queryByText(/your run is queued|loading market data/i)).toBeNull();   // not the loading panel: the engine is ready
+    expect(screen.queryByLabelText("dry run result")).toBeNull();
+    release(null);
+    expect(await screen.findByLabelText("dry run result")).toBeInTheDocument();
+    expect(screen.queryByRole("status", { name: /running your screen/i })).toBeNull();
+  }, 15000);
+
+  it("a re-run keeps the old results on screen and only notes that they are updating", async () => {
+    const engine: Engine = { now: READY };
+    let hold: Promise<unknown> | null = null, release: (v: unknown) => void = () => {};
+    const f = stub(routes(engine, {
+      "/api/drafts/7/program/screen": async (init: any) => {
+        if (JSON.parse(init.body).table) return { ...RESULT, table: TABLE };
+        if (hold) await hold;
+        return RESULT;
+      },
+    }));
+    render(<InterpretationView draftId={7} promptText="some prompt" />);
+    await statusKnown(f);
+    run();
+    await screen.findByLabelText("dry run result");
+    hold = new Promise((r) => { release = r; });
+    fireEvent.click(screen.getByRole("button", { name: /run again/i }));
+    expect(await screen.findByText(/updating results/i)).toBeInTheDocument();
+    expect(screen.getByLabelText("dry run result")).toBeInTheDocument();     // the previous answer stays visible
+    expect(screen.queryByRole("status", { name: /running your screen/i })).toBeNull();
+    release(null);
+    await waitFor(() => expect(screen.queryByText(/updating results/i)).toBeNull());
+  }, 15000);
 });

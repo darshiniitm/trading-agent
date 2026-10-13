@@ -115,9 +115,6 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
 
   return (
     <main>
-      <div className={styles.top}>
-        <h1 className={styles.draftBadge}>Draft {draftId ?? "…"} · not yet numbered</h1>
-      </div>
       {draftStatus && draftStatus !== "open" && <Banner role="status">This draft is {draftStatus}; it can no longer be confirmed.</Banner>}
 
       <Card title="Your prompt">
@@ -125,7 +122,7 @@ export function DraftEditor({ initialDraftId }: { initialDraftId?: number }) {
       </Card>
 
       {draftId && (
-        <InterpretationView draftId={draftId} promptText={promptText} hasProgram={hasProgram} onViewChange={setView}
+        <InterpretationView draftId={draftId} promptText={promptText} hasProgram={hasProgram} onViewChange={setView} onPromptTextChange={setPromptText}
           addonsExtra={
             <fieldset>
               <legend>Forward-test notes (optional)</legend>

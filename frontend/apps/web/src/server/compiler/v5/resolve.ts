@@ -15,9 +15,9 @@ const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
 
 // An indicator's standard settings (priority 3). Only the parameters with a conventional value are listed.
 export const STANDARD_SETTINGS: Record<string, Record<string, number>> = {
-  rsi: { length: 14 }, sma: { length: 20 }, ema: { length: 20 }, atr: { length: 14 },
+  rsi: { length: 14 }, adx: { length: 14 }, sma: { length: 20 }, ema: { length: 20 }, atr: { length: 14 },
   vstop: { length: 10, mult: 2 }, supertrend: { length: 10, mult: 3 }, macd: { fast: 12, slow: 26, signal: 9 },
-  bollinger: { length: 20, mult: 2 }, volume_avg: { length: 20 }, return_n: { bars: 1 }, dist_52w_high: { lookback: 52 },
+  bollinger: { length: 20, mult: 2 }, volume_avg: { length: 20, skip: 0 }, return_n: { bars: 1 }, dist_52w_high: { lookback: 52 },
 };
 const TRADED_VALUE_WINDOW = "8W";
 // "Outperforming" = sector return above the benchmark's; top_k is large so every sector above it is flagged.
@@ -175,6 +175,17 @@ export function resolveProgram(program: ScreenProgram, defaults: UserDefaults): 
   return cx.p;
 }
 
+function editedLabel(p: ScreenProgram, path: string, fallback: string): string {
+  let m: RegExpExecArray | null;
+  if ((m = /^conditions\.(C\d+)\.(rhs\.)?params\.(\w+)$/.exec(path))) {
+    const c = p.conditions.find((x) => x.id === m![1]);
+    const operand: any = m[2] ? c?.rhs : c?.lhs;
+    return `${condName(c)} ${(operand?.ind && paramMeta(operand.ind, m[3])?.label) || m[3]}`;
+  }
+  if ((m = /^conditions\.(C\d+)\.value$/.exec(path))) return `${condName(p.conditions.find((x) => x.id === m![1]))} cut-off`;
+  return fallback;
+}
+
 // A chip edit: the user replaces an assumed value. Goes through the same validated setter, becomes the
 // user's own answer (no longer an assumption), and anything the new value opens up is re-resolved.
 export function applyChipEdit(program: ScreenProgram, path: string, value: unknown, defaults: UserDefaults): ScreenProgram {
@@ -184,5 +195,9 @@ export function applyChipEdit(program: ScreenProgram, path: string, value: unkno
   p.needs_input = [...p.needs_input, { path, reason: "missing", ...(chip.options ? { options: chip.options } : {}) } as NeedsInputV5];
   p = applyProgramAnswer(p, path, value);
   p.assumptions = (p.assumptions ?? []).filter((a) => a.path !== path && !(path.endsWith("highlight.metric") && a.path.startsWith(path.replace(/metric$/, "rule."))));
-  return resolveProgram(p, defaults);
+  const resolved = resolveProgram(p, defaults);
+  // The new value stays visible as an "edited" chip: it can be changed again, and the label no longer quotes the old number.
+  const edited: Assumption = { path, label: editedLabel(resolved, path, chip.label), value, provenance: "edited", ...(chip.options ? { options: chip.options } : {}) };
+  resolved.assumptions = [...(resolved.assumptions ?? []).filter((a) => a.path !== path), edited].sort((a, b) => a.path.localeCompare(b.path));
+  return resolved;
 }

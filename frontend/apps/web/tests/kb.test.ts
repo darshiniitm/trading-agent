@@ -16,7 +16,7 @@ describe("knowledge repository", () => {
   it("registry.json contains exactly the implemented entries; proposed/unimplemented ones are not computable", () => {
     const impl = kbEntries().filter((e) => (e.kind === "indicator" || e.kind === "field") && e.engine.implemented).map((e) => e.id).sort();
     expect([...Object.keys(INDICATORS), ...Object.keys(FIELDS)].sort()).toEqual(impl);
-    for (const id of ["ichimoku", "adx", "pe"]) expect(INDICATORS[id] ?? FIELDS[id]).toBeUndefined();
+    for (const id of ["stochastic", "cci", "pe"]) expect(INDICATORS[id] ?? FIELDS[id]).toBeUndefined();
   });
 
   it("the weekly screener's own parameters are seeded as reviewed", () => {
@@ -67,14 +67,14 @@ describe("knowledge search", () => {
   });
 
   it("proposed entries are invisible to matching until reviewed, but findable by opting in", () => {
-    expect(search(idx, "ichimoku cloud")).toEqual([]);
+    expect(search(idx, "stochastic oscillator")).toEqual([]);
     const all = indexOf(["reviewed", "proposed"]);
-    expect(search(all, "ichimoku cloud", { kinds: ["indicator"] })[0].entry.id).toBe("ichimoku");
+    expect(search(all, "stochastic oscillator", { kinds: ["indicator"] })[0].entry.id).toBe("stochastic");
   });
 
   it("findMentions lists every entry in free text, longest alias first, without overlaps", () => {
-    const m = findMentions(buildIndex(kbEntries(), ["reviewed", "proposed"]), "Compute the exponential moving average and the Ichimoku Cloud", ["indicator"]);
-    expect(m.map((x) => x.entry.id)).toEqual(["ema", "ichimoku"]);
+    const m = findMentions(buildIndex(kbEntries(), ["reviewed", "proposed"]), "Compute the exponential moving average and the Stochastic Oscillator", ["indicator"]);
+    expect(m.map((x) => x.entry.id)).toEqual(["ema", "stochastic"]);
   });
 
   it("closest gives suggestions for an unknown phrase", () => {

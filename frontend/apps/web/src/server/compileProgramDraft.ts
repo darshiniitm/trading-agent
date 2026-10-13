@@ -10,6 +10,7 @@ import { toFiveSlots } from "@/server/compiler/v5/slots5";
 import { coverage } from "@/server/compiler/v5/coverage";
 import { learnFromClauseEdit, recordEdit, similarExamples } from "@/server/learning";
 import { makeClauseFallback, type CallModelFn } from "@/server/compiler/v5/fallback";
+import { makeModelReader } from "@/server/compiler/v5/modelRead";
 import { applyChipEdit, resolveProgram } from "@/server/compiler/v5/resolve";
 import { resolvedJson, toSlotConditions, type SlotCondition } from "@/server/compiler/v5/slots";
 import { getUserDefaults, type UserDefaults } from "@/server/userDefaults";
@@ -26,6 +27,8 @@ export type ProgramView = {
   // the interpreter's own account (plan §1, §3.2): plain-English reading, five slots with provenance, critic issues, coverage
   english: string; fiveSlots: ReturnType<typeof toFiveSlots>; issues: Issue[]; coverage: ReturnType<typeof coverage>;
   reader?: { calls: number; dropped: string[] };
+  // the local model could not be reached: the rules' reading stands and unread words are flagged (start Ollama and re-interpret)
+  modelError?: string;
 };
 
 export function viewOf(draft: DraftRow, defaults: UserDefaults): ProgramView {
@@ -52,12 +55,12 @@ export async function compileProgramDraft(raw: Database.Database, draftId: numbe
   const defaults = defaultsOf(raw, draft.userId);
   const examples: Example[] = useModel ? similarExamples(raw, draft.promptText, 4) : [];
   const r = await interpret(draft.promptText, {
-    defaults, fallback: useModel ? makeClauseFallback(callModel) : undefined,
+    defaults, fallback: useModel ? makeClauseFallback(callModel) : undefined, modelRead: useModel ? makeModelReader(callModel) : undefined,
     reader: useModel ? makeReader(callModel) : undefined, critic: useModel ? makeModelCritic(callModel) : undefined, examples,
   });
   const view = viewOf(saveProgramState(raw, draftId, { program: r.program, clauses: r.draft.clauses, normalised: r.draft.normalised }), defaults);
   // the model critic's issues are not stored with the draft; they ride along on this response
-  return { ...view, issues: r.issues, reader: r.reader };
+  return { ...view, issues: r.issues, reader: r.reader, ...(r.draft.modelError ? { modelError: r.draft.modelError } : {}) };
 }
 
 function load(raw: Database.Database, draftId: number) {

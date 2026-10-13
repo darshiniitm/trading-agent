@@ -16,6 +16,7 @@ import type { Fragment } from "./recognisers";
 export type InterpretOptions = {
   defaults?: UserDefaults; reader?: ReaderFn; critic?: CriticFn; examples?: Example[];
   fallback?: (text: string, start: number) => Promise<Fragment[]>;
+  modelRead?: import("./modelRead").ModelReadFn;
   maxRounds?: number;
   dryRun?: { asOf: string; screen?: Parameters<typeof dryRun>[2]; fetchFn?: typeof fetch };
 };
@@ -36,13 +37,14 @@ export async function interpret(text: string, opts: InterpretOptions = {}): Prom
   let rounds = 0;
 
   for (let round = 0; round <= maxRounds; round++) {
-    const draft = await compileProgram(text, { defaults: opts.defaults, reader: opts.reader, readerIssues: issuesForReader, examples: opts.examples, fallback: opts.fallback });
+    const draft = await compileProgram(text, { defaults: opts.defaults, reader: opts.reader, readerIssues: issuesForReader, examples: opts.examples, fallback: opts.fallback, modelRead: opts.modelRead });
     reader.calls += draft.reader?.calls ?? 0; reader.dropped.push(...(draft.reader?.dropped ?? []));
     const english = renderEnglish(draft.program);
     const found = new Map<string, Issue>();
     for (const i of ruleCritic(draft.normalised, draft.clauses, draft.program)) found.set(key(i), i);
-    // the model critic only runs when a model already read part of the prompt, or the rules found something to check
-    if (opts.critic && (draft.modelCalls > 0 || found.size > 0)) for (const i of await opts.critic(draft.normalised, english)) found.set(key(i), i);
+    // the model critic is a second opinion on a model's reading: it runs only when a model read part of the prompt.
+    // A prompt the rules read alone is already checked by ruleCritic, and a large local model takes minutes over the extra call.
+    if (opts.critic && draft.modelCalls > 0) for (const i of await opts.critic(draft.normalised, english)) found.set(key(i), i);
     const issues = [...found.values()];
     // fewer problems wins; a line still unread counts as one
     const score = (d: ProgramDraft, n: number) => n + d.clauses.filter((c) => c.status === "not_understood").length;

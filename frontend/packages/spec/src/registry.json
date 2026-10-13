@@ -1,0 +1,803 @@
+{
+  "fields": [
+    {
+      "kind": "field",
+      "name": "mcap_cr",
+      "label": "Market cap (cr)",
+      "required_params": []
+    },
+    {
+      "kind": "field",
+      "name": "traded_value_cr",
+      "label": "Median traded value (cr)",
+      "required_params": [
+        {
+          "name": "window",
+          "type": "week_window_str",
+          "label": "window",
+          "min": "1W",
+          "max": "52W"
+        }
+      ]
+    },
+    {
+      "kind": "field",
+      "name": "price",
+      "label": "Price",
+      "required_params": []
+    },
+    {
+      "kind": "field",
+      "name": "volume",
+      "label": "Volume",
+      "required_params": []
+    },
+    {
+      "kind": "field",
+      "name": "sector",
+      "label": "Sector",
+      "required_params": []
+    },
+    {
+      "kind": "field",
+      "name": "rs_rating",
+      "label": "RS rating",
+      "required_params": [
+        {
+          "name": "lookback",
+          "type": "int",
+          "label": "lookback bars",
+          "min": 20,
+          "max": 1000
+        }
+      ]
+    }
+  ],
+  "indicators": [
+    {
+      "kind": "indicator",
+      "name": "sma",
+      "label": "SMA",
+      "required_params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 1,
+          "max": 500
+        },
+        {
+          "name": "source",
+          "type": "enum",
+          "label": "price source",
+          "values": [
+            "open",
+            "high",
+            "low",
+            "close"
+          ]
+        }
+      ],
+      "positional_params": [
+        "length"
+      ],
+      "events": [
+        "cross_above",
+        "cross_any",
+        "cross_below"
+      ],
+      "outputs": [
+        "value"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    },
+    {
+      "kind": "indicator",
+      "name": "ema",
+      "label": "EMA",
+      "required_params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 1,
+          "max": 500
+        },
+        {
+          "name": "source",
+          "type": "enum",
+          "label": "price source",
+          "values": [
+            "open",
+            "high",
+            "low",
+            "close"
+          ]
+        }
+      ],
+      "positional_params": [
+        "length"
+      ],
+      "events": [
+        "cross_above",
+        "cross_any",
+        "cross_below"
+      ],
+      "outputs": [
+        "value"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    },
+    {
+      "kind": "indicator",
+      "name": "rsi",
+      "label": "RSI",
+      "required_params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 2,
+          "max": 100
+        }
+      ],
+      "positional_params": [
+        "length"
+      ],
+      "events": [
+        "cross_above",
+        "cross_any",
+        "cross_below"
+      ],
+      "outputs": [
+        "value"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    },
+    {
+      "kind": "indicator",
+      "name": "vstop",
+      "label": "VStop",
+      "required_params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 2,
+          "max": 100
+        },
+        {
+          "name": "mult",
+          "type": "float",
+          "label": "multiplier",
+          "min": 0.1,
+          "max": 10
+        },
+        {
+          "name": "source",
+          "type": "enum",
+          "label": "price source",
+          "values": [
+            "open",
+            "high",
+            "low",
+            "close"
+          ]
+        }
+      ],
+      "positional_params": [
+        "length",
+        "mult"
+      ],
+      "events": [
+        "cross_above",
+        "cross_any",
+        "cross_below",
+        "flip"
+      ],
+      "outputs": [
+        "value",
+        "stop_line"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": true
+    },
+    {
+      "kind": "indicator",
+      "name": "atr",
+      "label": "ATR",
+      "required_params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 1,
+          "max": 200
+        }
+      ],
+      "positional_params": [
+        "length"
+      ],
+      "events": [],
+      "outputs": [
+        "value"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    },
+    {
+      "kind": "indicator",
+      "name": "macd",
+      "label": "MACD",
+      "required_params": [
+        {
+          "name": "fast",
+          "type": "int",
+          "label": "fast length",
+          "min": 1,
+          "max": 200
+        },
+        {
+          "name": "slow",
+          "type": "int",
+          "label": "slow length",
+          "min": 2,
+          "max": 400
+        },
+        {
+          "name": "signal",
+          "type": "int",
+          "label": "signal length",
+          "min": 1,
+          "max": 100
+        },
+        {
+          "name": "source",
+          "type": "enum",
+          "label": "price source",
+          "values": [
+            "open",
+            "high",
+            "low",
+            "close"
+          ]
+        }
+      ],
+      "positional_params": [
+        "fast",
+        "slow",
+        "signal"
+      ],
+      "events": [
+        "cross_above",
+        "cross_any",
+        "cross_below"
+      ],
+      "outputs": [
+        "value",
+        "signal",
+        "hist"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    },
+    {
+      "kind": "indicator",
+      "name": "supertrend",
+      "label": "Supertrend",
+      "required_params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 2,
+          "max": 100
+        },
+        {
+          "name": "mult",
+          "type": "float",
+          "label": "multiplier",
+          "min": 0.1,
+          "max": 10
+        }
+      ],
+      "positional_params": [
+        "length",
+        "mult"
+      ],
+      "events": [
+        "cross_above",
+        "cross_any",
+        "cross_below",
+        "flip"
+      ],
+      "outputs": [
+        "value",
+        "stop_line"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": true
+    },
+    {
+      "kind": "indicator",
+      "name": "bollinger",
+      "label": "Bollinger Bands",
+      "required_params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 1,
+          "max": 500
+        },
+        {
+          "name": "mult",
+          "type": "float",
+          "label": "multiplier",
+          "min": 0.1,
+          "max": 10
+        },
+        {
+          "name": "source",
+          "type": "enum",
+          "label": "price source",
+          "values": [
+            "open",
+            "high",
+            "low",
+            "close"
+          ]
+        }
+      ],
+      "positional_params": [
+        "length",
+        "mult"
+      ],
+      "events": [
+        "cross_above",
+        "cross_any",
+        "cross_below"
+      ],
+      "outputs": [
+        "value",
+        "upper",
+        "lower"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    },
+    {
+      "kind": "indicator",
+      "name": "volume_avg",
+      "label": "Average volume",
+      "required_params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 1,
+          "max": 500
+        },
+        {
+          "name": "skip",
+          "type": "int",
+          "label": "bars to skip (1 = exclude the current bar)",
+          "min": 0,
+          "max": 5
+        }
+      ],
+      "positional_params": [
+        "length"
+      ],
+      "events": [],
+      "outputs": [
+        "value"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    },
+    {
+      "kind": "indicator",
+      "name": "return_n",
+      "label": "N-bar return %",
+      "required_params": [
+        {
+          "name": "bars",
+          "type": "int",
+          "label": "number of bars",
+          "min": 1,
+          "max": 500
+        },
+        {
+          "name": "source",
+          "type": "enum",
+          "label": "price source",
+          "values": [
+            "open",
+            "high",
+            "low",
+            "close"
+          ]
+        }
+      ],
+      "positional_params": [
+        "bars"
+      ],
+      "events": [],
+      "outputs": [
+        "value"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    },
+    {
+      "kind": "indicator",
+      "name": "dist_52w_high",
+      "label": "Distance from 52-bar high %",
+      "required_params": [
+        {
+          "name": "lookback",
+          "type": "int",
+          "label": "lookback bars",
+          "min": 2,
+          "max": 1000
+        }
+      ],
+      "positional_params": [
+        "lookback"
+      ],
+      "events": [],
+      "outputs": [
+        "value"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    },
+    {
+      "kind": "indicator",
+      "name": "adx",
+      "label": "ADX",
+      "required_params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 2,
+          "max": 100
+        }
+      ],
+      "positional_params": [
+        "length"
+      ],
+      "events": [
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "outputs": [
+        "value",
+        "plus_di",
+        "minus_di"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    },
+    {
+      "kind": "indicator",
+      "name": "ichimoku",
+      "label": "Ichimoku Cloud",
+      "required_params": [
+        {
+          "name": "tenkan",
+          "type": "int",
+          "label": "conversion line length",
+          "min": 1,
+          "max": 200
+        },
+        {
+          "name": "kijun",
+          "type": "int",
+          "label": "base line length",
+          "min": 1,
+          "max": 400
+        },
+        {
+          "name": "span_b",
+          "type": "int",
+          "label": "span B length",
+          "min": 1,
+          "max": 400
+        },
+        {
+          "name": "shift",
+          "type": "int",
+          "label": "cloud displacement",
+          "min": 1,
+          "max": 100
+        }
+      ],
+      "positional_params": [
+        "tenkan",
+        "kijun",
+        "span_b",
+        "shift"
+      ],
+      "events": [
+        "cross_above",
+        "cross_below",
+        "cross_any"
+      ],
+      "outputs": [
+        "value",
+        "tenkan",
+        "kijun",
+        "span_a",
+        "span_b",
+        "cloud_top",
+        "cloud_bottom"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    },
+    {
+      "kind": "indicator",
+      "name": "bar",
+      "label": "Price bar",
+      "required_params": [
+        {
+          "name": "source",
+          "type": "enum",
+          "label": "bar field",
+          "values": [
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume"
+          ]
+        }
+      ],
+      "positional_params": [],
+      "events": [],
+      "outputs": [
+        "value"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    },
+    {
+      "kind": "indicator",
+      "name": "high_n",
+      "label": "Highest high of N bars",
+      "required_params": [
+        {
+          "name": "lookback",
+          "type": "int",
+          "label": "lookback bars",
+          "min": 2,
+          "max": 1000
+        },
+        {
+          "name": "skip",
+          "type": "int",
+          "label": "bars to skip (1 = exclude the current bar)",
+          "min": 0,
+          "max": 5
+        }
+      ],
+      "positional_params": [
+        "lookback"
+      ],
+      "events": [],
+      "outputs": [
+        "value"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    },
+    {
+      "kind": "indicator",
+      "name": "low_n",
+      "label": "Lowest low of N bars",
+      "required_params": [
+        {
+          "name": "lookback",
+          "type": "int",
+          "label": "lookback bars",
+          "min": 2,
+          "max": 1000
+        },
+        {
+          "name": "skip",
+          "type": "int",
+          "label": "bars to skip (1 = exclude the current bar)",
+          "min": 0,
+          "max": 5
+        }
+      ],
+      "positional_params": [
+        "lookback"
+      ],
+      "events": [],
+      "outputs": [
+        "value"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    },
+    {
+      "kind": "indicator",
+      "name": "gap_up",
+      "label": "Gap above previous high",
+      "required_params": [],
+      "positional_params": [],
+      "events": [],
+      "outputs": [
+        "value"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    },
+    {
+      "kind": "indicator",
+      "name": "narrow_range",
+      "label": "Narrowest range of N bars",
+      "required_params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "bars",
+          "min": 2,
+          "max": 50
+        }
+      ],
+      "positional_params": [
+        "length"
+      ],
+      "events": [],
+      "outputs": [
+        "value"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    },
+    {
+      "kind": "indicator",
+      "name": "inside_day",
+      "label": "Inside bar",
+      "required_params": [],
+      "positional_params": [],
+      "events": [],
+      "outputs": [
+        "value"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    },
+    {
+      "kind": "indicator",
+      "name": "bb_squeeze",
+      "label": "Bollinger squeeze (bandwidth at its N-bar low)",
+      "required_params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 1,
+          "max": 500
+        },
+        {
+          "name": "mult",
+          "type": "float",
+          "label": "multiplier",
+          "min": 0.1,
+          "max": 10
+        },
+        {
+          "name": "lookback",
+          "type": "int",
+          "label": "lookback bars",
+          "min": 2,
+          "max": 1000
+        },
+        {
+          "name": "within",
+          "type": "int",
+          "label": "within the last N bars",
+          "min": 1,
+          "max": 100
+        }
+      ],
+      "positional_params": [
+        "length",
+        "mult"
+      ],
+      "events": [],
+      "outputs": [
+        "value",
+        "bandwidth"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    },
+    {
+      "kind": "indicator",
+      "name": "momentum_skip",
+      "label": "Return skipping recent bars",
+      "required_params": [
+        {
+          "name": "lookback",
+          "type": "int",
+          "label": "bars back",
+          "min": 2,
+          "max": 1000
+        },
+        {
+          "name": "skip",
+          "type": "int",
+          "label": "recent bars to skip",
+          "min": 0,
+          "max": 500
+        }
+      ],
+      "positional_params": [
+        "lookback",
+        "skip"
+      ],
+      "events": [],
+      "outputs": [
+        "value"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    },
+    {
+      "kind": "indicator",
+      "name": "turnover_avg",
+      "label": "Average traded value (cr)",
+      "required_params": [
+        {
+          "name": "length",
+          "type": "int",
+          "label": "length",
+          "min": 1,
+          "max": 500
+        }
+      ],
+      "positional_params": [
+        "length"
+      ],
+      "events": [],
+      "outputs": [
+        "value"
+      ],
+      "supports_partial_bar": false,
+      "can_supply_stop": false
+    }
+  ],
+  "ops": [
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "==",
+    "between",
+    "outside",
+    "flip",
+    "cross_above",
+    "cross_below",
+    "cross_any",
+    "rising",
+    "falling",
+    "up_over",
+    "down_over"
+  ],
+  "timeframes": [
+    "1D",
+    "1W",
+    "1M"
+  ]
+}

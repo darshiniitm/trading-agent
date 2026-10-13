@@ -6,3 +6,4 @@
 .inferred { border: 1.5px dashed var(--blue); }
 .chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-0); border: 1px solid var(--border-strong); border-radius: var(--r-md); padding: 4px 9px; font-size: 13px; color: var(--text-2); }
 .id { font-family: var(--font-mono); color: var(--accent); font-weight: 600; }
+.edited { background: var(--amber); }

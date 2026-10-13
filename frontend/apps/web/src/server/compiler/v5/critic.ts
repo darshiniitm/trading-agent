@@ -20,10 +20,15 @@ const programNumbers = (p: ScreenProgram): Set<number> => {
   const add = (v: unknown) => { if (typeof v === "number") s.add(v); else if (Array.isArray(v)) v.forEach(add); };
   const conds: any[] = [...p.conditions, ...(p.not_evaluable ?? []).map((n) => n.condition).filter(Boolean)];
   for (const c of conds) {
-    add(c.value); add(c.within_bars); add(c.bars);
+    add(c.value); add(c.within_bars); add(c.bars); add(c.rhs_mult);
     for (const o of [c.lhs, c.rhs]) if (o?.params) Object.values(o.params).forEach(add);
   }
-  for (const a of p.actions as any[]) { add(a.n); add(a.horizons_w); add(a.shift?.weeks && Math.abs(a.shift.weeks)); }
+  for (const a of p.actions as any[]) {
+    add(a.n); add(a.horizons_w); add(a.shift?.weeks && Math.abs(a.shift.weeks));
+    add(a.stop?.from_atr?.mult); add(a.target?.r_multiple); add(a.highlight?.top_n_per_group);
+  }
+  // a number the reading derives ("52 weeks = 252 sessions", "within 25% = x0.75") is accounted for by its assumption
+  for (const a of p.assumptions ?? []) for (const m of String(a.label).matchAll(/\d+(?:\.\d+)?/g)) s.add(Number(m[0]));
   (p.universe.index ?? "").match(/\d+/g)?.forEach((d) => s.add(Number(d)));
   return s;
 };
@@ -31,6 +36,7 @@ const indicatorsIn = (p: ScreenProgram): Set<string> => {
   const s = new Set<string>();
   const conds: any[] = [...p.conditions, ...(p.not_evaluable ?? []).map((n) => n.condition).filter(Boolean)];
   for (const c of conds) for (const o of [c.lhs, c.rhs]) if (o && "ind" in o) s.add(o.ind);
+  if ((p.actions as any[]).some((a) => a.stop?.from_atr)) s.add("atr");   // an ATR stop on a trade plan uses ATR
   return s;
 };
 
@@ -55,8 +61,12 @@ export function ruleCritic(norm: string, clauses: ClauseView[], p: ScreenProgram
     for (const cond of p.conditions) {
       if (!cond.phrase || !c.text.includes(cond.phrase)) continue;
       const below = /\b(below|under|less than)\b/i.test(cond.phrase), above = /\b(above|over|greater than|more than)\b/i.test(cond.phrase);
-      if (below && !above && cond.op && ![ "<", "<=", "outside"].includes(cond.op)) push("reversed", cond.phrase, `"below" was read as ${cond.op}`);
-      if (above && !below && cond.op && ![">", ">="].includes(cond.op) && !String(cond.op).startsWith("cross")) push("reversed", cond.phrase, `"above" was read as ${cond.op}`);
+      // an event or a derived reading ("crossover below the zero line", "above a rising average") is not a comparator
+      const isEvent = (o: { op?: unknown }) => !!o.op && (String(o.op).startsWith("cross") || o.op === "flip" || o.op === "up_over" || o.op === "down_over");
+      // a companion the crossover implies ("still above the signal line") carries its parent's phrase, so it shares the event's words
+      const derived = isEvent(cond) || p.conditions.some((o) => o !== cond && o.phrase === cond.phrase && isEvent(o));
+      if (below && !above && cond.op && !derived && !["<", "<=", "outside"].includes(cond.op)) push("reversed", cond.phrase, `"below" was read as ${cond.op}`);
+      if (above && !below && cond.op && !derived && ![">", ">="].includes(cond.op)) push("reversed", cond.phrase, `"above" was read as ${cond.op}`);
     }
   }
 
@@ -96,7 +106,7 @@ export function makeModelCritic(callModel: CallModelFn = callClaude): CriticFn {
 - "reversed": a direction, comparator or order is the opposite of the prompt.
 "phrase" must be copied exactly from the PROMPT (for "extra", the words of the reading that are not in the prompt cannot be quoted, so quote the nearest prompt words). Ignore wording differences, rounding and defaults the reading marks as assumed. If they agree, answer {"issues": []}. Respond with ONLY the JSON object.`;
     const user = `PROMPT:\n${norm}\n\nREADING:\n${english}`;
-    const raw = await callModel(system, user, CRITIC_JSON_SCHEMA);
+    const raw = await callModel(system, user, CRITIC_JSON_SCHEMA, { task: "critic" });
     try {
       const r = CriticOutputSchema.safeParse(JSON.parse(raw));
       if (!r.success) return [];

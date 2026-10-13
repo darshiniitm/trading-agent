@@ -1,0 +1,126 @@
+{
+ "TC01": [
+  "universe NIFTY 500",
+  "bar(close)@1D > sma(150,close)@1D",
+  "bar(close)@1D > sma(200,close)@1D",
+  "sma(150,close)@1D > sma(200,close)@1D",
+  "sma(200,close)@1D up_over null bars 21",
+  "sma(50,close)@1D > sma(150,close)@1D",
+  "sma(50,close)@1D > sma(200,close)@1D",
+  "bar(close)@1D > sma(50,close)@1D",
+  "bar(close)@1D >= low_n(252,0)@1D x1.3",
+  "bar(close)@1D >= high_n(252,0)@1D x0.75",
+  "rs_rating(252) >= 70"
+ ],
+ "TC02": [
+  "universe NIFTY 100",
+  "sma(50,close)@1D cross_above sma(200,close)@1D within 10",
+  "sma(50,close)@1D > sma(200,close)@1D"
+ ],
+ "TC03": [
+  "universe NIFTY 500",
+  "bar(close)@1D > high_n(252,1)@1D",
+  "bar(volume)@1D >= volume_avg(20,1)@1D x2"
+ ],
+ "TC15": [
+  "universe NIFTY 500",
+  "bar(close)@1W > sma(30,close)@1W",
+  "sma(30,close)@1W up_over null bars 4",
+  "bar(close)@1W > high_n(26,1)@1W",
+  "bar(volume)@1W >= volume_avg(10,1)@1W x2"
+ ],
+ "TC12": [
+  "universe NIFTY 200",
+  "momentum_skip(252,21)@1D > -100",
+  "action rank by=C1.value/desc",
+  "action limit n=20"
+ ],
+ "TC04": [
+  "universe NIFTY 100",
+  "bar(close)@1D > sma(200,close)@1D",
+  "rsi(2)@1D < 10"
+ ],
+ "TC05": [
+  "universe NIFTY 200",
+  "supertrend(10,3)@1D flip null within 3 long",
+  "adx(14)@1D > 25"
+ ],
+ "TC06": [
+  "universe NIFTY 200",
+  "macd(12,26,9,close)@1D cross_above macd(12,26,9,close).signal@1D within 2",
+  "macd(12,26,9,close)@1D > macd(12,26,9,close).signal@1D",
+  "macd(12,26,9,close)@1D < 0"
+ ],
+ "TC07": [
+  "universe NIFTY 500",
+  "bb_squeeze(20,2,126,5)@1D == 1",
+  "bar(close)@1D > bollinger(20,2,close).upper@1D"
+ ],
+ "TC08": [
+  "universe NIFTY 200",
+  "narrow_range(7)@1D == 1",
+  "inside_day()@1D == 1"
+ ],
+ "TC09": [
+  "universe NIFTY 200",
+  "ema(9,close)@1D cross_above ema(21,close)@1D within 3",
+  "ema(9,close)@1D > ema(21,close)@1D",
+  "bar(close)@1D > ema(200,close)@1D"
+ ],
+ "TC10": [
+  "universe NIFTY 200",
+  "ichimoku(9,26,52,26).tenkan@1D cross_above ichimoku(9,26,52,26).kijun@1D within 3",
+  "ichimoku(9,26,52,26).tenkan@1D > ichimoku(9,26,52,26).kijun@1D",
+  "bar(close)@1D > ichimoku(9,26,52,26).cloud_top@1D"
+ ],
+ "TC18": [
+  "universe NIFTY 200",
+  "ema(20,close)@1D > ema(50,close)@1D",
+  "ema(50,close)@1D > ema(200,close)@1D",
+  "bar(close)@1D >= ema(20,close)@1D",
+  "bar(close)@1D <= ema(20,close)@1D x1.02"
+ ],
+ "TC13": [
+  "universe NIFTY 500",
+  "bar(close)@1D <= low_n(252,0)@1D x1.1",
+  "rsi(14)@1D cross_above 30 within 3",
+  "rsi(14)@1D > 30"
+ ],
+ "TC14": [
+  "universe NIFTY 500",
+  "gap_up()@1D >= 0.02",
+  "bar(close)@1D > bar(open)@1D",
+  "bar(volume)@1D >= volume_avg(20,1)@1D x1.5"
+ ],
+ "TC11": [
+  "universe all",
+  "mcap_cr between [10000,50000]",
+  "vstop(10,2,close)@1W flip null within 1 long",
+  "rsi(14)@1W between [50,65]",
+  "action validate"
+ ],
+ "TC16": [
+  "universe NIFTY 500",
+  "bar(close)@1D > 0",
+  "action group_by ew_sector_return_vs_universe/20/top3"
+ ],
+ "TC17": [
+  "universe NIFTY 50",
+  "bar(close)@1D > ema(20,close)@1D",
+  "bar(close)@1D > ema(50,close)@1D",
+  "rsi(14)@1D > 55",
+  "action trade_plan entry=next_open stop=2xATR(14) target=2R"
+ ],
+ "TC19": [
+  "universe all",
+  "turnover_avg(20)@1D > 25",
+  "rsi(14)@1W > 60",
+  "bar(close)@1W > ema(20,close)@1W",
+  "mcap_cr between [10000,50000]"
+ ],
+ "TC20": [
+  "universe NIFTY 100",
+  "bar(close)@1D > sma(200,close)@1D",
+  "not evaluated: recognised: P/E ratio, Return on equity, not computable yet"
+ ]
+}

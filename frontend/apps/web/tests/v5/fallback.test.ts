@@ -10,7 +10,7 @@ const NONE = { conditions: [] };
 const wrap = (...c: unknown[]) => JSON.stringify({ conditions: c });
 const RSI = { kind: "condition", subject: "indicator", indicator: "rsi", timeframe: "1W", op: ">", direction: null,
   args: [{ name: "length", value: 14, phrase: "14" }, { name: "value", value: 60, phrase: "60" }], phrase: "RSI(14) is above 60" };
-const NO_COND = new Set(["universe+mcap", "indicators"]);
+const NO_COND = new Set(["universe+mcap", "indicators", "patterns"]);
 
 describe("golden set (recognisers on)", () => {
   it.each(GOLDEN.map((g) => [g.id, g] as const))("%s", async (_id, g) => {
@@ -32,7 +32,7 @@ describe("model fallback", () => {
 
   it("passes the JSON Schema as Ollama's structured output format, one line per call", async () => {
     const callModel = vi.fn().mockResolvedValue(wrap({ ...RSI, phrase: "relative strength (14) is above 60" }));
-    const d = await compileProgram("Weekly\nrelative strength (14) is above 60", { fallback: makeClauseFallback(callModel), disabledRecognisers: new Set(["indicators"]) });
+    const d = await compileProgram("Weekly\nrelative strength (14) is above 60", { fallback: makeClauseFallback(callModel), disabledRecognisers: new Set(["indicators", "patterns"]) });
     expect(callModel).toHaveBeenCalledTimes(1);
     expect(callModel.mock.calls[0][2]).toEqual(CLAUSE_JSON_SCHEMA);
     expect(callModel.mock.calls[0][1]).toContain("relative strength (14) is above 60");
@@ -41,7 +41,7 @@ describe("model fallback", () => {
 
   it("a verified model fragment compiles exactly like a recogniser's, and is marked as model-read", async () => {
     const line = "RSI(14) is above 60";
-    const d = await compileProgram(`Weekly\n${line}`, { fallback: makeClauseFallback(vi.fn().mockResolvedValue(wrap(RSI))), disabledRecognisers: new Set(["indicators"]) });
+    const d = await compileProgram(`Weekly\n${line}`, { fallback: makeClauseFallback(vi.fn().mockResolvedValue(wrap(RSI))), disabledRecognisers: new Set(["indicators", "patterns"]) });
     expect(canonicalConditions(d.program)).toEqual(["rsi(length=14)@1W > 60"]);
     expect(d.clauses[1].status).toBe("model");
     expect(() => verifyProgram(d.program, d.normalised)).not.toThrow();
@@ -50,7 +50,7 @@ describe("model fallback", () => {
   it("rejects a hallucinated number (retry carries the error), then 'not understood' — never a 422, never an invented value", async () => {
     const lie = { ...RSI, args: [{ name: "length", value: 21, phrase: "14" }, { name: "value", value: 60, phrase: "60" }] };
     const callModel = vi.fn().mockResolvedValue(wrap(lie));
-    const d = await compileProgram("Weekly\nRSI(14) is above 60", { fallback: makeClauseFallback(callModel), disabledRecognisers: new Set(["indicators"]) });
+    const d = await compileProgram("Weekly\nRSI(14) is above 60", { fallback: makeClauseFallback(callModel), disabledRecognisers: new Set(["indicators", "patterns"]) });
     expect(callModel).toHaveBeenCalledTimes(2);
     expect(callModel.mock.calls[1][1]).toMatch(/cannot be read from/);
     expect(d.program.unrecognised).toHaveLength(1);
@@ -59,9 +59,9 @@ describe("model fallback", () => {
 
   it("rejects a phrase that is not in the line and non-JSON output", async () => {
     const bad = { ...RSI, phrase: "something else entirely" };
-    const d1 = await compileProgram("Weekly\nRSI(14) is above 60", { fallback: makeClauseFallback(vi.fn().mockResolvedValue(wrap(bad))), disabledRecognisers: new Set(["indicators"]) });
+    const d1 = await compileProgram("Weekly\nRSI(14) is above 60", { fallback: makeClauseFallback(vi.fn().mockResolvedValue(wrap(bad))), disabledRecognisers: new Set(["indicators", "patterns"]) });
     expect(d1.program.unrecognised).toHaveLength(1);
-    const d2 = await compileProgram("Weekly\nRSI(14) is above 60", { fallback: makeClauseFallback(vi.fn().mockResolvedValue("not json")), disabledRecognisers: new Set(["indicators"]) });
+    const d2 = await compileProgram("Weekly\nRSI(14) is above 60", { fallback: makeClauseFallback(vi.fn().mockResolvedValue("not json")), disabledRecognisers: new Set(["indicators", "patterns"]) });
     expect(d2.program.unrecognised).toHaveLength(1);
   });
 
@@ -72,7 +72,7 @@ describe("model fallback", () => {
 
   it("a timeframe the line does not state is dropped, not trusted (the scope line supplies it)", async () => {
     const invented = { ...RSI, timeframe: "1D" };
-    const d = await compileProgram("Weekly\nRSI(14) is above 60", { fallback: makeClauseFallback(vi.fn().mockResolvedValue(wrap(invented))), disabledRecognisers: new Set(["indicators"]) });
+    const d = await compileProgram("Weekly\nRSI(14) is above 60", { fallback: makeClauseFallback(vi.fn().mockResolvedValue(wrap(invented))), disabledRecognisers: new Set(["indicators", "patterns"]) });
     expect(canonicalConditions(d.program)).toEqual(["rsi(length=14)@1W > 60"]);
   });
 
@@ -80,7 +80,7 @@ describe("model fallback", () => {
     const A = { kind: "condition", subject: "indicator", indicator: "vstop", timeframe: null, op: "flip", direction: "long", args: [{ name: "length", value: 10, phrase: "10" }, { name: "mult", value: 2, phrase: "2" }], phrase: "VStop 10,2 flipped" };
     const B = { kind: "condition", subject: "indicator", indicator: "rsi", timeframe: null, op: "between", direction: null, args: [{ name: "value.0", value: 50, phrase: "50" }, { name: "value.1", value: 65, phrase: "65" }], phrase: "RSI 50 to 65" };
     const callModel = vi.fn().mockResolvedValue(wrap(A, B));
-    const d = await compileProgram("Weekly\nVStop 10,2 flipped and RSI 50 to 65", { fallback: makeClauseFallback(callModel), disabledRecognisers: new Set(["indicators"]) });
+    const d = await compileProgram("Weekly\nVStop 10,2 flipped and RSI 50 to 65", { fallback: makeClauseFallback(callModel), disabledRecognisers: new Set(["indicators", "patterns"]) });
     expect(callModel).toHaveBeenCalledTimes(1);
     expect(canonicalConditions(d.program)).toEqual(["vstop(length=10,mult=2,source=?)@1W flip long", "rsi(length=?)@1W between 50,65"]);
   });

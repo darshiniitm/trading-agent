@@ -117,11 +117,15 @@ describe("a condition that cannot be evaluated is greyed out and the rest runs (
 });
 
 describe("editing a chip", () => {
-  it("replaces the assumed value with the user's, which is then no longer an assumption", async () => {
+  it("replaces the assumed value with the user's, which stays as an 'edited' chip so it can be changed again", async () => {
     const { program: p } = await compileProgram(SIX_LINES);
     const q = applyChipEdit(p, "conditions.C3.params.length", 21, BUILTIN_DEFAULTS);
     expect((q.conditions.find((c) => c.id === "C3")!.lhs as any).params.length).toBe(21);
-    expect(chip(q, "conditions.C3.params.length")).toBeUndefined();
+    expect(chip(q, "conditions.C3.params.length")).toMatchObject({ value: 21, provenance: "edited" });
+    expect(chip(q, "conditions.C3.params.length")!.label).not.toMatch(/\b14\b/);
+    const again = applyChipEdit(q, "conditions.C3.params.length", 34, BUILTIN_DEFAULTS);   // editable a second time
+    expect((again.conditions.find((c) => c.id === "C3")!.lhs as any).params.length).toBe(34);
+    expect(chip(again, "conditions.C3.params.length")).toMatchObject({ value: 34, provenance: "edited" });
     expect(q.answers).toContainEqual({ path: "conditions.C3.params.length" });
     expect(q.needs_input).toEqual([]);
   });

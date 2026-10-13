@@ -6,9 +6,10 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 // The Interpret view has its own tests; here it just reports a view upward, as it does after a compile.
 let reportView: (v: any) => void = () => undefined;
+let pushText: (t: string) => void = () => undefined;
 vi.mock("@/components/InterpretationView", () => ({
   InterpretationView: (props: any) => {
-    reportView = props.onViewChange;
+    reportView = props.onViewChange; pushText = props.onPromptTextChange;
     return <div data-testid="interpretation" data-has-program={String(props.hasProgram)} data-prompt={props.promptText}>{props.addonsExtra}</div>;
   },
 }));
@@ -33,7 +34,7 @@ describe("DraftEditor (v5)", () => {
   it("creates a draft; saving needs only a read prompt — no answers, hypothesis or kill criterion", async () => {
     stub({ "POST /api/drafts": () => ({ body: { draft_id: 5 } }) });
     render(<DraftEditor />);
-    await screen.findByText(/Draft 5/);
+    await screen.findByTestId("interpretation");
     const confirm = screen.getByRole("button", { name: /Save and assign Prompt ID/ });
     expect(confirm).toBeDisabled();
     expect(screen.getByRole("alert")).toHaveTextContent("Read your prompt first");
@@ -55,7 +56,7 @@ describe("DraftEditor (v5)", () => {
       "POST /api/drafts/5/confirm": (init) => { calls.push("confirm:" + init.body); return { status: 201, body: { prompt_id: 9, watchlist_id: 4, selection_warning: null } }; },
     });
     render(<DraftEditor />);
-    await screen.findByText(/Draft 5/);
+    await screen.findByTestId("interpretation");
     reportView(READY);
     fireEvent.change(screen.getByLabelText("hypothesis"), { target: { value: "mid-caps in an uptrend" } });
     fireEvent.change(screen.getByLabelText("kill criterion"), { target: { value: "negative after 13 weeks" } });
@@ -73,7 +74,7 @@ describe("DraftEditor (v5)", () => {
       "PATCH /api/drafts/5": () => ({ ok: false, status: 400, body: { error: "prompt_text must be 2000 characters or fewer" } }),
     });
     render(<DraftEditor />);
-    await screen.findByText(/Draft 5/);
+    await screen.findByTestId("interpretation");
     reportView(READY);
     fireEvent.change(screen.getByLabelText("hypothesis"), { target: { value: "h" } });
     fireEvent.change(screen.getByLabelText("kill criterion"), { target: { value: "k" } });
@@ -91,7 +92,7 @@ describe("DraftEditor (v5)", () => {
       "POST /api/drafts/5/confirm": () => ({ ok: false, status: 409, body: { error: "you already have a confirmed prompt with these exact conditions (Prompt 3)" } }),
     });
     render(<DraftEditor />);
-    await screen.findByText(/Draft 5/);
+    await screen.findByTestId("interpretation");
     reportView(READY);
     fireEvent.change(screen.getByLabelText("hypothesis"), { target: { value: "h" } });
     fireEvent.change(screen.getByLabelText("kill criterion"), { target: { value: "k" } });
@@ -103,7 +104,7 @@ describe("DraftEditor (v5)", () => {
   it("reopening a draft loads its prompt, hypothesis and kill criterion, and tells the view a program exists", async () => {
     stub({ "GET /api/drafts/8": () => ({ body: { draftId: 8, status: "open", promptText: "my prompt", hypothesis: "hh", killCriterion: "kk", program: { program_version: 5 } } }) });
     render(<DraftEditor initialDraftId={8} />);
-    await screen.findByText(/Draft 8/);
+    await screen.findByTestId("interpretation");
     expect(screen.getByLabelText("prompt text")).toHaveValue("my prompt");
     expect(screen.getByLabelText("hypothesis")).toHaveValue("hh");
     expect(screen.getByLabelText("kill criterion")).toHaveValue("kk");
@@ -118,5 +119,14 @@ describe("DraftEditor (v5)", () => {
     stub({ "GET /api/drafts/9": () => ({ ok: false, status: 404, body: { error: "draft not found" } }) });
     render(<DraftEditor initialDraftId={9} />);
     expect(await screen.findByText("draft not found")).toBeInTheDocument();
+  });
+
+  it("shows the prompt text the server rewrote after a line edit (never a stale textarea)", async () => {
+    stub({ "POST /api/drafts": () => ({ body: { draft_id: 5 } }) });
+    render(<DraftEditor />);
+    await screen.findByTestId("interpretation");
+    const { act } = await import("@testing-library/react");
+    act(() => pushText("Rank Nifty 200 by 12-month return (formula) excluding the most recent month"));
+    expect(screen.getByLabelText("prompt text")).toHaveValue("Rank Nifty 200 by 12-month return (formula) excluding the most recent month");
   });
 });

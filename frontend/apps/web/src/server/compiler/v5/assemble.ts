@@ -28,6 +28,7 @@ export function assemble(results: ClauseResult[], norm: string): Assembled {
   const ignored: ScreenProgram["ignored"] = [];
   const unrecognised: ScreenProgram["unrecognised"] = [];
   const trace: Assembled["trace"] = new Map();
+  const assumed: NonNullable<ScreenProgram["assumptions"]> = [];
   let universe: ScreenProgram["universe"] = { source: "nse_all" };
   let universeSeen = false;
   let scope: { tf: Tf; mode: "literal" | "latest" } | null = null;
@@ -130,7 +131,9 @@ export function assemble(results: ClauseResult[], norm: string): Assembled {
         addTrace(id, f.reason);
       } else if (f.kind === "noise") {
         ignored.push({ text: clause.text, reason: f.reason });
-        trace.set(id, { maps: [], questions: 0, ignored: f.reason });
+        const had = trace.get(id);
+        if (had && had.maps.length) had.maps.push(`ignored: ${f.reason}`);
+        else trace.set(id, { maps: [], questions: 0, ignored: f.reason });
       } else if (f.kind === "scope") {
         scope = { tf: f.tf, mode: f.mode };
         addTrace(id, `${f.tf === "1D" ? "daily" : f.tf === "1W" ? "weekly" : "monthly"} bars (applies to the lines below)`);
@@ -145,8 +148,16 @@ export function assemble(results: ClauseResult[], norm: string): Assembled {
         const rhs: any = f.rhs ? { ...f.rhs, tf: f.rhs.tf ?? scope?.tf ?? null } : f.rhs;
         const c: Cond = { id: cid, lhs, op: f.op, ...(f.value !== undefined ? { value: f.value } : {}), ...(rhs !== undefined ? { rhs } : {}),
           ...(f.dir ? { dir: f.dir } : {}), ...(f.within_bars !== undefined ? { within_bars: f.within_bars } : {}),
-          ...(f.emit ? { emit: f.emit } : {}), phrase: f.phrase };
+          ...(f.emit ? { emit: f.emit } : {}), ...(f.rhs_mult !== undefined ? { rhs_mult: f.rhs_mult } : {}),
+          ...(f.bars !== undefined ? { bars: f.bars } : {}), phrase: f.phrase };
         conds.push(c);
+        // a value the phrase only implies is not traced to words: it is listed as an editable assumption instead
+        for (const im of f.implied ?? []) {
+          const path = `conditions.${cid}.${im.path}`;
+          const value = im.value !== undefined ? im.value : valueAt(c, im.path);
+          if (value === undefined || value === null) continue;
+          if (!assumed.some((a) => a.path === path)) assumed.push({ path, label: im.label, value, provenance: "assumed" });
+        }
         meta.set(cid, { clauseId: id, clauseNumber: clause.number, phrase: f.phrase, field: isField, clauseText: clause.text });
         produced.push(cid);
         f.leaves.forEach((l) => leaves.push({ ...l, path: `conditions.${cid}.${l.path}` }));
@@ -158,6 +169,7 @@ export function assemble(results: ClauseResult[], norm: string): Assembled {
         if (f.ref.type === "description" && f.ref.stray) ignored.push({ text: f.ref.stray, reason: "stray word after a set reference" });
         const { set, extra } = resolveSet(f, id, aid);
         const a = buildAction(f, aid, set, conds, meta, (n) => addNeed(id, n), leaves, id);
+        for (const im of f.implied ?? []) assumed.push({ path: `actions.${aid}.${im.path}`, label: im.label, value: im.value, provenance: "assumed" });
         actions.push(a);
         extra.forEach((n) => addNeed(id, n));
         addTrace(id, `${aid}: ${describeAction(a, sets)}`);
@@ -172,7 +184,12 @@ export function assemble(results: ClauseResult[], norm: string): Assembled {
   if (sig.length > 0 && !sets.some((s) => sameIds(whereIds(s).filter((x) => !meta.get(x)!.field), sig))) qualified();
   else if (sig.length === 0 && conds.length > 0) ensureBase();
   // rank on an event_date needs the cross condition to emit it
-  actions.filter((a) => a.type === "rank").forEach((a) => {
+  actions.filter((a) => a.type === "rank" && a.by?.[0]?.key === "?.value").forEach((a) => {
+    const s = sets.find((x) => x.id === a.set);
+    const own = whereIds(s ?? ({ where: { all: [] } } as any)).filter((id) => !meta.get(id)!.field);
+    a.by[0].key = `${own[own.length - 1] ?? "C1"}.value`;
+  });
+  actions.filter((a) => a.type === "rank" && a.by?.[0]?.key !== undefined && String(a.by[0].key).startsWith("?.")).forEach((a) => {
     const s = sets.find((x) => x.id === a.set);
     const key = (a.by?.[0]?.key as string | undefined)?.split(".")[0];
     const c = conds.find((x) => x.id === key) ?? conds.find((x) => whereIds(s ?? ({ where: { all: [] } } as any)).includes(x.id) && x.rhs);
@@ -195,17 +212,34 @@ export function assemble(results: ClauseResult[], norm: string): Assembled {
     program_version: 5, universe, sets, conditions: conds, actions: actions as any,
     source_phrases: leaves.filter((l) => !isNull(l)).map((l) => ({ path: l.path, phrase: l.phrase, span: l.span })),
     needs_input, unsupported, ignored, unrecognised, answers: [],
+    ...(assumed.length ? { assumptions: assumed } : {}),
   };
   return { program, trace };
 }
 
 const isNull = (_l: Leaf) => false;
 
+/** Read a condition-relative path ("params.length", "rhs.params.skip", "tf", "rhs_mult") from a built condition. */
+function valueAt(c: any, path: string): unknown {
+  if (path === "tf") return c.lhs?.tf;
+  let node: any = c;
+  const parts = path.split(".");
+  if (parts[0] === "params") node = c.lhs;
+  else if (parts[0] === "rhs" && parts[1] === "params") node = c.rhs, parts.shift();
+  else if (parts[0] === "value" && parts.length === 2) { return Array.isArray(c.value) ? c.value[Number(parts[1])] : undefined; }
+  for (const k of parts) node = node?.[k];
+  return node;
+}
+
 function buildAction(f: ActionFrag, aid: string, set: string | null, conds: Cond[], meta: Map<string, any>,
                      need: (n: Need & { path: string }) => void, leaves: { path: string; phrase: string; span: Span }[], clauseId: string): Action {
   const base: any = { id: aid, type: f.action, set };
   const P = (p: string) => `actions.${aid}.${p}`;
   if (set === null && f.action !== "validate") need({ path: P("set"), reason: "missing" });
+  if (f.preset) {                      // the phrase fixed everything this action needs: nothing is left to ask
+    Object.assign(base, JSON.parse(JSON.stringify(f.preset)));
+    if (f.action === "trade_plan" || f.action === "group_by") return base;
+  }
   if (f.action === "group_by") {
     base.key = "sector";
     if (f.highlight) { base.highlight = { metric: null, rule: null }; need({ path: P("highlight.metric"), reason: "missing" }); }
@@ -227,7 +261,7 @@ function buildAction(f: ActionFrag, aid: string, set: string | null, conds: Cond
     if (f.horizons) leaves.push({ ...f.horizons.leaf, path: P("horizons_w") }); else need({ path: P("horizons_w"), reason: "missing" });
     delete base.set;
   } else if (f.action === "rank") {
-    base.by = f.rankKey ? [{ key: "?.event_date", order: f.rankOrder ?? "desc" }] : [];
+    base.by = f.rankKey ? [{ key: `?.${f.rankKey}`, order: f.rankOrder ?? "desc" }] : [];
     if (!f.rankKey) need({ path: P("by"), reason: "missing" });
   } else if (f.action === "limit") {
     base.n = f.n!.value; leaves.push({ ...f.n!.leaf, path: P("n") });
@@ -257,7 +291,7 @@ export function gapAnalysis(conds: Cond[], _actions: Action[]): { n: Need & { pa
       c.value.forEach((v, i) => { if (v === null || v === undefined) out.push({ n: { path: `conditions.${c.id}.value.${i}`, reason: "missing" }, condId: c.id }); });
     }
     if (c.op === null) { /* contradiction already raised by the recogniser */ }
-    else if (c.value === undefined && !c.rhs && !["flip", "cross_above", "cross_below", "cross_any", "rising", "falling"].includes(c.op)) {
+    else if (c.value === undefined && !c.rhs && !["flip", "cross_above", "cross_below", "cross_any", "rising", "falling", "up_over", "down_over"].includes(c.op)) {
       out.push({ n: { path: `conditions.${c.id}.value`, reason: "missing" }, condId: c.id });
     }
   }
@@ -269,10 +303,11 @@ const q = (v: unknown) => (v === null || v === undefined ? "?" : typeof v === "n
 
 function describeOperand(o: any): string {
   if (!o) return "?";
-  if ("field" in o) return ({ mcap_cr: "Market cap", traded_value_cr: "Traded value", price: "Price", volume: "Volume", sector: "Sector" } as any)[o.field] ?? o.field;
+  if ("field" in o) return ({ mcap_cr: "Market cap", traded_value_cr: "Traded value", price: "Price", volume: "Volume", sector: "Sector", rs_rating: "RS rating" } as any)[o.field] ?? o.field;
+  if (o.ind === "bar") return `the ${o.params?.source ?? "close"}`;
   const reg = INDICATORS[o.ind];
   const params = (reg?.required_params ?? []).map((p) => q(o.params[p.name])).join(", ");
-  return `${reg?.label ?? o.ind}(${params})`;
+  return `${reg?.label ?? o.ind}(${params})${o.output && o.output !== "value" ? ` ${o.output}` : ""}`;
 }
 export function describeCond(c: Cond): string {
   const unit = "field" in c.lhs && c.lhs.field === "mcap_cr" ? " cr" : "";
@@ -280,7 +315,9 @@ export function describeCond(c: Cond): string {
   const v = Array.isArray(c.value) ? `${q(c.value[0])}–${q(c.value[1])}${unit}` : c.value === undefined || c.value === null ? (c.rhs ? describeOperand(c.rhs) : "") : `${q(c.value)}${unit}`;
   if (c.op === null) return `${describeOperand(c.lhs)} — comparison unclear`;
   if (c.op === "flip") return `${describeOperand(c.lhs)}${tf} flips ${c.dir ?? ""}`.trim();
-  return `${describeOperand(c.lhs)}${tf} ${OPW[c.op] ?? c.op} ${v}`.trim();
+  if (c.op === "up_over" || c.op === "down_over") return `${describeOperand(c.lhs)}${tf} ${c.op === "up_over" ? "higher" : "lower"} than ${q(c.bars)} bars ago`;
+  const mult = c.rhs_mult !== undefined && c.rhs_mult !== 1 ? ` × ${q(Math.round(c.rhs_mult * 10000) / 10000)}` : "";
+  return `${describeOperand(c.lhs)}${tf} ${OPW[c.op] ?? c.op} ${v}${mult}`.trim();
 }
 export function describeAction(a: Action, sets: SetDef[]): string {
   const s = sets.find((x) => x.id === a.set);

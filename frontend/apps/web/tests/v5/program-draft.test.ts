@@ -43,7 +43,7 @@ describe("compileProgramDraft", () => {
     await compileProgramDraft(raw, id, { useModel: false });
     const v = editChip(raw, id, "conditions.C3.params.length", 21);
     expect((v.program.conditions[2].lhs as any).params.length).toBe(21);
-    expect(v.chips.some((c) => c.path === "conditions.C3.params.length")).toBe(false);
+    expect(v.chips.find((c) => c.path === "conditions.C3.params.length")).toMatchObject({ value: 21, provenance: "edited" });
     expect(v.chips.some((c) => c.path === "conditions.C2.params.source")).toBe(true);
     expect(getDraft(raw, id)!.program!.conditions[2].lhs).toMatchObject({ params: { length: 21 } });
   });
@@ -129,7 +129,7 @@ describe("routes", () => {
     expect(bad.status).toBe(400);
     const good = await answerRoute(post({ path: "conditions.C3.params.length", value: 21 }), ctx(id));
     expect(good.status).toBe(200);
-    expect((await good.json()).chips).toHaveLength(nChips - 1);
+    expect((await good.json()).chips).toHaveLength(nChips);
     const addon = await answerRoute(post({ liquidity: { mode: "floor", cr: 10 } }), ctx(id));
     expect((await addon.json()).addons.liquidity.enabled).toBe(true);
     const forged = JSON.stringify({ needs_input: [] });
@@ -143,5 +143,34 @@ describe("routes", () => {
     await compileRoute(post({}), ctx(id));
     expect((await answerRoute(post({ nope: 1 }), ctx(id))).status).toBe(400);
     expect((await answerRoute(post({ path: "conditions.C2.params.__proto__", value: 1 }), ctx(id))).status).toBe(400);
+  });
+});
+
+describe("momentum prompt with a pasted return formula", () => {
+  const plain = "Rank Nifty 200 by 12-month return excluding the most recent month and give me the top 20";
+  const withFormula = "Rank Nifty 200 by 12-month return (day n price - day0 price)*100/day0_price excluding the most recent month and give me the top 20 based on returns";
+  it("reads the formula as part of the momentum rule instead of dropping every rule", async () => {
+    const { compileProgram } = await import("@/server/compiler/v5/compileProgram");
+    for (const text of [plain, withFormula]) {
+      const d = await compileProgram(text, {});
+      expect(d.program.conditions.map((c: any) => c.lhs.ind)).toEqual(["momentum_skip"]);
+      expect(d.program.actions.map((a: any) => a.type)).toEqual(["rank", "limit"]);
+      expect(d.program.not_evaluable ?? []).toEqual([]);
+    }
+  });
+});
+
+describe("momentum chips can be edited repeatedly and each Apply re-resolves the rule", () => {
+  it("lookback, skip and cut-off all change, and stay editable", async () => {
+    raw = createTestDb();
+    const { draftId } = createDraft(raw, { userId: ensureOwnerUser(raw) });
+    updateDraft(raw, draftId, { promptText: "Rank Nifty 200 by 12-month return (day n price - day0 price)*100/day0_price excluding the most recent month and give me the top 20 based on returns" });
+    await compileProgramDraft(raw, draftId, { useModel: false });
+    for (const [path, v] of [["conditions.C1.params.lookback", 126], ["conditions.C1.params.skip", 10], ["conditions.C1.value", 0], ["conditions.C1.params.lookback", 63]] as const) {
+      const view = editChip(raw, draftId, path, v);
+      expect(view.chips.find((c) => c.path === path)).toMatchObject({ value: v, provenance: "edited" });
+    }
+    const c = getDraft(raw, draftId)!.program!.conditions[0] as any;
+    expect([c.lhs.params.lookback, c.lhs.params.skip, c.value]).toEqual([63, 10, 0]);
   });
 });

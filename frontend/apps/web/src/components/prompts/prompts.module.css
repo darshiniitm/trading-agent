@@ -14,3 +14,5 @@
 .blockAmber { color: var(--amber-text); font-size: 12.5px; }
 .blockRed { color: var(--negative); font-size: 12.5px; }
 .empty { color: var(--muted); padding: 20px 0; }
+.draftHead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }

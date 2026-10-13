@@ -1,6 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const mockDb = { marker: "db" };
+vi.mock("@/server/auth/requireUser", async () => (await import("./helpers/authMock")).authMockModule());
+vi.mock("@/server/auth/ownership", async () => (await import("./helpers/authMock")).ownershipMockModule());
 vi.mock("@/server/db/client", () => ({ db: () => mockDb }));
 vi.mock("@/server/drafts", () => ({
   createDraft: vi.fn(() => ({ draftId: 7 })),

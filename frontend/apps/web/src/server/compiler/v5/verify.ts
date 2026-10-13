@@ -8,7 +8,7 @@ const NAME = "[a-z][a-z0-9_]*";
 const FORBIDDEN = new Set(["__proto__", "constructor", "prototype"]);
 export const PATH_RE = [
   /^universe\.(source|index)$/,
-  new RegExp(`^conditions\\.C\\d+\\.(op|tf|rhs|within_bars|bars|value(\\.\\d+)?|params\\.${NAME}|rhs\\.params\\.${NAME})$`),
+  new RegExp(`^conditions\\.C\\d+\\.(op|tf|rhs|rhs_mult|within_bars|bars|value(\\.\\d+)?|params\\.${NAME}|rhs\\.params\\.${NAME})$`),
   /^actions\.A\d+\.(set|entry\.at|confidence\.method|confidence\.n_weeks|highlight\.metric|highlight\.lookback_weeks|highlight\.rule\.(rs_gt|top_k|gt)|stop\.from|shift\.weeks|horizons_w|by|n)$/,
 ];
 
@@ -66,7 +66,8 @@ export function verifyProgram(program: unknown, norm: string): ScreenProgram {
   }
 
   const byPath = new Map(p.source_phrases.map((s) => [s.path, s.phrase]));
-  const answered = new Set(p.answers.map((a) => a.path));
+  // a value the phrase only implies is listed as an assumption (with its reason) instead of being traced to words
+  const answered = new Set([...p.answers.map((a) => a.path), ...(p.assumptions ?? []).map((a) => a.path)]);
   for (const { path, value } of tracedLeafPaths(p)) {
     if (answered.has(path)) continue;
     const phrase = byPath.get(path);

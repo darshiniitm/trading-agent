@@ -4,7 +4,7 @@
 // number re-readable from its phrase. Anything that fails twice is "not understood" — never a 422.
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { callClaude } from "@/server/compiler/callModel";
+import { callClaude, type CallOpts } from "@/server/compiler/callModel";
 import { valueTracesToPhrase } from "../spanCheck";
 import { INDICATORS } from "./registry";
 import { timeframeOf, type CondFrag, type Fragment, type Leaf, type Need, type Tf } from "./recognisers";
@@ -139,7 +139,7 @@ export function toFragment(out: ClauseFragmentOutput, text: string, start: numbe
   throw new FallbackRejected("condition without a subject");
 }
 
-export type CallModelFn = (system: string, user: string, format?: object) => Promise<string>;
+export type CallModelFn = (system: string, user: string, format?: object, opts?: CallOpts) => Promise<string>;
 
 // One constrained call + one retry carrying the verification errors. Returns [] ("not understood")
 // if the model still can't produce a verifiable fragment.
@@ -149,7 +149,7 @@ export function makeClauseFallback(callModel: CallModelFn = callClaude) {
     let errors: string[] = [];
     for (let attempt = 1; attempt <= 2; attempt++) {
       const u = attempt === 1 ? user : `${user}\n\nYour previous answer was rejected: ${errors.join("; ")}. Answer again with only the corrected JSON.`;
-      const raw = await callModel(system, u, CLAUSE_JSON_SCHEMA);   // a model call that throws (Ollama down) is a real error, not "not understood"
+      const raw = await callModel(system, u, CLAUSE_JSON_SCHEMA, { task: "fallback" });   // a model call that throws (Ollama down) is a real error, not "not understood"
       try {
         const parsed = ClauseOutputSchema.safeParse(JSON.parse(raw));
         if (!parsed.success) { errors = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`); continue; }

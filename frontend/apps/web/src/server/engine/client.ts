@@ -1,11 +1,15 @@
 import type { ScreenProgram } from "spec";
 
 // The interpreter's bookkeeping (assumption chips, greyed-out rows) is the app's own; the engine only ever
-// sees the rules it has to run.
+// sees the rules it has to run — plus one fact it must not lose: a condition the prompt named but nothing can
+// evaluate ("P/E below 25") means no stock is a full match, so the engine reports its members as partial.
 export function forEngine<T>(program: T): T {
   if (!program || typeof program !== "object") return program;
-  const { assumptions: _a, not_evaluable: _n, ...rest } = program as any;
-  return rest as T;
+  const { assumptions: _a, not_evaluable, ...rest } = program as any;
+  const unsupported = (Array.isArray(not_evaluable) ? not_evaluable : [])
+    .filter((n: any) => n?.id === "unsupported")
+    .map((n: any) => ({ text: String(n.text), reason: String(n.reason) }));
+  return (unsupported.length ? { ...rest, unsupported } : rest) as T;
 }
 
 export const ENGINE_BASE_URL = process.env.ENGINE_BASE_URL ?? "http://127.0.0.1:8001";

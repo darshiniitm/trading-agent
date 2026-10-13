@@ -35,7 +35,7 @@ export function toFiveSlots(p: ScreenProgram): { conditions: FiveSlots[]; rank: 
       const inner = Object.entries(o.params ?? {}).map(([name, value]) => {
         const path = `${base}${prefix}params.${name}`;
         const a = assumed.get(path);
-        const status: SlotStatus = a ? (a === "inferred" ? "derived" : "assumed") : value === null || value === undefined ? "missing" : "from_prompt";
+        const status: SlotStatus = a ? (a === "edited" ? "from_prompt" : a === "inferred" ? "derived" : "assumed") : value === null || value === undefined ? "missing" : "from_prompt";
         const sugg = status === "from_prompt" ? [] : kb?.params.find((x) => x.name === name)?.common_values ?? [];
         return { name: prefix ? `rhs.${name}` : name, value, status, suggestions: sugg };
       });

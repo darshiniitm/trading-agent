@@ -1,6 +1,6 @@
 import styles from "./Provenance.module.css";
 
-export type Origin = "prompt" | "user_answer" | "user_convention" | "assumed" | "inferred";
+export type Origin = "prompt" | "user_answer" | "user_convention" | "assumed" | "inferred" | "edited";
 
 export const ORIGIN_LABEL: Record<Origin, string> = {
   prompt: "from the prompt",
@@ -8,6 +8,7 @@ export const ORIGIN_LABEL: Record<Origin, string> = {
   user_convention: "your convention",
   assumed: "assumed",
   inferred: "inferred",
+  edited: "edited by you",
 };
 
 // Decorative: the text label always travels with it, so colour/shape is never the only cue.

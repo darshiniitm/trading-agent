@@ -20,6 +20,8 @@ export default function PromptsPage() {
   const [selected, setSelected] = useState<number | null>(null);
   const [retiring, setRetiring] = useState<number | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
+  const [picked, setPicked] = useState<Set<number>>(new Set());
+  const [deleting, setDeleting] = useState<"selected" | "all" | null>(null);
   const mineQ = useQuery<PromptRow[]>({ queryKey: ["prompts", "mine"], queryFn: list("mine") });
   const draftsQ = useQuery<DraftRow[]>({ queryKey: ["prompts", "drafts"], queryFn: list("drafts") });
   const followingQ = useQuery<PromptRow[]>({ queryKey: ["prompts", "following"], queryFn: list("following") });
@@ -38,6 +40,15 @@ export default function PromptsPage() {
     if (!res.ok) return;
     const body = await res.json();
     if (body.warning) setWarning(String(body.warning));
+    void qc.invalidateQueries({ queryKey: ["prompts"] });
+  }
+  const togglePick = (id: number) => setPicked((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  async function deleteDrafts(mode: "selected" | "all") {
+    setDeleting(null);
+    const ids = drafts.map((d) => d.draftId).filter((id) => picked.has(id));
+    const res = await fetch("/api/drafts", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify(mode === "all" ? { all: true } : { ids }) });
+    if (!res.ok) { setWarning("Couldn't delete the drafts. Please try again."); return; }
+    setPicked(new Set());
     void qc.invalidateQueries({ queryKey: ["prompts"] });
   }
   async function toggleShare(promptId: number, shared: boolean) {
@@ -64,7 +75,25 @@ export default function PromptsPage() {
         </>
       )}
       {tab === "following" && <PromptGrid rows={following} mode="following" />}
-      {tab === "drafts" && <DraftCards drafts={drafts} />}
+      {tab === "drafts" && (
+        <>
+          {drafts.length > 0 && (
+            <div className={styles.bulk}>
+              <label><input type="checkbox" aria-label="select all drafts" checked={picked.size > 0 && drafts.every((d) => picked.has(d.draftId))}
+                onChange={(e) => setPicked(e.target.checked ? new Set(drafts.map((d) => d.draftId)) : new Set())} /> Select all</label>
+              <Button size={36} disabled={picked.size === 0} onClick={() => setDeleting("selected")}>Delete selected ({picked.size})</Button>
+              <Button size={36} onClick={() => setDeleting("all")}>Delete all ({drafts.length})</Button>
+            </div>
+          )}
+          <DraftCards drafts={drafts} selected={picked} onToggle={togglePick} />
+        </>
+      )}
+
+      <Dialog open={deleting !== null} onClose={() => setDeleting(null)}
+        title={deleting === "all" ? `Delete all ${drafts.length} drafts?` : `Delete ${picked.size} selected draft${picked.size === 1 ? "" : "s"}?`}
+        actions={<><Button onClick={() => setDeleting(null)}>Cancel</Button><Button variant="primary" onClick={() => deleting && void deleteDrafts(deleting)}>Delete</Button></>}>
+        <p>This permanently deletes the draft{deleting === "all" || picked.size !== 1 ? "s" : ""} and cannot be undone. Saved prompts with a Prompt ID are not affected.</p>
+      </Dialog>
 
       <Dialog open={retiring !== null} onClose={() => setRetiring(null)} title={`Retire Prompt ${retiring}?`}
         actions={<><Button onClick={() => setRetiring(null)}>Cancel</Button><Button variant="primary" onClick={() => retiring !== null && void retire(retiring)}>Retire</Button></>}>

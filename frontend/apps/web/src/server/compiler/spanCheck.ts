@@ -38,7 +38,8 @@ export function valueTracesToPhrase(value: unknown, phrase: string): boolean {
   if (typeof value === "number") return numbersIn(phrase).has(value);
   if (typeof value === "string") {
     const v = norm(value);
-    return norm(phrase).includes(v) || (STRING_ALIASES[v]?.test(norm(phrase)) ?? false);
+    const sq = (s: string) => s.replace(/\s+/g, "");
+    return norm(phrase).includes(v) || sq(norm(phrase)).includes(sq(v)) || (STRING_ALIASES[v]?.test(norm(phrase)) ?? false);
   }
   return false;
 }

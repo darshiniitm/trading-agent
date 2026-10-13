@@ -1,5 +1,8 @@
 import { z } from "zod";
+import { rateLimited } from "@/server/rateLimit";
 import { db } from "@/server/db/client";
+import { withUser } from "@/server/auth/requireUser";
+import { ownsDraft } from "@/server/auth/ownership";
 import { editChip, editProgramClause, setAddon } from "@/server/compileProgramDraft";
 
 // Nothing here is an answer to a question: {path, value} replaces one assumed value (a chip), {liquidity} /
@@ -11,7 +14,7 @@ const Body = z.union([
   z.object({ edit: z.object({ clause_id: z.string().min(1), text: z.string().min(1).max(500) }).strict() }).strict(),
 ]);
 
-export async function POST(req: Request, { params }: { params: { draftId: string } }) {
+async function handle(req: Request, { params }: { params: { draftId: string } }) {
   let json: unknown;
   try { json = await req.json(); } catch { return Response.json({ error: "request body must be JSON" }, { status: 400 }); }
   const body = Body.safeParse(json);
@@ -27,4 +30,12 @@ export async function POST(req: Request, { params }: { params: { draftId: string
   } catch (err) {
     return Response.json({ error: (err as Error).message }, { status: 400 });
   }
+}
+
+export async function POST(req: Request, ctx: { params: { draftId: string } }) {
+  const raw = db();
+  return withUser(raw, req, (user) => {
+    if (!ownsDraft(raw, user.userId, Number(ctx.params.draftId))) return Response.json({ error: "draft not found" }, { status: 404 });
+    return rateLimited(user.userId, "model") ?? handle(req, ctx);
+  });
 }

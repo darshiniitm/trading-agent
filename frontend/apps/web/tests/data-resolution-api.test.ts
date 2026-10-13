@@ -46,14 +46,16 @@ describe("draft-level data resolution calls", () => {
 describe("routes", () => {
   it("POST feasibility validates the body", async () => {
     const raw = createTestDb(); (globalThis as any).__raw = raw;
+    const draftId = String(readyDraft(raw));
     const { POST } = await import("@/../app/api/drafts/[draftId]/program/feasibility/route");
-    const res = await POST(new Request("http://x", { method: "POST", body: JSON.stringify({ as_of: "nope" }) }), { params: { draftId: "1" } });
+    const res = await POST(new Request("http://x", { method: "POST", body: JSON.stringify({ as_of: "nope" }) }), { params: { draftId } });
     expect(res.status).toBe(400);
   });
   it("POST upload validates the body", async () => {
     const raw = createTestDb(); (globalThis as any).__raw = raw;
+    const draftId = String(readyDraft(raw));
     const { POST } = await import("@/../app/api/drafts/[draftId]/program/upload/route");
-    const res = await POST(new Request("http://x", { method: "POST", body: JSON.stringify({ name: 1 }) }), { params: { draftId: "1" } });
+    const res = await POST(new Request("http://x", { method: "POST", body: JSON.stringify({ name: 1 }) }), { params: { draftId } });
     expect(res.status).toBe(400);
   });
 });

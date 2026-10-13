@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("@/server/auth/requireUser", async () => (await import("./helpers/authMock")).authMockModule());
+vi.mock("@/server/auth/ownership", async () => (await import("./helpers/authMock")).ownershipMockModule());
 vi.mock("@/server/db/client", () => ({ db: () => ({ marker: "db" }) }));
 vi.mock("@/server/confirm", () => ({
   confirmDraft: vi.fn(async () => ({ promptId: 4, watchlistId: 7, selectionWarning: "prompt confirmed, but selection could not run yet: engine down" })),

@@ -34,7 +34,7 @@ export async function wikipediaSnippet(term: string, fetchFn: typeof fetch = fet
 export async function curateTerm(term: string, opts: { callModel?: CallModelFn; snippet: Snippet; now?: Date }): Promise<IndicatorKb> {
   const call = opts.callModel ?? callClaude;
   const system = `You turn a short reference text about a technical-analysis term into a catalogue entry. Use ONLY the text and standard conventions for parameter names; set "is_indicator" false if the term is not a computable indicator. Parameters must be numeric, with a sensible min/max and up to 6 common values. "warmup_bars" is a sum of parameter names and numbers ("length + 1"). Respond with ONLY the JSON object.`;
-  const raw = await call(system, `Term: ${term}\nReference text:\n${opts.snippet.text}`, CURATE_JSON_SCHEMA);
+  const raw = await call(system, `Term: ${term}\nReference text:\n${opts.snippet.text}`, CURATE_JSON_SCHEMA, { task: "curate" });
   const r = CurateSchema.safeParse(JSON.parse(raw));
   if (!r.success) throw new CurateRejected(r.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "));
   const c = r.data;

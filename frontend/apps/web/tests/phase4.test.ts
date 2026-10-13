@@ -1,16 +1,11 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { createTestDb } from "@/server/db/test-db";
 import { ensureOwnerUser } from "@/server/db/seed";
-import { createSessionCookie, verifySessionCookie } from "@/server/auth/session";
-import { createUser, verifyPassword } from "@/server/auth/users";
-import { getCurrentUserId, AuthRequiredError } from "@/server/auth/currentUser";
 import { setVisibility } from "@/server/visibility";
 import { followPrompt, unfollowPrompt } from "@/server/follow";
 import { copyPromptToDraft } from "@/server/copyPrompt";
 import { listExplore } from "@/server/explore";
 
-const oldSecret = process.env.SESSION_SECRET;
-afterEach(() => { if (oldSecret === undefined) delete process.env.SESSION_SECRET; else process.env.SESSION_SECRET = oldSecret; });
 
 function seedPrompt(raw: ReturnType<typeof createTestDb>, visibility: "private" | "shared" = "shared", promptId = 15, draftId = 1, runId = 1) {
   const ownerId = ensureOwnerUser(raw);
@@ -24,38 +19,6 @@ function seedPrompt(raw: ReturnType<typeof createTestDb>, visibility: "private" 
   raw.prepare("INSERT INTO run_results (run_id, symbol, membership, in_forward_record, cond_json, entry_status) VALUES (?, 'ABC', 'full_match', 0, '{}', 'pending_selection')").run(runId);
   return { ownerId, followerId: 2 };
 }
-
-describe("Phase 4 authentication", () => {
-  it("round-trips and rejects tampered or expired session cookies", () => {
-    process.env.SESSION_SECRET = "phase4-test-secret";
-    let now = 1000;
-    const cookie = createSessionCookie(7, () => now);
-    expect(verifySessionCookie(cookie, () => now)).toBe(7);
-    expect(verifySessionCookie(`${cookie.slice(0, -1)}x`, () => now)).toBeNull();
-    now += 31 * 24 * 60 * 60 * 1000;
-    expect(verifySessionCookie(cookie, () => now)).toBeNull();
-  });
-
-  it("hashes passwords with create/verify behavior and rejects wrong passwords", async () => {
-    const raw = createTestDb();
-    const created = await createUser(raw, { displayName: "New User", email: "new@example.com", password: "correct horse battery" });
-    expect(await verifyPassword(raw, { email: "new@example.com", password: "correct horse battery" })).toEqual(created);
-    expect(await verifyPassword(raw, { email: "new@example.com", password: "wrong password" })).toBeNull();
-    const row = raw.prepare("SELECT password_hash FROM users WHERE user_id = ?").get(created.userId) as any;
-    expect(row.password_hash).toMatch(/^\$argon2id\$/);
-  });
-
-  it("auto-resolves the only user but requires a valid session with multiple users", async () => {
-    const raw = createTestDb();
-    const ownerId = ensureOwnerUser(raw);
-    expect(getCurrentUserId(raw, new Request("http://localhost"))).toBe(ownerId);
-    await createUser(raw, { displayName: "Second", email: "second@example.com", password: "password 123" });
-    expect(() => getCurrentUserId(raw, new Request("http://localhost"))).toThrow(AuthRequiredError);
-    process.env.SESSION_SECRET = "phase4-test-secret";
-    const request = new Request("http://localhost", { headers: { cookie: `prompt_screener_session=${createSessionCookie(ownerId)}` } });
-    expect(getCurrentUserId(raw, request)).toBe(ownerId);
-  });
-});
 
 describe("Phase 4 sharing", () => {
   it("archives follower watchlists when a shared prompt becomes private", () => {

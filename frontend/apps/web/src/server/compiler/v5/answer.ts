@@ -65,6 +65,14 @@ export function applyProgramAnswer(program: ScreenProgram, path: string, value: 
         const arr = Array.isArray(c.value) ? c.value : [null, null];
         arr[Number(pm[1])] = n; c.value = arr;
       } else c.value = n;
+    } else if (rest === "rhs_mult") {
+      const n = numberOf(value);
+      if (n <= 0) throw new AnswerError("the multiple must be positive");
+      c.rhs_mult = n;
+    } else if (rest === "within_bars" || rest === "bars") {
+      const n = numberOf(value);
+      if (!Number.isInteger(n) || n < 1) throw new AnswerError("must be a whole number of at least 1");
+      (c as any)[rest] = n;
     } else if (rest === "rhs") {
       throw new AnswerError("name the second indicator in the prompt and compile again");
     } else {

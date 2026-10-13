@@ -1,12 +1,12 @@
 import { db } from "@/server/db/client";
 import { listPrompts } from "@/server/listPrompts";
-import { getCurrentUserId, AuthRequiredError } from "@/server/auth/currentUser";
+import { withUser } from "@/server/auth/requireUser";
 
 export async function GET(req: Request) {
-  try {
+  const raw = db();
+  return withUser(raw, req, (user) => {
     const viewParam = new URL(req.url).searchParams.get("view");
     const view = viewParam === "drafts" || viewParam === "following" ? viewParam : "mine";
-    const raw = db();
-    return Response.json(listPrompts(raw, { userId: getCurrentUserId(raw, req), view }));
-  } catch (error) { if (error instanceof AuthRequiredError) return Response.json({ error: "sign in required" }, { status: 401 }); throw error; }
+    return Response.json(listPrompts(raw, { userId: user.userId, view }));
+  });
 }

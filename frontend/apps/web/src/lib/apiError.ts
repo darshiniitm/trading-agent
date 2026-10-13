@@ -1,3 +1,5 @@
+import { isWarmingBody } from "@/lib/engineStatus";
+
 // The API surface a page's fetch() can see is a mix of four shapes:
 // - this app's own routes: {"error": "<message>"}
 // - the engine's 422 passed through verbatim: {"detail": [{"condition_id", "message"}, ...]}
@@ -6,6 +8,8 @@
 // describeApiError normalizes all four into one readable line.
 export function describeApiError(body: unknown, fallback: string): string {
   if (typeof body === "string") return body;
+  // the engine is still loading its data (503): never shown as a failure, the app has a loading state for it
+  if (isWarmingBody(body)) return "The data engine is still loading market data. Your run will start as soon as it is ready.";
   if (body && typeof body === "object") {
     const obj = body as Record<string, unknown>;
     if (typeof obj.error === "string") return obj.error;
