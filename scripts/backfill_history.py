@@ -1,6 +1,6 @@
 """
 Backfill daily OHLCV from a fixed start date (default 2019-01-01) for the whole universe plus the
-benchmark, into data_cache/daily_ohlcv_since_<start>.parquet
+benchmark, into <cache_dir>/daily_ohlcv_since_<start>.parquet
 (docs/open-decisions-implementation-plan.md §4, decision D1: "fetch from 2019 onwards").
 
 Weekly history for the dev and holdout_ext segments is then built from these daily bars with
@@ -8,9 +8,14 @@ src/data/resample.py:daily_to_weekly — NOT from yfinance interval="1wk", whose
 a Monday holiday report the previous Friday's close as the week's open (see findings 2026-09-16).
 
 Needs network (run on your Mac):
-    .venv/bin/python scripts/backfill_history.py [--start 2019-01-01] [--chunk 50]
+    .venv/bin/python scripts/backfill_history.py [--start 2019-01-01] [--chunk 50] [--config config/rules.yaml]
 
-Does not touch data_cache/weekly_ohlcv_260w.parquet or daily_ohlcv_1820d.parquet (the live and
+--config selects which rule spec's universe/adapter/cache_dir to use (default config/rules.yaml,
+Control — unchanged behavior). Pass --config config/rules_literal.yaml --start 2024-01-01 to
+backfill Literal's full-NSE daily history into data_cache_literal/ instead (one function,
+config-driven, per HARNESS §2 — not a forked copy of this script).
+
+Does not touch <cache_dir>/weekly_ohlcv_260w.parquet or daily_ohlcv_1820d.parquet (the live and
 forward-test caches).
 """
 from __future__ import annotations
@@ -53,9 +58,10 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--start", default="2019-01-01")
     ap.add_argument("--chunk", type=int, default=50)
+    ap.add_argument("--config", default="config/rules.yaml")
     args = ap.parse_args()
 
-    rule_spec = load_rule_spec(str(ROOT / "config" / "rules.yaml"))
+    rule_spec = load_rule_spec(str(ROOT / args.config))
     adapter = build_adapter(rule_spec)
     tickers = adapter.nse_equities_pit(as_of=None)["ticker"].tolist()
     tickers.append(rule_spec["sector"]["benchmark_ticker"])

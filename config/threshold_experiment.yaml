@@ -12,3 +12,13 @@ control_cap_pct: 15            # must equal rules.yaml trade.max_r_pct * 100 (as
 cap_inclusive: true            # a name with R/EP exactly == cap is SELECTED (build_trades rejects only R/EP > cap)
 primary_metric: equal_weight_net_pct   # per arm: selected basket and rejected basket, equal weight
 checksum: 'sha256:262b4c344c8d421b135983710b986473aeabc333b51dca0594c53bef9da43767'
+
+# Decided 26 Sep 2026 (docs/literal-spec-plan.md decision 2; not covered by the checksum
+# above, which locks only experiment/caps_pct/control_cap_pct/cap_inclusive/primary_metric):
+# Control's forward recording is winding down (see tests/track_forward.py:CONTROL_WIND_DOWN)
+# in favor of the new Literal spec. This experiment derives every arm solely from Control's
+# own weekly picks file (HARNESS.md §12) and needs 26 forward weeks to reach its graduation
+# gate; only 1 forward week is recorded so far. It cannot reach that gate before Control's
+# recording ends and is orphaned as a deliberate, logged consequence of that decision -- see
+# docs/forward_test_findings.md, 2026-09-26 entry.
+status: orphaned_insufficient_forward_weeks

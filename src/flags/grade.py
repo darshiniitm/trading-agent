@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from src.data.holding_week import corrected_week_bar
 from tests.track_forward import _grade_rows
 
 COST_PCT_ROUND_TRIP = 0.005
@@ -33,11 +34,16 @@ def grade_matrix(df: pd.DataFrame, rule_spec: dict, adapter, panels: dict, as_of
     evaluable = df[df["eligible_reason"].isna()].copy()
     cost = rule_spec["validation"]["costs_pct_round_trip"] / 100
 
+    # D7: prefer the holding week's own daily sessions for EP/low/close (see
+    # src/data/holding_week.py); adapter.daily_ohlcv() is the same cache T1 already uses.
+    daily_panels = adapter.daily_ohlcv(evaluable["ticker"].tolist(), rule_spec["data"]["history_weeks"] * 7) \
+        if not evaluable.empty else {}
+
     control_style_rows = []
     for _, r in evaluable.iterrows():
         sl = r["vstop_line"] if bool(r["uptrend"]) else None
         control_style_rows.append({"ticker": r["ticker"], "vstop_line_SL": sl})
-    graded_control, missing_control = _grade_rows(control_style_rows, panels, as_of, cost)
+    graded_control, missing_control = _grade_rows(control_style_rows, panels, as_of, cost, daily_panels)
     control_by_ticker = {g["ticker"]: g for g in graded_control}
 
     out_rows = []
@@ -56,16 +62,19 @@ def grade_matrix(df: pd.DataFrame, rule_spec: dict, adapter, panels: dict, as_of
             out_rows.append(row)
             continue
 
-        EP = float(bar["open"])
-        oc_ret_net = (float(bar["close"]) - EP) / EP - cost
+        week_start = pd.Timestamp(bar["date"])
+        corrected = corrected_week_bar(ticker, daily_panels, week_start,
+                                        float(bar["open"]), float(bar["low"]), float(bar["close"]))
+        EP, week_low, week_close = corrected["open"], corrected["low"], corrected["close"]
+        oc_ret_net = (week_close - EP) / EP - cost
         ctrl = control_by_ticker.get(ticker)
 
         row.update({
             "EP_actual": round(EP, 4), "week_open": round(EP, 4),
-            "week_high": round(float(bar["high"]), 4), "week_low": round(float(bar["low"]), 4),
-            "week_close": round(float(bar["close"]), 4),
+            "week_high": round(float(bar["high"]), 4), "week_low": round(week_low, 4),
+            "week_close": round(week_close, 4), "ep_source": corrected["source"],
             "exit_reason": ctrl["exit_reason"] if ctrl else "week_close",
-            "exit_price": ctrl["exit_price"] if ctrl else round(float(bar["close"]), 4),
+            "exit_price": ctrl["exit_price"] if ctrl else round(week_close, 4),
             "fwd_ret_oc_net_pct": round(oc_ret_net * 100, 3),
             "fwd_ret_control_exit_net_pct": ctrl["ret_pct_net"] if ctrl else None,
             "graded_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),

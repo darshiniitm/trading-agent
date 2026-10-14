@@ -118,18 +118,23 @@ def test_rsi_streaming_equals_batch(seed):
 
 # ---------------------------------------------------------------- edge cases
 
-def test_rsi_flat_series_is_neutral_not_100():
+def test_rsi_flat_series_matches_tradingview_100():
     """
-    A perfectly flat series has no gains AND no losses. RSI is conventionally
-    undefined -> 50 (neutral), never 100. Returning 100 is wrong, and 100 is a
-    value that a '>= 50' half-band would accept.
+    A perfectly flat series has no gains AND no losses. TradingView's Pine v6 RSI
+    (`down == 0 ? 100 : ...`) returns 100 unconditionally in this case -- confirmed
+    against the real source 2026-09-29. This supersedes the old "D4" (26 Sep 2026)
+    neutral-50 override: an Explore agent confirmed the flat condition never fires
+    on any real screening candidate (only on suspended/illiquid tickers that fail
+    liquidity/market-cap filters regardless), so matching TradingView exactly here
+    has zero effect on any actual screening outcome. See
+    docs/forward_test_findings.md's dated entry for the full reasoning.
     """
     flat = np.full(40, 100.0)
     rsi = compute_rsi(pd.Series(flat), 14)
     val = rsi.iloc[-1]
     assert not pd.isna(val), "flat series produced NaN RSI"
-    assert val == pytest.approx(50.0, abs=1e-9), (
-        f"flat series RSI should be neutral 50, got {val}"
+    assert val == pytest.approx(100.0, abs=1e-9), (
+        f"flat series RSI should match TradingView's 100, got {val}"
     )
 
 

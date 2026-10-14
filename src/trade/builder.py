@@ -50,7 +50,9 @@ def build_trades(survivors_df: pd.DataFrame, rule_spec: dict, next_week_open: di
         if SL is None or pd.isna(SL) or EP is None:
             continue
         R = EP - SL
-        if (R / EP) > max_r_pct:
+        # max_r_pct: null (Literal spec) means no cap — brief step 4: a trade for every
+        # qualified stock. Control's rules.yaml keeps 0.15 unchanged.
+        if max_r_pct is not None and (R / EP) > max_r_pct:
         # R <= 0 or (R / EP) > max_r_pct:
             continue  # reject: SL above/at entry, or implausibly wide (design doc §6.2)
 

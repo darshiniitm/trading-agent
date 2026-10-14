@@ -10,6 +10,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from src.data.holding_week import corrected_week_bar
 from src.indicators.vstop import compute_vstop
 from src.screen.engine import run_screen
 from src.trade.builder import build_trades
@@ -24,7 +25,8 @@ def _next_week_row(panel: pd.DataFrame, as_of: pd.Timestamp) -> pd.Series | None
 
 
 def simulate_week_forward(trades_df: pd.DataFrame, weekly_panels: dict[str, pd.DataFrame],
-                           as_of: pd.Timestamp, cost_pct: float, target_r_multiple: float = 2.0) -> pd.DataFrame:
+                           as_of: pd.Timestamp, cost_pct: float, target_r_multiple: float = 2.0,
+                           daily_panels: dict[str, pd.DataFrame] | None = None) -> pd.DataFrame:
     """For each trade, simulate the following week at the actual fill (next week's open).
 
     Exit rule (same as tests/track_forward.py:_grade_rows, the forward-test grader):
@@ -34,6 +36,12 @@ def simulate_week_forward(trades_df: pd.DataFrame, weekly_panels: dict[str, pd.D
     D6: R and target are recomputed off the actual fill (EP = open). The signal-time values are
     kept as R_signal / target_signal. r_multiple uses the fill R when positive, else the signal R
     (a gap-through fill has no positive fill R), so a stop-out is never reported better than 0R.
+
+    D7: pass `daily_panels` (ticker -> daily OHLCV) to prefer the holding week's own daily
+    sessions for EP/low/close over the weekly bar, which reports the previous Friday's close
+    as the open in a week whose Monday is an NSE holiday (src/data/holding_week.py). Weekly
+    panels resampled from daily bars (src/data/resample.py, used by env_extended()) don't have
+    this defect either way, so omitting daily_panels there changes nothing.
     """
     if trades_df.empty:
         return trades_df.assign(exit_price=[], exit_reason=[], ret_pct=[], ret_pct_net=[], r_multiple=[],
@@ -48,14 +56,17 @@ def simulate_week_forward(trades_df: pd.DataFrame, weekly_panels: dict[str, pd.D
         if nxt is None:
             continue  # no forward data yet (e.g. this week's live screen) -> can't grade
 
-        EP = float(nxt["open"])  # actual fill at next week's open
+        week_start = pd.Timestamp(nxt["date"])
+        bar = corrected_week_bar(t["ticker"], daily_panels, week_start,
+                                  float(nxt["open"]), float(nxt["low"]), float(nxt["close"]))
+        EP, week_low, week_close = bar["open"], bar["low"], bar["close"]  # actual fill at next week's open
         SL = float(t["SL"])
         if EP <= SL:
             exit_price, exit_reason = EP, "gap_stop_at_open"
-        elif float(nxt["low"]) <= SL:
+        elif week_low <= SL:
             exit_price, exit_reason = SL, "stop_hit"
         else:
-            exit_price, exit_reason = float(nxt["close"]), "week_close"
+            exit_price, exit_reason = week_close, "week_close"
 
         ret_pct = (exit_price - EP) / EP
         ret_pct_net = ret_pct - cost_pct
