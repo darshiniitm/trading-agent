@@ -1,0 +1,4 @@
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px 18px; margin-bottom: 16px; }
+.warn { border-color: var(--warn-border); background: var(--warn-bg); color: var(--warn-fg); }
+.head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.title { font-size: 17px; font-weight: 600; margin: 0; }

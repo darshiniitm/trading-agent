@@ -1,0 +1,337 @@
+{
+ "entries": [
+  {
+   "kind": "field",
+   "id": "mcap_cr",
+   "label": "Market cap (cr)",
+   "aliases": [
+    "market cap",
+    "mcap",
+    "market capitalisation",
+    "cap"
+   ],
+   "unit": "crore",
+   "params": [],
+   "data_source": "NSE market cap (engine universe table)",
+   "update_frequency": "daily",
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   }
+  },
+  {
+   "kind": "field",
+   "id": "traded_value_cr",
+   "label": "Median traded value (cr)",
+   "aliases": [
+    "traded value",
+    "turnover",
+    "median traded value",
+    "liquidity"
+   ],
+   "unit": "crore",
+   "params": [
+    {
+     "name": "window",
+     "type": "week_window_str",
+     "label": "window",
+     "min": "1W",
+     "max": "52W",
+     "aliases": [
+      "over",
+      "for the last"
+     ],
+     "common_values": [
+      "8W"
+     ]
+    }
+   ],
+   "data_source": "NSE daily bars (price x volume)",
+   "update_frequency": "daily",
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   }
+  },
+  {
+   "kind": "field",
+   "id": "price",
+   "label": "Price",
+   "aliases": [
+    "price",
+    "close",
+    "closing price",
+    "ltp"
+   ],
+   "unit": "rupees",
+   "params": [],
+   "data_source": "NSE daily bars",
+   "update_frequency": "daily",
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   }
+  },
+  {
+   "kind": "field",
+   "id": "volume",
+   "label": "Volume",
+   "aliases": [
+    "volume",
+    "shares traded"
+   ],
+   "unit": "shares",
+   "params": [],
+   "data_source": "NSE daily bars",
+   "update_frequency": "daily",
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   }
+  },
+  {
+   "kind": "field",
+   "id": "sector",
+   "label": "Sector",
+   "aliases": [
+    "sector",
+    "industry"
+   ],
+   "unit": "category",
+   "params": [],
+   "data_source": "NSE sector classification",
+   "update_frequency": "quarterly",
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed"
+   }
+  },
+  {
+   "kind": "field",
+   "id": "pe",
+   "label": "P/E ratio",
+   "aliases": [
+    "pe",
+    "p/e",
+    "price to earnings"
+   ],
+   "unit": "ratio",
+   "params": [],
+   "data_source": null,
+   "update_frequency": null,
+   "engine": {
+    "implemented": false
+   },
+   "provenance": {
+    "sources": [
+     "https://www.tradingview.com/pine-script-reference/v6/",
+     "https://ta-lib.org/functions/",
+     "https://github.com/twopirllc/pandas-ta"
+    ],
+    "fetched_at": null,
+    "status": "proposed",
+    "notes": "No data source in the engine yet (plan decision 3)."
+   }
+  },
+  {
+   "kind": "field",
+   "id": "roe",
+   "label": "Return on equity",
+   "aliases": [
+    "roe",
+    "return on equity"
+   ],
+   "unit": "percent",
+   "params": [],
+   "data_source": null,
+   "update_frequency": null,
+   "engine": {
+    "implemented": false
+   },
+   "provenance": {
+    "sources": [
+     "https://www.tradingview.com/pine-script-reference/v6/",
+     "https://ta-lib.org/functions/",
+     "https://github.com/twopirllc/pandas-ta"
+    ],
+    "fetched_at": null,
+    "status": "proposed",
+    "notes": "No data source in the engine yet (plan decision 3)."
+   }
+  },
+  {
+   "kind": "field",
+   "id": "promoter_holding_pct",
+   "label": "Promoter holding (%)",
+   "aliases": [
+    "promoter holding",
+    "promoter stake"
+   ],
+   "unit": "percent",
+   "params": [],
+   "data_source": null,
+   "update_frequency": null,
+   "engine": {
+    "implemented": false
+   },
+   "provenance": {
+    "sources": [
+     "https://www.tradingview.com/pine-script-reference/v6/",
+     "https://ta-lib.org/functions/",
+     "https://github.com/twopirllc/pandas-ta"
+    ],
+    "fetched_at": null,
+    "status": "proposed",
+    "notes": "No data source in the engine yet (plan decision 3)."
+   }
+  },
+  {
+   "kind": "field",
+   "id": "delivery_pct",
+   "label": "Delivery (%)",
+   "aliases": [
+    "delivery %",
+    "delivery percentage",
+    "delivery volume"
+   ],
+   "unit": "percent",
+   "params": [],
+   "data_source": null,
+   "update_frequency": null,
+   "engine": {
+    "implemented": false
+   },
+   "provenance": {
+    "sources": [
+     "https://www.tradingview.com/pine-script-reference/v6/",
+     "https://ta-lib.org/functions/",
+     "https://github.com/twopirllc/pandas-ta"
+    ],
+    "fetched_at": null,
+    "status": "proposed",
+    "notes": "No data source in the engine yet (plan decision 3)."
+   }
+  },
+  {
+   "kind": "field",
+   "id": "high_52w",
+   "label": "52-week high",
+   "aliases": [
+    "52 week high",
+    "52w high",
+    "yearly high"
+   ],
+   "unit": "rupees",
+   "params": [],
+   "data_source": null,
+   "update_frequency": null,
+   "engine": {
+    "implemented": false
+   },
+   "provenance": {
+    "sources": [
+     "https://www.tradingview.com/pine-script-reference/v6/",
+     "https://ta-lib.org/functions/",
+     "https://github.com/twopirllc/pandas-ta"
+    ],
+    "fetched_at": null,
+    "status": "proposed",
+    "notes": "No data source in the engine yet (plan decision 3)."
+   }
+  },
+  {
+   "kind": "field",
+   "id": "low_52w",
+   "label": "52-week low",
+   "aliases": [
+    "52 week low",
+    "52w low",
+    "yearly low"
+   ],
+   "unit": "rupees",
+   "params": [],
+   "data_source": null,
+   "update_frequency": null,
+   "engine": {
+    "implemented": false
+   },
+   "provenance": {
+    "sources": [
+     "https://www.tradingview.com/pine-script-reference/v6/",
+     "https://ta-lib.org/functions/",
+     "https://github.com/twopirllc/pandas-ta"
+    ],
+    "fetched_at": null,
+    "status": "proposed",
+    "notes": "No data source in the engine yet (plan decision 3)."
+   }
+  },
+  {
+   "kind": "field",
+   "id": "rs_rating",
+   "label": "RS rating",
+   "aliases": [
+    "rs rating",
+    "relative strength rating"
+   ],
+   "unit": "percentile",
+   "params": [
+    {
+     "name": "lookback",
+     "type": "int",
+     "label": "lookback bars",
+     "min": 20,
+     "max": 1000,
+     "positional": 0,
+     "aliases": [],
+     "common_values": [
+      252
+     ]
+    }
+   ],
+   "data_source": "percentile rank of the N-bar return within the screened universe",
+   "update_frequency": "daily",
+   "engine": {
+    "implemented": true
+   },
+   "provenance": {
+    "sources": [
+     "engine registry"
+    ],
+    "fetched_at": null,
+    "status": "reviewed",
+    "notes": "No NSE standard; 12-month return percentile within the universe."
+   }
+  }
+ ]
+}

@@ -1,0 +1,32 @@
+.header { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.titleRow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.meta { color: var(--muted); font-size: 13px; margin: 0 0 4px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.quote { margin: 0 0 12px; font-family: var(--font-mono); font-size: 14px; color: var(--text); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+.whatRuns { margin: 10px 0 0; font-size: 13px; color: var(--text-2); }
+.runItem { margin-right: 12px; display: inline-block; }
+.pricesBar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 8px 14px; background: var(--surface-0); border: 1px solid var(--border); border-radius: var(--r-lg); margin-bottom: 16px; font-size: 13px; color: var(--muted); }
+.pricesBar strong { color: var(--text); font-family: var(--font-mono); }
+.liveRegion { font-size: 12px; }
+.err { color: var(--negative); }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.layout { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; margin-bottom: 16px; }
+.main { flex: 999 1 min(640px, 100%); min-width: 0; }
+.aside { flex: 1 1 min(340px, 100%); min-width: 0; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.search { min-width: 220px; }
+.sub { color: var(--muted); font-size: 12.5px; }
+.pos { color: var(--positive); }
+.neg { color: var(--negative); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.tile { background: var(--surface-0); border: 1px solid var(--border); border-radius: var(--r-md); padding: 12px 14px; }
+.tileLabel { font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); margin-bottom: 4px; }
+.price { font-family: var(--font-mono); font-size: 30px; font-weight: 600; }
+.detailHead { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: center; }
+.condList { list-style: none; padding: 0; margin: 8px 0 12px; display: grid; gap: 6px; font-size: 13px; }
+.condList li { display: flex; gap: 8px; align-items: baseline; }
+.ok { color: var(--positive); } .no { color: var(--amber-text); }
+.note { width: 100%; min-height: 64px; }
+.dialogBody { font-size: 13.5px; }

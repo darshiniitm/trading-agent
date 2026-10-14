@@ -1,0 +1,4 @@
+.badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 13px; font-weight: 600; padding: 3px 8px; border-radius: var(--r-sm); background: var(--surface-chip); color: var(--text); }
+.draft { background: transparent; border: 1px dashed var(--border-dashed); }
+.copy { background: none; border: 0; color: var(--muted); padding: 0; display: inline-flex; }
+.copy:hover { color: var(--text); }

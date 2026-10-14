@@ -1,0 +1,58 @@
+{
+ "TC01": [
+  "Minervini setup on Nifty 500: closes above the 150-day and 200-day averages, 150-day average above the 200-day, 200-day average climbing for a month or more, 50-day above both, close above the 50-day, at least 30% above the 52-week low, no more than 25% under the 52 week high, RS rating at least 70"
+ ],
+ "TC02": [
+  "Nifty 100 golden crossover: the 50 DMA cutting above the 200 DMA in the last 10 trading sessions",
+  "Nifty 100 - 50-day moving average moved above the 200-day moving average within the last 10 days"
+ ],
+ "TC03": [
+  "Nifty 500 breakouts to a 52-week high today with volume at least twice the 20-day average",
+  "Which Nifty 500 stocks closed at a 52 week high today on more than 2 times their 20 day average volume"
+ ],
+ "TC04": [
+  "Nifty 100 mean reversion: price over its 200-day SMA while RSI(2) is under 10",
+  "Nifty 100 stocks above the 200 day moving average with a 2-period RSI below 10"
+ ],
+ "TC05": [
+  "Nifty 200 Supertrend (10, 3) turned green in the last 3 sessions and ADX above 25",
+  "Supertrend 10/3 bullish flip in the past 3 days with ADX over 25 on Nifty 200"
+ ],
+ "TC06": [
+  "Nifty 200: MACD (12, 26, 9) bullish crossover, with MACD still negative, in the last 2 sessions",
+  "Nifty 200 stocks with a MACD 12 26 9 bullish crossover in the past 2 days below the zero line"
+ ],
+ "TC07": [
+  "Nifty 500: Bollinger bandwidth at a 6-month low sometime in the last 5 days and price now above the upper band"
+ ],
+ "TC09": [
+  "Nifty 200 stocks whose 9-period EMA crossed above the 21-period EMA in the last 3 sessions and that close above the 200 EMA"
+ ],
+ "TC10": [
+  "Nifty 200: Tenkan crossing above Kijun in the last 3 sessions with price above the Ichimoku cloud"
+ ],
+ "TC13": [
+  "Nifty 500 stocks within 10% of the 52 week low with RSI 14 crossing back above 30 in the last 3 sessions"
+ ],
+ "TC14": [
+  "Nifty 500: stocks that gapped up at least 2% above yesterday's high, closed above the open, and traded 1.5x their 20-day average volume"
+ ],
+ "TC15": [
+  "Nifty 500 weekly stage 2: close above a rising 30-week moving average, breaking above the 26 week high, volume at least 2x its 10-week average"
+ ],
+ "TC17": [
+  "Nifty 50: price above 20 EMA and 50 EMA, RSI above 55. Buy at next open, stop 2 ATR under entry, target 2R"
+ ],
+ "TC12": [
+  "Rank Nifty 200 stocks by 12 month momentum excluding the last month; show the top 20"
+ ],
+ "TC16": [
+  "Which Nifty 500 sectors outperformed the index over the past 4 weeks? Top 3 stocks per sector"
+ ],
+ "TC19": [
+  "Midcap stocks with market cap from 10,000 to 50,000 crore, average daily turnover over 25 crore, weekly RSI above 60 and trading above the 20-week EMA"
+ ],
+ "TC20": [
+  "Nifty 100: P/E under 25, ROE over 15%, price over the 200 DMA"
+ ]
+}

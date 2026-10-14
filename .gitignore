@@ -9,3 +9,7 @@ results/*
 .DS_Store
 .pytest_cache/
 .env
+
+# secrets
+.env.local
+frontend/apps/web/.env.local

@@ -1,0 +1,40 @@
+:root {
+  --bg: #0d1117;
+  --surface-0: #0f141b;
+  --surface-1: #131922;
+  --surface-nav-active: #1c2330;
+  --surface-chip: #262f3d;
+  --row-hover: #18202b;
+  --row-selected: #1e2836;
+  --selected-blue-bg: #0f1a2a;
+  --border: #262c36;
+  --border-strong: #2f3846;
+  --divider: #1f2630;
+  --border-dashed: #3a4352;
+  --text: #e6edf3;
+  --text-2: #c9d1d9;
+  --muted: #9aa4b2;
+  --accent: #f0b429;
+  --accent-hover: #ffd166;
+  --on-accent: #14110a;
+  --accent-disabled-bg: #3a3320;
+  --accent-disabled-fg: #a89a70;
+  --blue: #58a6ff;
+  --blue-text: #79b8ff;
+  --amber: #f2a541;
+  --amber-text: #f2c14e;
+  --warn-border: #8a6417;
+  --warn-bg: #1a1508;
+  --warn-fg: #e6dcc4;
+  --orange: #d18616;
+  --positive: #3fb950;
+  --negative: #ff7b72;
+
+  --font-sans: var(--font-plex-sans), "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 10px;
+  --r-pill: 999px;
+}

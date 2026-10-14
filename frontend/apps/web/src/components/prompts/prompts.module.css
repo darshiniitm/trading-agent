@@ -1,0 +1,18 @@
+.top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+.top h1 { margin: 0; }
+.mono { font-family: var(--font-mono); }
+.cell { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sub { color: var(--muted); font-size: 12.5px; }
+.rowBox { display: grid; grid-template-columns: var(--cols); gap: 10px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--divider); font-size: 13px; }
+.rowBox:hover { background: var(--row-hover); }
+.rowSel { background: var(--row-selected); }
+.pos { color: var(--positive); } .neg { color: var(--negative); }
+.actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.drafts { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.draft { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.draftText { font-family: var(--font-mono); font-size: 13px; color: var(--text-2); overflow-wrap: anywhere; }
+.blockAmber { color: var(--amber-text); font-size: 12.5px; }
+.blockRed { color: var(--negative); font-size: 12.5px; }
+.empty { color: var(--muted); padding: 20px 0; }
+.draftHead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }

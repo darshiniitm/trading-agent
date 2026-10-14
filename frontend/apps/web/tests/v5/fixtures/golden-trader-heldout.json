@@ -1,0 +1,62 @@
+{
+ "TC01": [
+  "Minervini template on Nifty 500: closing price above both the 150-day and 200-day moving averages, 150-day SMA above the 200-day SMA, the 200-day SMA rising for at least a month, 50-day SMA above 150 and 200 day SMAs, price above 50 DMA, trading at least 30% above its 52-week low and within 25% of its 52-week high, with RS rating of 70+"
+ ],
+ "TC02": [
+  "Show me golden crosses in the Nifty 100 - 50 DMA moving above the 200 DMA during the last 10 trading days",
+  "NIFTY 100 stocks where 50 DMA has crossed up through 200 DMA in the past 10 sessions"
+ ],
+ "TC03": [
+  "Stocks in Nifty 500 hitting a 52 week high today with volume 2x the 20-day average",
+  "Nifty 500: today's close is a new 52-week high and volume is double the 20 day average volume"
+ ],
+ "TC04": [
+  "Nifty 100 oversold bounce: close above the 200 day SMA and RSI 2 below 10",
+  "Connors RSI(2) pullback in Nifty 100 - above 200 DMA, 2-day RSI under 10"
+ ],
+ "TC05": [
+  "Nifty 200 where Supertrend 10 3 has just turned green (last 3 sessions) with ADX over 25",
+  "Supertrend(10,3) buy signal in last 3 days and ADX(14) > 25 in Nifty 200"
+ ],
+ "TC06": [
+  "Nifty 200 MACD(12,26,9) line crossing above signal below zero in the last 2 sessions",
+  "Nifty 200 stocks where MACD turned up through its signal line below zero within 2 days"
+ ],
+ "TC07": [
+  "Bollinger squeeze breakout Nifty 500: 6 month low in band width within the last 5 sessions, close above the upper Bollinger Band"
+ ],
+ "TC08": [
+  "Nifty 200 stocks with an NR7 day that is also an inside day"
+ ],
+ "TC09": [
+  "Nifty 200 stocks with EMA 9 crossing above EMA 21 in the last 3 sessions while the close is over the 200 EMA",
+  "Nifty 200: 9-day EMA crossed over the 21-day EMA within 3 days and price is above the 200-day EMA"
+ ],
+ "TC10": [
+  "Nifty 200 Ichimoku breakout: Tenkan-sen crossed above Kijun-sen within the last 3 sessions and price is over the cloud"
+ ],
+ "TC12": [
+  "Nifty 200 top 20 by 12-1 momentum: 12 month return skipping the most recent month"
+ ],
+ "TC13": [
+  "Nifty 500 stocks within 10% of the 52 week low whose RSI(14) just moved back above 30 in the last 3 sessions"
+ ],
+ "TC14": [
+  "Nifty 500 stocks gapping up 2% or more above yesterday's high that closed above their open on 1.5x average volume"
+ ],
+ "TC16": [
+  "Nifty 500: which sectors did better than the index over the past 4 weeks, with the top 3 stocks in every sector"
+ ],
+ "TC17": [
+  "Nifty 50 stocks above 20 EMA and 50 EMA with RSI over 55 - buy at next day's open, 2 ATR stop below entry, 2R target"
+ ],
+ "TC18": [
+  "Nifty 200 stocks in a strong uptrend that are pulling back to the 20 EMA"
+ ],
+ "TC19": [
+  "Midcaps between 10,000 and 50,000 crore with average daily turnover above 25 crore, weekly RSI above 60 and price above the 20-week EMA"
+ ],
+ "TC20": [
+  "Nifty 100 stocks with P/E below 25 and ROE above 15% and price above the 200 DMA"
+ ]
+}
