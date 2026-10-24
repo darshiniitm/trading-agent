@@ -38,6 +38,8 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
+    "@electric-sql/pglite": "^0.5.11",
+    "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "6.4.8",
     "@testing-library/react": "16.0.0",
     "@types/better-sqlite3": "7.6.11",
