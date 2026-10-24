@@ -1,4 +1,5 @@
-import type Database from "better-sqlite3";
+import type { Db } from "../db/pg";
+import { ensureOwnerSeeded } from "../db/seed";
 import { supabaseIdentity, type IdentityResolver } from "./identity";
 import { ensureAppUser, type AppUser } from "./ensureAppUser";
 import { AccountDeniedError, AuthRequiredError, OwnerOnlyError } from "./errors";
@@ -11,15 +12,16 @@ export function setIdentityResolver(next: IdentityResolver | null) { resolver = 
 
 /**
  * The only way a route learns who is calling. No cookie, a forged cookie, an unknown identity or a
- * non-SQLite client all end in AuthRequiredError (401); there is no single-user or "user 1" fallback.
+ * unknown client all end in AuthRequiredError (401); there is no single-user or "user 1" fallback.
  */
-export async function requireUser(raw: Database.Database, req: Request): Promise<AppUser> {
+export async function requireUser(raw: Db, req: Request): Promise<AppUser> {
   const identity = await resolver(req);
   if (!identity) throw new AuthRequiredError("sign in required");
+  await ensureOwnerSeeded(raw);
   return ensureAppUser(raw, identity, { ip: req.headers.get("x-forwarded-for"), userAgent: req.headers.get("user-agent") });
 }
 
-export async function requireOwner(raw: Database.Database, req: Request): Promise<AppUser> {
+export async function requireOwner(raw: Db, req: Request): Promise<AppUser> {
   const user = await requireUser(raw, req);
   if (user.role !== "owner") throw new OwnerOnlyError("owner only");
   return user;
@@ -34,7 +36,7 @@ export function authErrorResponse(error: unknown): Response | null {
 }
 
 /** Wrap a route body: auth errors become 401/403, everything else keeps its own handling. */
-export async function withUser(raw: Database.Database, req: Request, fn: (user: AppUser) => Promise<Response> | Response, opts: { owner?: boolean } = {}): Promise<Response> {
+export async function withUser(raw: Db, req: Request, fn: (user: AppUser) => Promise<Response> | Response, opts: { owner?: boolean } = {}): Promise<Response> {
   let user: AppUser;
   try { user = opts.owner ? await requireOwner(raw, req) : await requireUser(raw, req); }
   catch (e) { const r = authErrorResponse(e); if (r) return r; throw e; }

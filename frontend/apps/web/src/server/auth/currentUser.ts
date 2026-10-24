@@ -1,8 +1,8 @@
-import type Database from "better-sqlite3";
+import type { Db } from "../db/pg";
 import { requireUser } from "./requireUser";
 
-export async function getMe(raw: Database.Database, req: Request) {
-  const activeUsers = (raw.prepare("SELECT COUNT(*) AS n FROM users WHERE status = 'active'").get() as { n: number }).n;
+export async function getMe(raw: Db, req: Request) {
+  const activeUsers = (await raw.get<{ n: number }>("SELECT COUNT(*) AS n FROM users WHERE status = 'active'"))!.n;
   let currentUser: { userId: number; displayName: string; email: string | null; role: string } | null = null;
   let denied: string | null = null;
   try {

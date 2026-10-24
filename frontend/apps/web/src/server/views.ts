@@ -1,6 +1,6 @@
-import type Database from "better-sqlite3";
+import type { Db } from "./db/pg";
 import { ratingLabel } from "@/lib/ratings";
-import { benchmarkSymbolsFor, latestFundamentals, latestMetrics } from "@/server/viewData";
+import { benchmarkSymbolsFor, latestFundamentalsFor, latestMetricsFor } from "@/server/viewData";
 import type { Quote } from "@/server/quotes";
 
 // P6: the read model behind GET /api/watchlists/:id/views. DISPLAY ONLY — values here never feed conditions,
@@ -9,10 +9,9 @@ export type Fx = { inrPerUsd: number; usdPerInr: number; asOf: string | null };
 const DROPPED = ["dropped_from_screen", "stopped_out", "closed"];
 const num = (x: unknown): number | null => (typeof x === "number" && Number.isFinite(x) ? x : null);
 
-function rowFor(raw: Database.Database, symbol: string, meta: { name: string | null; kind: string }, tf: "1D" | "1W", quote: Quote | undefined) {
-  const m = latestMetrics(raw, symbol, tf);
+function rowFor(symbol: string, meta: { name: string | null; kind: string }, tf: "1D" | "1W", quote: Quote | undefined, m: any, fundamentals: any) {
   const isIndex = meta.kind === "index";
-  const f = isIndex ? undefined : latestFundamentals(raw, symbol);
+  const f = isIndex ? undefined : fundamentals;
   const last = quote && quote.price !== null && !quote.error ? quote.price : null;
   const eps = num(f?.eps_ttm);
   const dividend = num(f?.dividend_ttm);
@@ -46,14 +45,23 @@ function rowFor(raw: Database.Database, symbol: string, meta: { name: string | n
   };
 }
 
-export function buildWatchlistViews(raw: Database.Database, watchlistId: number, userId: number, opts: { tf: "1D" | "1W"; quotes: Record<string, Quote>; fx: Fx | null }) {
-  const symbolMeta = raw.prepare("SELECT name, kind FROM symbols WHERE symbol = ?");
-  const meta = (s: string) => (symbolMeta.get(s) as { name: string | null; kind: string } | undefined) ?? { name: null, kind: s.startsWith("^") ? "index" : "stock" };
+export async function buildWatchlistViews(raw: Db, watchlistId: number, userId: number, opts: { tf: "1D" | "1W"; quotes: Record<string, Quote>; fx: Fx | null }) {
+  const entries = await raw.all("SELECT * FROM watchlist_entries WHERE watchlist_id = ? AND status <> 'removed_by_user' ORDER BY symbol, entry_id", [watchlistId]);
+  const benchSymbols = await benchmarkSymbolsFor(raw, userId, watchlistId);
 
-  const entries = raw.prepare("SELECT * FROM watchlist_entries WHERE watchlist_id = ? AND status <> 'removed_by_user' ORDER BY symbol, entry_id").all(watchlistId) as any[];
-  const entryRow = (e: any) => ({ ...rowFor(raw, e.symbol, meta(e.symbol), opts.tf, opts.quotes[e.symbol]), entryId: e.entry_id, status: e.status, membership: e.membership });
+  // Everything the rows need is read up front, in a few queries, not once per row.
+  const symbols = Array.from(new Set([...entries.map((e) => e.symbol), ...benchSymbols]));
+  const [metrics, fundamentals] = await Promise.all([latestMetricsFor(raw, symbols, opts.tf), latestFundamentalsFor(raw, symbols)]);
+  const metaRows = new Map<string, { name: string | null; kind: string }>();
+  for (let i = 0; i < symbols.length; i += 1000) {
+    const part = symbols.slice(i, i + 1000);
+    for (const r of await raw.all<{ symbol: string; name: string | null; kind: string }>(`SELECT symbol, name, kind FROM symbols WHERE symbol IN (${part.map(() => "?").join(",")})`, part)) metaRows.set(r.symbol, r);
+  }
+  const meta = (s: string) => metaRows.get(s) ?? { name: null, kind: s.startsWith("^") ? "index" : "stock" };
+  const row = (s: string) => rowFor(s, meta(s), opts.tf, opts.quotes[s], metrics.get(s), fundamentals.get(s));
+  const entryRow = (e: any) => ({ ...row(e.symbol), entryId: e.entry_id, status: e.status, membership: e.membership });
 
-  const benchRows = benchmarkSymbolsFor(raw, userId, watchlistId).map((s) => rowFor(raw, s, meta(s), opts.tf, opts.quotes[s]));
+  const benchRows = benchSymbols.map(row);
   const picks = entries.filter((e) => !DROPPED.includes(e.status) && e.membership === "full_match").map(entryRow);
   const watching = entries.filter((e) => !DROPPED.includes(e.status) && e.membership !== "full_match").map(entryRow);
   const dropped = entries.filter((e) => DROPPED.includes(e.status)).map(entryRow);

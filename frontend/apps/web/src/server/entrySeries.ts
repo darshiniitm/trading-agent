@@ -1,9 +1,9 @@
-import type Database from "better-sqlite3";
+import type { Db } from "./db/pg";
 import { getSeries, type SeriesParams } from "@/server/engine/client";
 
 // The detail chart is drawn with the prompt's OWN indicator settings, taken unchanged from its stored conditions.
-export function seriesParamsFor(raw: Database.Database, promptId: number): SeriesParams {
-  const rows = raw.prepare("SELECT name, params_json FROM prompt_conditions WHERE prompt_id = ? ORDER BY cond_no").all(promptId) as { name: string; params_json: string | null }[];
+export async function seriesParamsFor(raw: Db, promptId: number): Promise<SeriesParams> {
+  const rows = await raw.all<{ name: string; params_json: string | null }>("SELECT name, params_json FROM prompt_conditions WHERE prompt_id = ? ORDER BY cond_no", [promptId]);
   const out: SeriesParams = {};
   for (const r of rows) {
     const p = r.params_json ? JSON.parse(r.params_json) : {};
@@ -17,10 +17,10 @@ export function seriesParamsFor(raw: Database.Database, promptId: number): Serie
   return out;
 }
 
-export async function getEntrySeries(raw: Database.Database, watchlistId: number, entryId: number, fetchFn: typeof fetch = fetch) {
-  const row = raw.prepare(
-    `SELECT e.symbol, w.prompt_id FROM watchlist_entries e JOIN watchlists w ON w.watchlist_id = e.watchlist_id WHERE e.entry_id = ? AND e.watchlist_id = ?`
-  ).get(entryId, watchlistId) as { symbol: string; prompt_id: number } | undefined;
+export async function getEntrySeries(raw: Db, watchlistId: number, entryId: number, fetchFn: typeof fetch = fetch) {
+  const row = await raw.get<{ symbol: string; prompt_id: number }>(
+    `SELECT e.symbol, w.prompt_id FROM watchlist_entries e JOIN watchlists w ON w.watchlist_id = e.watchlist_id WHERE e.entry_id = ? AND e.watchlist_id = ?`,
+    [entryId, watchlistId]);
   if (!row) return null;
-  return getSeries(row.symbol, seriesParamsFor(raw, row.prompt_id), fetchFn);
+  return getSeries(row.symbol, await seriesParamsFor(raw, row.prompt_id), fetchFn);
 }

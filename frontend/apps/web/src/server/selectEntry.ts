@@ -1,4 +1,5 @@
-import type Database from "better-sqlite3";
+import type { Db } from "@/server/db/pg";
+import { insertMany } from "@/server/db/pg";
 import { programOf } from "@/server/programOf";
 import { selectCandidates, type SelectCandidate } from "@/server/engine/client";
 import { task, tool } from "@/server/telemetry";
@@ -21,14 +22,16 @@ function outcomeFor(status: Outcome["status"], c: SelectCandidate): Outcome {
   return { status: "no_point_data", entryPrice: null, stop: null, refPrice: null };
 }
 
+const marks = (n: number) => Array.from({ length: n }, () => "?").join(",");
+
 async function runSelectEntryImpl(
-  raw: Database.Database,
+  raw: Db,
   { promptId, runId }: { promptId: number; runId: number },
   fetchFn?: typeof fetch
 ): Promise<{ updated: number }> {
-  const prompt = raw.prepare("SELECT * FROM prompts WHERE prompt_id = ?").get(promptId) as any;
+  const prompt = await raw.get("SELECT * FROM prompts WHERE prompt_id = ?", [promptId]);
   if (!prompt) throw new Error(`prompt ${promptId} not found`);
-  const run = raw.prepare("SELECT * FROM runs WHERE run_id = ? AND prompt_id = ?").get(runId, promptId) as any;
+  const run = await raw.get("SELECT * FROM runs WHERE run_id = ? AND prompt_id = ?", [runId, promptId]);
   if (!run) throw new Error(`run ${runId} not found for prompt ${promptId}`);
   const program = programOf(prompt.spec_json);
 
@@ -41,24 +44,9 @@ async function runSelectEntryImpl(
   for (const c of result.watching) byTicker.set(c.ticker, outcomeFor("watching", c));
 
   const now = new Date().toISOString();
-  const selectEntriesForRun = raw.prepare("SELECT entry_id, symbol, status FROM watchlist_entries WHERE last_run_id = ?");
-  // entry_price (N1 fix): the resolved selection-point fill, written here
-  // alongside entry_status so that validatePrior.ts can source its graded
-  // picks straight from run_results — an immutable per-(run_id, symbol)
-  // fact — instead of from watchlist_entries, whose rows freeze per
-  // watchlist and can't reflect a symbol re-entering on a later run.
-  const updateRunResult = raw.prepare("UPDATE run_results SET entry_status = ?, entry_price = ? WHERE run_id = ? AND symbol = ?");
-  const updateEntry = raw.prepare(
-    `UPDATE watchlist_entries
-     SET status = ?, entry_price = ?, stop = ?, ref_price = COALESCE(?, ref_price),
-         entry_date = CASE WHEN ? = 'entered' THEN COALESCE(entry_date, ?) ELSE entry_date END,
-         updated_at = ?
-     WHERE entry_id = ?`
-  );
-  const insertEvent = raw.prepare("INSERT INTO entry_events (entry_id, run_id, type, from_value, to_value, at) VALUES (?, ?, 'status_changed', ?, ?, ?)");
 
-  const txn = raw.transaction(() => {
-    const entriesBefore = selectEntriesForRun.all(runId) as { entry_id: number; symbol: string; status: string }[];
+  const txn = () => raw.tx(async (t) => {
+    const entriesBefore = await t.all<{ entry_id: number; symbol: string; status: string }>("SELECT entry_id, symbol, status FROM watchlist_entries WHERE last_run_id = ?", [runId]);
     const entriesByTicker = new Map<string, { entry_id: number; symbol: string; status: string }[]>();
     for (const entry of entriesBefore) {
       const list = entriesByTicker.get(entry.symbol) ?? [];
@@ -67,6 +55,9 @@ async function runSelectEntryImpl(
     }
 
     let applied = 0;
+    const resultRows: [string, number | null, string][] = [];
+    const entryRows: [number, Outcome][] = [];
+    const events: unknown[][] = [];
     for (const [ticker, outcome] of byTicker) {
       const entries = entriesByTicker.get(ticker) ?? [];
       // A pick already resolved in this run (entered / not_confirmed — the
@@ -76,24 +67,49 @@ async function runSelectEntryImpl(
       // recorded outcome for it.
       if (entries.some((e) => FROZEN_STATUSES.includes(e.status))) continue;
 
-      updateRunResult.run(outcome.status, outcome.entryPrice, runId, ticker);
+      // entry_price (N1 fix): the resolved selection-point fill, written here
+      // alongside entry_status so that validatePrior.ts can source its graded
+      // picks straight from run_results — an immutable per-(run_id, symbol)
+      // fact — instead of from watchlist_entries, whose rows freeze per
+      // watchlist and can't reflect a symbol re-entering on a later run.
+      resultRows.push([outcome.status, outcome.entryPrice, ticker]);
       for (const entry of entries) {
         // Only entries still awaiting a selection outcome are updated; a
         // terminal entry (e.g. dropped_from_screen, which also carries this
         // run as its last_run_id) is never revived by a /select result.
         if (!SELECTABLE_STATUSES.includes(entry.status)) continue;
-        updateEntry.run(outcome.status, outcome.entryPrice, outcome.stop, outcome.refPrice, outcome.status, run.as_of, now, entry.entry_id);
-        if (outcome.status !== entry.status) {
-          insertEvent.run(entry.entry_id, runId, entry.status, outcome.status, now);
-        }
+        entryRows.push([entry.entry_id, outcome]);
+        if (outcome.status !== entry.status) events.push([entry.entry_id, runId, "status_changed", entry.status, outcome.status, now]);
       }
       applied++;
     }
 
+    // One statement per batch (UPDATE .. FROM VALUES) rather than one per pick, for the same round-trip reason as weeklyScreen.
+    for (let i = 0; i < resultRows.length; i += 3000) {
+      const part = resultRows.slice(i, i + 3000);
+      await t.run(
+        `UPDATE run_results rr SET entry_status = v.st, entry_price = v.ep
+         FROM (VALUES ${part.map(() => "(?::text, ?::double precision, ?::text)").join(", ")}) AS v(st, ep, sym)
+         WHERE rr.run_id = ? AND rr.symbol = v.sym`,
+        [...part.flat(), runId]);
+    }
+    for (let i = 0; i < entryRows.length; i += 3000) {
+      const part = entryRows.slice(i, i + 3000);
+      await t.run(
+        `UPDATE watchlist_entries e
+         SET status = v.st, entry_price = v.ep, stop = v.sl, ref_price = COALESCE(v.rp, e.ref_price),
+             entry_date = CASE WHEN v.st = 'entered' THEN COALESCE(e.entry_date, CAST(? AS date)) ELSE e.entry_date END,
+             updated_at = CAST(? AS timestamptz)
+         FROM (VALUES ${part.map(() => "(?::bigint, ?::text, ?::double precision, ?::double precision, ?::double precision)").join(", ")}) AS v(id, st, ep, sl, rp)
+         WHERE e.entry_id = v.id`,
+        [run.as_of, now, ...part.flatMap(([id, o]) => [id, o.status, o.entryPrice, o.stop, o.refPrice])]);
+    }
+    await insertMany(t, "entry_events", ["entry_id", "run_id", "type", "from_value", "to_value", "at"], events);
+
     return applied;
   });
 
-  return { updated: tool("warehouse.write", txn, { argsOf: () => ({ tables: "run_results, watchlist_entries, entry_events" }), captureOutput: false })() };
+  return { updated: await tool("warehouse.write", txn, { argsOf: () => ({ tables: "run_results, watchlist_entries, entry_events" }), captureOutput: false })() };
 }
 
 // observability: entry selection for one run

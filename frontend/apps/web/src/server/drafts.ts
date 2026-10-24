@@ -1,4 +1,4 @@
-import type Database from "better-sqlite3";
+import type { Db } from "./db/pg";
 import type { ClauseView, ScreenProgram } from "spec";
 
 export type DraftRow = {
@@ -40,19 +40,18 @@ function rowToDraft(row: any): DraftRow {
   };
 }
 
-export function createDraft(raw: Database.Database, { userId, copiedFromPromptId }: { userId: number; copiedFromPromptId?: number }): { draftId: number } {
+export async function createDraft(raw: Db, { userId, copiedFromPromptId }: { userId: number; copiedFromPromptId?: number }): Promise<{ draftId: number }> {
   const now = new Date().toISOString();
-  const info = raw
-    .prepare(
-      `INSERT INTO prompt_drafts (user_id, copied_from_prompt_id, prompt_text, status, created_at, updated_at)
-       VALUES (?, ?, '', 'open', ?, ?)`
-    )
-    .run(userId, copiedFromPromptId ?? null, now, now);
-  return { draftId: Number(info.lastInsertRowid) };
+  const row = await raw.get<{ draft_id: number }>(
+    `INSERT INTO prompt_drafts (user_id, copied_from_prompt_id, prompt_text, status, created_at, updated_at)
+     VALUES (?, ?, '', 'open', ?, ?) RETURNING draft_id`,
+    [userId, copiedFromPromptId ?? null, now, now]
+  );
+  return { draftId: row!.draft_id };
 }
 
-export function getDraft(raw: Database.Database, draftId: number): DraftRow | null {
-  const row = raw.prepare("SELECT * FROM prompt_drafts WHERE draft_id = ?").get(draftId);
+export async function getDraft(raw: Db, draftId: number): Promise<DraftRow | null> {
+  const row = await raw.get("SELECT * FROM prompt_drafts WHERE draft_id = ?", [draftId]);
   return row ? rowToDraft(row) : null;
 }
 
@@ -65,8 +64,8 @@ const COLUMN_BY_KEY: Record<keyof DraftPatch, string> = {
   killCriterion: "kill_criterion",
 };
 
-export function updateDraft(raw: Database.Database, draftId: number, patch: DraftPatch): DraftRow {
-  const existing = raw.prepare("SELECT draft_id FROM prompt_drafts WHERE draft_id = ?").get(draftId);
+export async function updateDraft(raw: Db, draftId: number, patch: DraftPatch): Promise<DraftRow> {
+  const existing = await raw.get("SELECT draft_id FROM prompt_drafts WHERE draft_id = ?", [draftId]);
   if (!existing) throw new Error(`draft ${draftId} not found`);
 
   const keys = (Object.keys(patch) as (keyof DraftPatch)[]).filter((k) => patch[k] !== undefined);
@@ -76,24 +75,24 @@ export function updateDraft(raw: Database.Database, draftId: number, patch: Draf
     const assignments = keys.map((k) => `${COLUMN_BY_KEY[k]} = ?`).join(", ");
     const values = keys.map((k) => patch[k]);
     try {
-      raw.prepare(`UPDATE prompt_drafts SET ${assignments}, updated_at = ? WHERE draft_id = ?`).run(...values, new Date().toISOString(), draftId);
+      await raw.run(`UPDATE prompt_drafts SET ${assignments}, updated_at = ? WHERE draft_id = ?`, [...values, new Date().toISOString(), draftId]);
     } catch (err: any) {
-      if (String(err.message).includes("CHECK constraint failed") && keys.includes("promptText")) {
+      if (/check constraint/i.test(String(err.message)) && keys.includes("promptText")) {
         throw new Error("prompt_text must be 2000 characters or fewer");
       }
       throw err;
     }
   }
-  return getDraft(raw, draftId)!;
+  return (await getDraft(raw, draftId))!;
 }
 
 // v5 program state is server-owned: only the prompt compiler writes it (see compileProgramDraft.ts).
-export function saveProgramState(raw: Database.Database, draftId: number, state: { program: ScreenProgram; clauses: ClauseView[] | null; normalised?: string | null }): DraftRow {
-  const existing = getDraft(raw, draftId);
+export async function saveProgramState(raw: Db, draftId: number, state: { program: ScreenProgram; clauses: ClauseView[] | null; normalised?: string | null }): Promise<DraftRow> {
+  const existing = await getDraft(raw, draftId);
   if (!existing) throw new Error(`draft ${draftId} not found`);
   const clauses = state.clauses ?? existing.programClauses;
-  raw.prepare(`UPDATE prompt_drafts SET program_json = ?, program_clauses_json = ?, program_normalised = ?, updated_at = ? WHERE draft_id = ?`)
-    .run(JSON.stringify(state.program), clauses ? JSON.stringify(clauses) : null,
-      state.normalised === undefined ? existing.programNormalised : state.normalised, new Date().toISOString(), draftId);
-  return getDraft(raw, draftId)!;
+  await raw.run(`UPDATE prompt_drafts SET program_json = ?, program_clauses_json = ?, program_normalised = ?, updated_at = ? WHERE draft_id = ?`,
+    [JSON.stringify(state.program), clauses ? JSON.stringify(clauses) : null,
+      state.normalised === undefined ? existing.programNormalised : state.normalised, new Date().toISOString(), draftId]);
+  return (await getDraft(raw, draftId))!;
 }

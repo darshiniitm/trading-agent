@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toPgPlaceholders } from "@/server/db/pg";
+import { insertMany, toPgPlaceholders } from "@/server/db/pg";
 import { createTestDb } from "@/server/db/test-db";
 
 describe("toPgPlaceholders", () => {
@@ -66,5 +66,27 @@ describe("createTestDb (Postgres)", () => {
   it("gives every test its own empty database", async () => {
     const db = await createTestDb();
     expect((await db.get<{ n: number }>("SELECT count(*) AS n FROM users"))!.n).toBe(0);
+  });
+});
+
+describe("insertMany", () => {
+  it("inserts every row in one go and does nothing for an empty list", async () => {
+    const db = await createTestDb();
+    expect(await insertMany(db, "symbols", ["symbol", "active"], [])).toBe(0);
+    expect(await insertMany(db, "symbols", ["symbol", "active"], [["A.NS", 1], ["B.NS", 1]])).toBe(2);
+    expect((await db.get<{ n: number }>("SELECT count(*) AS n FROM symbols WHERE symbol IN ('A.NS','B.NS')"))!.n).toBe(2);
+  });
+
+  it("splits a large list so no statement exceeds Postgres' parameter limit", async () => {
+    const db = await createTestDb();
+    const rows = Array.from({ length: 40000 }, (_, i) => [`S${i}.NS`, 1]);
+    expect(await insertMany(db, "symbols", ["symbol", "active"], rows)).toBe(40000);
+    expect((await db.get<{ n: number }>("SELECT count(*) AS n FROM symbols WHERE symbol LIKE 'S%.NS'"))!.n).toBe(40000);
+  });
+
+  it("honours an ON CONFLICT clause", async () => {
+    const db = await createTestDb();
+    await insertMany(db, "symbols", ["symbol", "active"], [["A.NS", 1]]);
+    expect(await insertMany(db, "symbols", ["symbol", "active"], [["A.NS", 1], ["B.NS", 1]], "ON CONFLICT DO NOTHING")).toBe(1);
   });
 });

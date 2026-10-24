@@ -1,4 +1,4 @@
-import type Database from "better-sqlite3";
+import type { Db } from "@/server/db/pg";
 import { programOf } from "@/server/programOf";
 import { validateArm, type ValidateRow } from "@/server/engine/client";
 
@@ -20,23 +20,21 @@ function aggregate(rows: ValidateRow[], horizon: number): { n: number; ewReturn:
 }
 
 export async function runValidatePrior(
-  raw: Database.Database,
+  raw: Db,
   { promptId, runId }: { promptId: number; runId: number },
   fetchFn?: typeof fetch
 ): Promise<{ maturity: string; gradedWeeks: number; complete: boolean }> {
-  const prompt = raw.prepare("SELECT * FROM prompts WHERE prompt_id = ?").get(promptId) as any;
+  const prompt = await raw.get("SELECT * FROM prompts WHERE prompt_id = ?", [promptId]);
   if (!prompt) throw new Error(`prompt ${promptId} not found`);
-  const run = raw.prepare("SELECT * FROM runs WHERE run_id = ? AND prompt_id = ?").get(runId, promptId) as any;
+  const run = await raw.get("SELECT * FROM runs WHERE run_id = ? AND prompt_id = ?", [runId, promptId]);
   if (!run) throw new Error(`run ${runId} not found for prompt ${promptId}`);
   // Partial and low-coverage runs stay visible but are excluded from forward-test scoring (data-fallback spec §7).
   if (run.scored === 0) return { maturity: "not_first_look", gradedWeeks: 0, complete: true };
   const program = programOf(prompt.spec_json);
 
   const gradedWeeksSoFar = (
-    raw
-      .prepare(`SELECT COUNT(*) AS n FROM runs WHERE prompt_id = ? AND kind IN ('scheduled','catch_up') AND as_of <= ? AND (scored IS NULL OR scored = 1)`)
-      .get(promptId, run.as_of) as { n: number }
-  ).n;
+    await raw.get<{ n: number }>(`SELECT COUNT(*) AS n FROM runs WHERE prompt_id = ? AND kind IN ('scheduled','catch_up') AND as_of <= ? AND (scored IS NULL OR scored = 1)`, [promptId, run.as_of])
+  )!.n;
 
   // Sourced from run_results, not watchlist_entries (N1 fix): run_results is
   // one immutable row per (run_id, symbol), never reused across runs, so it
@@ -49,9 +47,8 @@ export async function runValidatePrior(
   // per-watchlist — the arm's forward record is about the prompt's own
   // picks, not any one user's watchlist view of them — so this also drops
   // validatePrior's dependency on the owner's watchlist entirely.
-  const picks = raw
-    .prepare("SELECT symbol, entry_price, sl FROM run_results WHERE run_id = ? AND entry_status = 'entered'")
-    .all(runId) as { symbol: string; entry_price: number | null; sl: number | null }[];
+  const picks = await raw.all<{ symbol: string; entry_price: number | null; sl: number | null }>(
+    "SELECT symbol, entry_price, sl FROM run_results WHERE run_id = ? AND entry_status = 'entered'", [runId]);
 
   const result = await validateArm(
     promptId, program, run.as_of,
@@ -61,14 +58,13 @@ export async function runValidatePrior(
 
   if (result.maturity !== "not_first_look") {
     const now = new Date().toISOString();
-    const upsert = raw.prepare(
-      `INSERT INTO validations (run_id, horizon_w, n, ew_return, control_ew_return, hit_rate, computed_at)
-       VALUES (?, ?, ?, ?, NULL, ?, ?)
-       ON CONFLICT (run_id, horizon_w) DO UPDATE SET n = excluded.n, ew_return = excluded.ew_return, hit_rate = excluded.hit_rate, computed_at = excluded.computed_at`
-    );
     for (const horizon of [1, 2, 3]) {
       const agg = aggregate(result.rows, horizon);
-      if (agg) upsert.run(runId, horizon, agg.n, agg.ewReturn, agg.hitRate, now);
+      if (agg) await raw.run(
+        `INSERT INTO validations (run_id, horizon_w, n, ew_return, control_ew_return, hit_rate, computed_at)
+         VALUES (?, ?, ?, ?, NULL, ?, ?)
+         ON CONFLICT (run_id, horizon_w) DO UPDATE SET n = excluded.n, ew_return = excluded.ew_return, hit_rate = excluded.hit_rate, computed_at = excluded.computed_at`,
+        [runId, horizon, agg.n, agg.ewReturn, agg.hitRate, now]);
     }
   }
 

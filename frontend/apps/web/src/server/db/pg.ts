@@ -109,6 +109,27 @@ export function pgDb(pool: Pick<Pool, "query" | "connect">): Db {
   });
 }
 
+const MAX_PARAMS = 30000;   // Postgres allows 65535 bind parameters per statement; stay well below
+
+/**
+ * Multi-row INSERT in as few statements as the parameter limit allows (a round trip per row is what makes
+ * serverless + a remote database slow). `suffix` is appended verbatim, e.g. "ON CONFLICT DO NOTHING".
+ * Returns the number of rows inserted.
+ */
+export async function insertMany(db: Db, table: string, columns: string[], rows: unknown[][], suffix = ""): Promise<number> {
+  if (rows.length === 0) return 0;
+  const perStatement = Math.max(1, Math.floor(MAX_PARAMS / columns.length));
+  const one = `(${columns.map(() => "?").join(", ")})`;
+  let inserted = 0;
+  for (let i = 0; i < rows.length; i += perStatement) {
+    const chunk = rows.slice(i, i + perStatement);
+    inserted += await db.run(
+      `INSERT INTO ${table} (${columns.join(", ")}) VALUES ${chunk.map(() => one).join(", ")} ${suffix}`.trim(),
+      chunk.flat());
+  }
+  return inserted;
+}
+
 /** Wraps an already-open transaction/executor (PGlite) in the same Db surface. */
 export { txDb as transactionDb };
 
