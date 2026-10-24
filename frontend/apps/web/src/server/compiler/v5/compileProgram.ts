@@ -11,6 +11,10 @@ import type { Example, ReaderFn } from "./reader";
 import { segment } from "./segment";
 import { verifyProgram } from "./verify";
 import { resolveProgram } from "./resolve";
+import { tool } from "@/server/telemetry";
+
+// observability: the pure default-filling / assumption-chip step, traced only on the compile path (resolveProgram is also called from viewOf on every read)
+const tracedResolve = tool("conditions.resolve", resolveProgram);
 import { BUILTIN_DEFAULTS, type UserDefaults } from "@/server/userDefaults";
 
 export type ProgramDraft = {
@@ -131,7 +135,7 @@ export async function compileProgram(promptText: string, opts: CompileProgramOpt
   const { trace } = assembled;
   // A failure here is a compiler bug (an untraceable value), never a user error: surface it loudly.
   const verified = verifyProgram(assembled.program, norm);
-  const program = opts.resolve === false ? verified : resolveProgram(verified, opts.defaults ?? BUILTIN_DEFAULTS);
+  const program = opts.resolve === false ? verified : tracedResolve(verified, opts.defaults ?? BUILTIN_DEFAULTS);
   const views: ClauseView[] = clauses.map((c) => {
     const t = trace.get(c.id);
     const unrec = verified.unrecognised.some((u) => u.clause_id === c.id);

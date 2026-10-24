@@ -1,0 +1,27 @@
+-- Descriptive names. Renames in place: data, keys, indexes and views follow automatically.
+alter schema ref rename to stock_master;
+alter schema market rename to market_data;
+alter schema fwd rename to forward_testing;
+alter schema app rename to screener_app;
+alter schema kb rename to indicator_knowledge;
+alter schema prompt_details rename to prompt_history;
+alter schema ops rename to data_pipeline_log;
+alter table stock_master.instruments rename to stocks;
+alter table stock_master.instrument_sector rename to stock_sector_history;
+alter table stock_master.market_cap_snapshots rename to stock_market_cap_history;
+alter table market_data.prices_daily rename to daily_prices;
+alter table market_data.prices_weekly rename to weekly_prices;
+alter table market_data.indicator_defs rename to indicator_definitions;
+alter table market_data.indicators_weekly rename to weekly_indicator_values;
+alter table market_data.quote_cache rename to latest_quotes;
+alter table forward_testing.arms rename to strategy_arms;
+alter table forward_testing.runs rename to weekly_runs;
+alter table forward_testing.candidates rename to screen_candidates;
+alter table forward_testing.condition_flags rename to candidate_condition_flags;
+alter table forward_testing.sector_summary rename to weekly_sector_summary;
+alter view forward_testing.v_flag_matrix_wide rename to v_condition_flag_matrix;
+alter table screener_app.prompts rename to user_prompts;
+alter table indicator_knowledge.parameters rename to parameter_definitions;
+alter table prompt_history.prompt_runs rename to prompt_executions;
+alter table prompt_history.agent_outputs rename to agent_step_outputs;
+drop schema if exists staging;

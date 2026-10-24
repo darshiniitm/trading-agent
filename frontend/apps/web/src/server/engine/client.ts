@@ -1,4 +1,7 @@
 import type { ScreenProgram } from "spec";
+import { context, isSpanContextValid, trace } from "@opentelemetry/api";
+import { currentRun, tool } from "@/server/telemetry";
+import { runtime } from "@/server/telemetry/runtime";
 
 // The interpreter's bookkeeping (assumption chips, greyed-out rows) is the app's own; the engine only ever
 // sees the rules it has to run — plus one fact it must not lose: a condition the prompt named but nothing can
@@ -26,7 +29,28 @@ export class EngineError extends Error {
 
 type FetchFn = typeof fetch;
 
-export async function call(path: string, init: Parameters<FetchFn>[1], fetchFn: FetchFn) {
+// Observability: engine calls made while a prompt run is active become tool spans (screen.filter, data.fetch, ...), and carry the
+// W3C trace context plus the run id so the Python side joins the same trace. Outside a run (supervisor health polls) nothing is traced.
+// `screen.filter` and `data.fetch` are the ENGINE's own spans (rows in/out, provider calls); these are the TS-side client calls, named apart so the two never double-count
+const SEG_TOOL: Record<string, string> = { screen: "engine.screen", feasibility: "engine.feasibility", quotes: "engine.quotes", series: "engine.series", history: "engine.history", fundamentals: "engine.fundamentals", metrics: "engine.metrics", select: "engine.select", validate: "arms.validate" };
+export function engineToolName(path: string): string {
+  const [seg1 = "", seg2, seg3] = path.split("?")[0].split("/").filter(Boolean);
+  if (seg1 === "arms") return `arms.${seg3 ?? seg2 ?? "register"}`.replace(/\.\d+$/, ".register");
+  if (seg1 === "data") return `data.${seg2 ?? "health"}`;
+  return SEG_TOOL[seg1] ?? `engine.${seg1 || "root"}`;
+}
+
+function withTraceHeaders(init: Parameters<FetchFn>[1]): Parameters<FetchFn>[1] {
+  const sc = trace.getSpanContext(context.active());
+  const run = currentRun();
+  if (!sc || !isSpanContextValid(sc)) return init;
+  const headers = new Headers((init as { headers?: HeadersInit } | undefined)?.headers);
+  headers.set("traceparent", `00-${sc.traceId}-${sc.spanId}-0${sc.traceFlags & 1}`);
+  if (run) { headers.set("x-run-id", run.runId); if (run.promptId !== undefined) headers.set("x-prompt-id", String(run.promptId)); }
+  return { ...init, headers };
+}
+
+async function callImpl(path: string, init: Parameters<FetchFn>[1], fetchFn: FetchFn) {
   const res = await fetchFn(`${ENGINE_BASE_URL}${path}`, init);
   // A Response body can only be consumed once, so read it as text exactly
   // once and try to parse that — never call both res.json() and res.text()
@@ -45,13 +69,19 @@ export async function call(path: string, init: Parameters<FetchFn>[1], fetchFn: 
   return body;
 }
 
+export async function call(path: string, init: Parameters<FetchFn>[1], fetchFn: FetchFn) {
+  if (!runtime().enabled || !currentRun()) return callImpl(path, init, fetchFn);
+  return tool(engineToolName(path), (p: string, i: Parameters<FetchFn>[1], f: FetchFn) => callImpl(p, withTraceHeaders(i), f),
+    { argsOf: (p) => ({ path: p, method: (init as { method?: string } | undefined)?.method ?? "GET" }) })(path, init, fetchFn);
+}
+
 export function getHealth(fetchFn: FetchFn = fetch) {
   return call("/health", { method: "GET" }, fetchFn);
 }
 
 // engine/quotes.py's fetch_quotes: a success entry is {price, source, source_ts};
 // a failure entry is only {error} — there is no as_of/error:null on success.
-type RawQuote = { price: number; source: string; source_ts: string; prev_close?: number } | { error: string };
+type RawQuote = { price: number; source: string; source_ts: string; prev_close?: number; volume?: number } | { error: string };
 
 export async function postQuotes(symbols: string[], fetchFn: FetchFn = fetch) {
   return call(
@@ -260,4 +290,36 @@ export async function getSeries(symbol: string, params: SeriesParams = {}, fetch
   if (params.rsiLength !== undefined) q.set("rsi_length", String(params.rsiLength));
   const qs = q.toString();
   return call(`/series/${encodeURIComponent(symbol)}${qs ? `?${qs}` : ""}`, { method: "GET" }, fetchFn) as Promise<{ symbol: string; bars: SeriesBar[] }>;
+}
+
+// ---- P6 watchlist views (display only): engine/metrics_service.py and engine/fundamentals.py ----
+export type RawMetrics = Record<string, any> & { error?: string };
+export type RawFundamentals = { currency?: string; market_cap?: number | null; shares_out?: number | null; revenue_ttm?: number | null; eps_ttm?: number | null; dividend_ttm?: number | null; error?: string };
+
+export function getMetrics(symbols: string[], tf: "1D" | "1W", fetchFn: FetchFn = fetch) {
+  const q = new URLSearchParams({ symbols: symbols.join(","), tf });
+  return call(`/metrics?${q}`, { method: "GET" }, fetchFn) as Promise<Record<string, RawMetrics>>;
+}
+
+export function getFundamentals(symbols: string[], fetchFn: FetchFn = fetch) {
+  const q = new URLSearchParams({ symbols: symbols.join(",") });
+  return call(`/fundamentals?${q}`, { method: "GET" }, fetchFn) as Promise<Record<string, RawFundamentals>>;
+}
+
+export function getHistory(symbol: string, weeks = 52, fetchFn: FetchFn = fetch) {
+  return call(`/history/${encodeURIComponent(symbol)}?weeks=${weeks}`, { method: "GET" }, fetchFn) as Promise<{ symbol: string; dates: string[]; closes: number[] }>;
+}
+
+// ---- "Refresh data" (engine/refresh.py): when the weekly price cache was last fetched, and a way to rebuild it ----
+export type RefreshStatus = {
+  state: "idle" | "running" | "done" | "error"; done: number; total: number;
+  started_at: number | null; finished_at: number | null; error: string | null;
+  last_refreshed: { fetched_at: string | null; latest_bar_date: string | null };
+  started?: boolean;
+};
+export function getRefreshStatus(fetchFn: FetchFn = fetch) {
+  return call("/data/refresh", { method: "GET" }, fetchFn) as Promise<RefreshStatus>;
+}
+export function startRefresh(fetchFn: FetchFn = fetch) {
+  return call("/data/refresh", { method: "POST" }, fetchFn) as Promise<RefreshStatus>;
 }

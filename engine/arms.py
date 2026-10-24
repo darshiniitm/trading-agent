@@ -4,8 +4,6 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from engine.schemas import ScreenSpec
-
 REGISTRY_PATH = Path("results/prompt_arms/registry.json")
 
 
@@ -20,10 +18,10 @@ def _write(body: dict) -> None:
     REGISTRY_PATH.write_text(json.dumps(body, indent=2))
 
 
-def register_arm(prompt_id: int, spec: ScreenSpec) -> None:
+def register_arm(prompt_id: int, program: dict, structure: str = "literal") -> None:
     body = _read()
     body[str(prompt_id)] = {
-        "structure": spec.structure, "status": "active",
+        "structure": structure, "program_version": program.get("program_version"), "status": "active",
         "registered_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
     _write(body)

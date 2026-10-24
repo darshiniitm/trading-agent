@@ -1,0 +1,101 @@
+{
+ "provider": "local",
+ "model": "gemma4:31b",
+ "run_at": "2026-10-22T18:22:47.574Z",
+ "cases": 6,
+ "passed": 6,
+ "pass_rate": 1,
+ "p50_ms": 42147,
+ "p95_ms": 50530,
+ "bad_json": 0,
+ "call_statuses": {
+  "ok": 12
+ },
+ "gpu_seconds": 240.090850628,
+ "rows": [
+  {
+   "id": "model-1",
+   "pass": true,
+   "slots": {
+    "universe": true,
+    "parameter": true,
+    "value": true,
+    "trigger": true,
+    "data_range": true,
+    "operator": true,
+    "rank": true
+   },
+   "ms": 37345
+  },
+  {
+   "id": "model-2",
+   "pass": true,
+   "slots": {
+    "universe": true,
+    "parameter": true,
+    "value": true,
+    "trigger": true,
+    "data_range": true,
+    "operator": true,
+    "rank": true
+   },
+   "ms": 42147
+  },
+  {
+   "id": "model-3",
+   "pass": true,
+   "slots": {
+    "universe": true,
+    "parameter": true,
+    "value": true,
+    "trigger": true,
+    "data_range": true,
+    "operator": true,
+    "rank": true
+   },
+   "ms": 30527
+  },
+  {
+   "id": "model-4",
+   "pass": true,
+   "slots": {
+    "universe": true,
+    "parameter": true,
+    "value": true,
+    "trigger": true,
+    "data_range": true,
+    "operator": true,
+    "rank": true
+   },
+   "ms": 50530
+  },
+  {
+   "id": "model-5",
+   "pass": true,
+   "slots": {
+    "universe": true,
+    "parameter": true,
+    "value": true,
+    "trigger": true,
+    "data_range": true,
+    "operator": true,
+    "rank": true
+   },
+   "ms": 48047
+  },
+  {
+   "id": "model-6",
+   "pass": true,
+   "slots": {
+    "universe": true,
+    "parameter": true,
+    "value": true,
+    "trigger": true,
+    "data_range": true,
+    "operator": true,
+    "rank": true
+   },
+   "ms": 31833
+  }
+ ]
+}

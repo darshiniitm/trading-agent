@@ -15,6 +15,15 @@ def _prev_close(info) -> float | None:
         return None
 
 
+def _volume(info) -> float | None:
+    try:
+        raw = info["last_volume"] if isinstance(info, dict) else info.last_volume
+        value = float(raw)
+        return value if value >= 0 else None
+    except Exception:
+        return None
+
+
 def fetch_quotes(symbols: list[str], yf_ticker_factory=None) -> dict[str, dict]:
     if yf_ticker_factory is None:
         import yfinance as yf
@@ -30,6 +39,9 @@ def fetch_quotes(symbols: list[str], yf_ticker_factory=None) -> dict[str, dict]:
             prev = _prev_close(info)
             if prev is not None:
                 entry["prev_close"] = prev
+            vol = _volume(info)
+            if vol is not None:
+                entry["volume"] = vol
             out[symbol] = entry
         except Exception as exc:
             out[symbol] = {"error": str(exc)}

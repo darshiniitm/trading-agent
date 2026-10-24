@@ -2,6 +2,8 @@ import { db } from "@/server/db/client";
 import { listExplore } from "@/server/explore";
 import { withUser } from "@/server/auth/requireUser";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request) {
   const raw = db();
   return withUser(raw, req, (user) => {

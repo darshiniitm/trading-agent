@@ -1,25 +1,25 @@
-# Flag matrix status — 2026-09-07
+# Flag matrix status — 2026-09-21
 
 mode: **late_backfill**  overall: **PASS**
-eligible_count: 264
+eligible_count: 262
 
 ## Top 15 by flags_met
 
-- JUBLPHARMA.NS: flags_met=11
-- KPRMILL.NS: flags_met=10
-- MRPL.NS: flags_met=9
-- PINELABS.NS: flags_met=9
-- PETRONET.NS: flags_met=9
-- NIACL.NS: flags_met=9
-- RAINBOW.NS: flags_met=9
-- LICHSGFIN.NS: flags_met=9
-- IIFL.NS: flags_met=9
-- GRANULES.NS: flags_met=9
-- GLAXO.NS: flags_met=9
-- CONCOR.NS: flags_met=9
-- KIRLOSENG.NS: flags_met=8
-- WOCKPHARMA.NS: flags_met=8
-- TATATECH.NS: flags_met=8
+- AEGISVOPAK.NS: flags_met=8
+- STARHEALTH.NS: flags_met=8
+- IKS.NS: flags_met=8
+- HFCL.NS: flags_met=7
+- SHYAMMETL.NS: flags_met=7
+- PNBHOUSING.NS: flags_met=7
+- PFOCUS.NS: flags_met=7
+- KPIL.NS: flags_met=7
+- KIRLOSENG.NS: flags_met=7
+- KARURVYSYA.NS: flags_met=7
+- JSWDULUX.NS: flags_met=7
+- IIFL.NS: flags_met=7
+- LICHSGFIN.NS: flags_met=7
+- HBLENGINE.NS: flags_met=7
+- EMMVEE.NS: flags_met=7
 
 ## T4 picks
 

@@ -3,8 +3,8 @@
   "signal_week": "2025-03-03",
   "holding_week": "2025-03-10",
   "recording_mode": "replay",
-  "created_utc": "2026-09-15T05:39:15+00:00",
-  "created_ist": "2026-09-15T11:09:13+05:30",
+  "created_utc": "2026-09-29T05:35:02+00:00",
+  "created_ist": "2026-09-29T11:05:01+05:30",
   "monday_open_deadline_ist": "2025-03-10T09:15:00+05:30",
   "registry_version": 1,
   "registry_checksum": "sha256:d8164388d645879ab937757c356184153873b26d53dbe865a48474be24cd648d",
@@ -22,27 +22,29 @@
   "counts": {
     "rows": 271,
     "flags_met_histogram": {
-      "1.0": 28,
-      "2.0": 78,
-      "3.0": 75,
-      "4.0": 41,
-      "5.0": 19,
-      "6.0": 6,
-      "7.0": 7,
+      "0.0": 1,
+      "1.0": 34,
+      "2.0": 80,
+      "3.0": 72,
+      "4.0": 34,
+      "5.0": 20,
+      "6.0": 9,
+      "7.0": 3,
       "8.0": 4,
-      "9.0": 1
+      "9.0": 1,
+      "10.0": 1
     },
     "prevalence_by_flag": {
       "A01_vstop_flip_up": 0.0077,
       "A02_vstop_uptrend": 0.0927,
       "A03_rsi_in_band": 0.1197,
       "A04_risk_cap_ok": 0.0425,
-      "B01_sector_rs_4w_pos": 0.4633,
-      "B02_sector_top_k": 0.1158,
-      "B03_sector_rs_13w_pos": 0.5367,
+      "B01_sector_rs_4w_pos": 0.3514,
+      "B02_sector_top_k": 0.1042,
+      "B03_sector_rs_13w_pos": 0.5637,
       "B04_volume_expansion": 0.1969,
-      "B05_trend_quality_strong": 0.0116,
-      "B06_rsi_sweetspot_core": 0.0541,
+      "B05_trend_quality_strong": 0.0193,
+      "B06_rsi_sweetspot_core": 0.0579,
       "C01_risk_headroom_5pp": 0.0232,
       "C02_liquidity_2x": 0.9961,
       "C03_cap_band_central": 0.4054
@@ -53,6 +55,11 @@
     "selected": []
   },
   "checks": [],
-  "caveats": [],
-  "replay_run_id": "replay_2026-09-15T11:08:40+05:30"
+  "caveats": [
+    "yfinance weekly bars / corporate-action adjustment not independently verified",
+    "market cap uses TODAY's shares outstanding held constant across history (no point-in-time share count available from open-source sources) \u2014 see design doc section 3.2",
+    "delisted / merged tickers are not included -> survivorship bias, backtest returns are likely biased upward",
+    "sector map is NSE index-classification 'Industry' field as of the CSV snapshot date, not strictly point-in-time historically"
+  ],
+  "replay_run_id": "replay_2026-09-29T11:03:48+05:30"
 }

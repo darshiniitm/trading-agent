@@ -1,0 +1,5 @@
+# NSE trading holidays (weekday closures) used for the freshness check (spec §3.3).
+# Weekends are handled in code. Maintain this list from NSE's published holiday circular; it is
+# deliberately NOT pre-filled from memory. Closures missing here are tolerated (see
+# ohlcv.stale_after_trading_days) and are also learned from data by `python -m engine.prefetch`.
+holidays: []

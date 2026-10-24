@@ -3,8 +3,8 @@
   "signal_week": "2025-03-10",
   "holding_week": "2025-03-17",
   "recording_mode": "replay",
-  "created_utc": "2026-09-15T05:39:16+00:00",
-  "created_ist": "2026-09-15T11:09:15+05:30",
+  "created_utc": "2026-09-29T05:35:05+00:00",
+  "created_ist": "2026-09-29T11:05:04+05:30",
   "monday_open_deadline_ist": "2025-03-17T09:15:00+05:30",
   "registry_version": 1,
   "registry_checksum": "sha256:d8164388d645879ab937757c356184153873b26d53dbe865a48474be24cd648d",
@@ -22,25 +22,25 @@
   "counts": {
     "rows": 264,
     "flags_met_histogram": {
-      "1.0": 68,
-      "2.0": 69,
-      "3.0": 45,
-      "4.0": 34,
-      "5.0": 19,
-      "6.0": 10,
-      "7.0": 1,
+      "1.0": 69,
+      "2.0": 82,
+      "3.0": 43,
+      "4.0": 29,
+      "5.0": 11,
+      "6.0": 9,
+      "7.0": 5,
       "8.0": 3,
-      "9.0": 3
+      "9.0": 1
     },
     "prevalence_by_flag": {
       "A01_vstop_flip_up": 0.0079,
       "A02_vstop_uptrend": 0.0873,
-      "A03_rsi_in_band": 0.1032,
+      "A03_rsi_in_band": 0.0992,
       "A04_risk_cap_ok": 0.0516,
-      "B01_sector_rs_4w_pos": 0.4167,
-      "B02_sector_top_k": 0.1468,
-      "B03_sector_rs_13w_pos": 0.3968,
-      "B04_volume_expansion": 0.0357,
+      "B01_sector_rs_4w_pos": 0.373,
+      "B02_sector_top_k": 0.119,
+      "B03_sector_rs_13w_pos": 0.3294,
+      "B04_volume_expansion": 0.0397,
       "B05_trend_quality_strong": 0.0119,
       "B06_rsi_sweetspot_core": 0.0476,
       "C01_risk_headroom_5pp": 0.0198,
@@ -53,6 +53,11 @@
     "selected": []
   },
   "checks": [],
-  "caveats": [],
-  "replay_run_id": "replay_2026-09-15T11:08:40+05:30"
+  "caveats": [
+    "yfinance weekly bars / corporate-action adjustment not independently verified",
+    "market cap uses TODAY's shares outstanding held constant across history (no point-in-time share count available from open-source sources) \u2014 see design doc section 3.2",
+    "delisted / merged tickers are not included -> survivorship bias, backtest returns are likely biased upward",
+    "sector map is NSE index-classification 'Industry' field as of the CSV snapshot date, not strictly point-in-time historically"
+  ],
+  "replay_run_id": "replay_2026-09-29T11:03:48+05:30"
 }

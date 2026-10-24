@@ -3,8 +3,8 @@ import { fmtDate } from "@/lib/watchlistMath";
 import styles from "./watchlist.module.css";
 
 // "Prices as of" is the newest quote's own timestamp — never the wall clock — so nothing implies live data.
-export function PricesBar({ asOf, lastBarDate, onRefresh, fetching, status, error }: {
-  asOf: string | null; lastBarDate: string | null; onRefresh: () => void; fetching: boolean; status: string; error: string | null;
+export function PricesBar({ asOf, lastBarDate, onRefresh, fetching, status, error, extraLine }: {
+  asOf: string | null; lastBarDate: string | null; onRefresh: () => void; fetching: boolean; status: string; error: string | null; extraLine?: string | null;
 }) {
   const time = asOf ? asOf.slice(11, 16) : null;
   return (
@@ -17,6 +17,7 @@ export function PricesBar({ asOf, lastBarDate, onRefresh, fetching, status, erro
       </Button>
       <span aria-live="polite" className={styles.liveRegion}>{status}</span>
       {error && <span role="alert" className={styles.err}>{error}</span>}
+      {extraLine && <span className={styles.asOfLine} data-testid="views-as-of">{extraLine}</span>}
     </div>
   );
 }

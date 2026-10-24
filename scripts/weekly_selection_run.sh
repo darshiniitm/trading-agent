@@ -30,6 +30,11 @@ python -m tests.track_threshold record --picks "$PICKS" || true
 STATUS=0
 python -m tests.track_flags on-selection --picks "$PICKS" || STATUS=$?
 
+# 3b. Observability: job gauges for Grafana Cloud (OTLP), derived read-only from the records above (success is "a valid record exists",
+#     not a shell exit status -- steps 2/3a swallow failures with `|| true`). Needs OTEL_EXPORTER_OTLP_ENDPOINT/_HEADERS in this
+#     shell's environment (prints instead when unset); never fails the run.
+python -m scripts.emit_job_metrics || true
+
 # 4. Audit (read-only agent); never blocks the selection output
 WK=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['signal_week_start'])" "$PICKS")
 claude -p "Invoke the flag-run-auditor agent for WK=$WK. Follow its decision table exactly." \

@@ -1,6 +1,7 @@
 import type Database from "better-sqlite3";
 import { programOf } from "@/server/programOf";
 import { selectCandidates, type SelectCandidate } from "@/server/engine/client";
+import { task, tool } from "@/server/telemetry";
 import { FROZEN_STATUSES } from "@/server/weeklyScreen";
 
 // Entry statuses a /select outcome may still be applied to: open, and not yet
@@ -20,7 +21,7 @@ function outcomeFor(status: Outcome["status"], c: SelectCandidate): Outcome {
   return { status: "no_point_data", entryPrice: null, stop: null, refPrice: null };
 }
 
-export async function runSelectEntry(
+async function runSelectEntryImpl(
   raw: Database.Database,
   { promptId, runId }: { promptId: number; runId: number },
   fetchFn?: typeof fetch
@@ -92,5 +93,8 @@ export async function runSelectEntry(
     return applied;
   });
 
-  return { updated: txn() };
+  return { updated: tool("warehouse.write", txn, { argsOf: () => ({ tables: "run_results, watchlist_entries, entry_events" }), captureOutput: false })() };
 }
+
+// observability: entry selection for one run
+export const runSelectEntry = task("select_entry", runSelectEntryImpl);

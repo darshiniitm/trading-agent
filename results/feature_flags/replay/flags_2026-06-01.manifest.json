@@ -3,8 +3,8 @@
   "signal_week": "2026-06-01",
   "holding_week": "2026-06-08",
   "recording_mode": "replay",
-  "created_utc": "2026-09-15T05:40:47+00:00",
-  "created_ist": "2026-09-15T11:10:46+05:30",
+  "created_utc": "2026-09-29T05:38:11+00:00",
+  "created_ist": "2026-09-29T11:08:09+05:30",
   "monday_open_deadline_ist": "2026-06-08T09:15:00+05:30",
   "registry_version": 1,
   "registry_checksum": "sha256:d8164388d645879ab937757c356184153873b26d53dbe865a48474be24cd648d",
@@ -25,10 +25,10 @@
       "1.0": 10,
       "2.0": 32,
       "3.0": 28,
-      "4.0": 42,
-      "5.0": 41,
-      "6.0": 52,
-      "7.0": 26,
+      "4.0": 41,
+      "5.0": 42,
+      "6.0": 53,
+      "7.0": 25,
       "8.0": 26,
       "9.0": 14,
       "10.0": 4
@@ -36,17 +36,17 @@
     "prevalence_by_flag": {
       "A01_vstop_flip_up": 0.0109,
       "A02_vstop_uptrend": 0.6473,
-      "A03_rsi_in_band": 0.3418,
+      "A03_rsi_in_band": 0.3455,
       "A04_risk_cap_ok": 0.4945,
-      "B01_sector_rs_4w_pos": 0.4145,
+      "B01_sector_rs_4w_pos": 0.4945,
       "B02_sector_top_k": 0.2255,
-      "B03_sector_rs_13w_pos": 0.8109,
+      "B03_sector_rs_13w_pos": 0.7309,
       "B04_volume_expansion": 0.1309,
       "B05_trend_quality_strong": 0.1127,
-      "B06_rsi_sweetspot_core": 0.1891,
+      "B06_rsi_sweetspot_core": 0.1818,
       "C01_risk_headroom_5pp": 0.2945,
       "C02_liquidity_2x": 1.0,
-      "C03_cap_band_central": 0.4145
+      "C03_cap_band_central": 0.4182
     }
   },
   "t4": {
@@ -54,6 +54,11 @@
     "selected": []
   },
   "checks": [],
-  "caveats": [],
-  "replay_run_id": "replay_2026-09-15T11:08:40+05:30"
+  "caveats": [
+    "yfinance weekly bars / corporate-action adjustment not independently verified",
+    "market cap uses TODAY's shares outstanding held constant across history (no point-in-time share count available from open-source sources) \u2014 see design doc section 3.2",
+    "delisted / merged tickers are not included -> survivorship bias, backtest returns are likely biased upward",
+    "sector map is NSE index-classification 'Industry' field as of the CSV snapshot date, not strictly point-in-time historically"
+  ],
+  "replay_run_id": "replay_2026-09-29T11:03:48+05:30"
 }

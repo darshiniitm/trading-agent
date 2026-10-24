@@ -1,0 +1,307 @@
+{
+ "program": {
+  "program_version": 5,
+  "universe": {
+   "source": "index",
+   "index": "NIFTY 200"
+  },
+  "sets": [
+   {
+    "id": "S1",
+    "from": "universe",
+    "label": "qualified stocks",
+    "eval": {
+     "mode": "latest",
+     "timeframe": "1D",
+     "bar": "last_completed"
+    },
+    "where": {
+     "all": [
+      "C1",
+      "C2",
+      "C3"
+     ]
+    }
+   }
+  ],
+  "conditions": [
+   {
+    "id": "C1",
+    "lhs": {
+     "ind": "macd",
+     "params": {
+      "fast": 12,
+      "slow": 26,
+      "signal": 9,
+      "source": "close"
+     },
+     "tf": "1D",
+     "output": "value"
+    },
+    "op": "cross_above",
+    "rhs": {
+     "ind": "macd",
+     "params": {
+      "fast": 12,
+      "slow": 26,
+      "signal": 9,
+      "source": "close"
+     },
+     "tf": "1D",
+     "output": "signal"
+    },
+    "within_bars": 2,
+    "emit": [
+     "event_date"
+    ],
+    "phrase": "MACD (12,26,9) bullish crossover below the zero line"
+   },
+   {
+    "id": "C2",
+    "lhs": {
+     "ind": "macd",
+     "params": {
+      "fast": 12,
+      "slow": 26,
+      "signal": 9,
+      "source": "close"
+     },
+     "tf": "1D",
+     "output": "value"
+    },
+    "op": ">",
+    "rhs": {
+     "ind": "macd",
+     "params": {
+      "fast": 12,
+      "slow": 26,
+      "signal": 9,
+      "source": "close"
+     },
+     "tf": "1D",
+     "output": "signal"
+    },
+    "phrase": "MACD (12,26,9) bullish crossover below the zero line"
+   },
+   {
+    "id": "C3",
+    "lhs": {
+     "ind": "macd",
+     "params": {
+      "fast": 12,
+      "slow": 26,
+      "signal": 9,
+      "source": "close"
+     },
+     "tf": "1D",
+     "output": "value"
+    },
+    "op": "<",
+    "value": 0,
+    "phrase": "MACD (12,26,9) bullish crossover below the zero line"
+   }
+  ],
+  "actions": [],
+  "source_phrases": [
+   {
+    "path": "conditions.C1.params.fast",
+    "phrase": "12",
+    "span": [
+     6,
+     8
+    ]
+   },
+   {
+    "path": "conditions.C1.params.slow",
+    "phrase": "26",
+    "span": [
+     9,
+     11
+    ]
+   },
+   {
+    "path": "conditions.C1.params.signal",
+    "phrase": "9",
+    "span": [
+     12,
+     13
+    ]
+   },
+   {
+    "path": "conditions.C1.rhs.params.fast",
+    "phrase": "12",
+    "span": [
+     6,
+     8
+    ]
+   },
+   {
+    "path": "conditions.C1.rhs.params.slow",
+    "phrase": "26",
+    "span": [
+     9,
+     11
+    ]
+   },
+   {
+    "path": "conditions.C1.rhs.params.signal",
+    "phrase": "9",
+    "span": [
+     12,
+     13
+    ]
+   },
+   {
+    "path": "conditions.C1.within_bars",
+    "phrase": "2",
+    "span": [
+     65,
+     66
+    ]
+   },
+   {
+    "path": "conditions.C2.params.fast",
+    "phrase": "12",
+    "span": [
+     6,
+     8
+    ]
+   },
+   {
+    "path": "conditions.C2.params.slow",
+    "phrase": "26",
+    "span": [
+     9,
+     11
+    ]
+   },
+   {
+    "path": "conditions.C2.params.signal",
+    "phrase": "9",
+    "span": [
+     12,
+     13
+    ]
+   },
+   {
+    "path": "conditions.C2.rhs.params.fast",
+    "phrase": "12",
+    "span": [
+     6,
+     8
+    ]
+   },
+   {
+    "path": "conditions.C2.rhs.params.slow",
+    "phrase": "26",
+    "span": [
+     9,
+     11
+    ]
+   },
+   {
+    "path": "conditions.C2.rhs.params.signal",
+    "phrase": "9",
+    "span": [
+     12,
+     13
+    ]
+   },
+   {
+    "path": "conditions.C3.params.fast",
+    "phrase": "12",
+    "span": [
+     6,
+     8
+    ]
+   },
+   {
+    "path": "conditions.C3.params.slow",
+    "phrase": "26",
+    "span": [
+     9,
+     11
+    ]
+   },
+   {
+    "path": "conditions.C3.params.signal",
+    "phrase": "9",
+    "span": [
+     12,
+     13
+    ]
+   },
+   {
+    "path": "universe.index",
+    "phrase": "Nifty 200",
+    "span": [
+     77,
+     86
+    ]
+   }
+  ],
+  "needs_input": [],
+  "unsupported": [],
+  "ignored": [],
+  "unrecognised": [],
+  "answers": [],
+  "assumptions": [
+   {
+    "path": "conditions.C1.params.source",
+    "label": "MACD price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C1.rhs.params.source",
+    "label": "MACD price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C2.params.source",
+    "label": "MACD price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C2.rhs.params.source",
+    "label": "MACD price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C3.params.source",
+    "label": "MACD price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C3.value",
+    "label": "the zero line = 0",
+    "value": 0,
+    "provenance": "assumed"
+   }
+  ],
+  "not_evaluable": []
+ },
+ "english": "From **NIFTY 200** stocks, on **daily** candles, find stocks where **MACD(12, 26, 9, close) crossed above MACD(12, 26, 9, close) signal line within the last 2 bars**, and **MACD(12, 26, 9, close) is above MACD(12, 26, 9, close) signal line**, and **MACD(12, 26, 9, close) is below 0**.",
+ "issues": [],
+ "clauses": [
+  {
+   "id": "L1",
+   "text": "MACD (12,26,9) bullish crossover below the zero line in the last 2 sessions, Nifty 200",
+   "span": [
+    0,
+    86
+   ],
+   "status": "ok",
+   "maps_to": "C1: MACD(12, 26, 9, close) [1D] crosses above MACD(12, 26, 9, close) signal; C2: MACD(12, 26, 9, close) [1D] > MACD(12, 26, 9, close) signal; C3: MACD(12, 26, 9, close) [1D] < 0; universe: NIFTY 200",
+   "questions": 0
+  }
+ ],
+ "reader": {
+  "calls": 0,
+  "dropped": []
+ }
+}

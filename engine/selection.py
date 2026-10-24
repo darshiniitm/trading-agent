@@ -1,13 +1,21 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import pandas as pd
 
-from engine.schemas import SelectionPoint
 from src.data.holding_week import corrected_week_bar
+
+
+@dataclass(frozen=True)
+class SelectionPoint:
+    session_of_week: int   # 1-5
+    at: str                # "open" | "close"
 
 
 def resolve_ep(ticker: str, weekly_panels: dict, daily_panels: dict | None,
                as_of: pd.Timestamp, selection_point: SelectionPoint) -> tuple[float | None, str]:
+    """A real price at the selection point, or (None, "no_point_data"). Never fabricates one."""
     as_of = pd.Timestamp(as_of)
     panel = weekly_panels.get(ticker)
     if panel is None or panel.empty:
@@ -36,37 +44,3 @@ def resolve_ep(ticker: str, weekly_panels: dict, daily_panels: dict | None,
         return None, "no_point_data"
     col = "open" if selection_point.at == "open" else "close"
     return float(days.iloc[idx][col]), "ok"
-
-
-def select_candidates(spec, as_of: pd.Timestamp, env, screen_result: dict) -> dict:
-    """Never fabricates a price. A full_match candidate is 'entered' only when a real
-    selection-point price was resolved; with no selection_point in the spec, or when
-    resolve_ep can't find one, the candidate goes to no_point_data -- the app-side
-    confirm gate is expected to block confirming a prompt with no selection_point at
-    all (backend plan §10's 'Open parameters'/'Structure applicability' tests), but
-    this function does not rely on that upstream gate to stay honest on its own."""
-    out = {"entered": [], "not_confirmed": [], "no_point_data": [], "watching": []}
-    for cand in screen_result["candidates"]:
-        ticker = cand["ticker"]
-        if cand["membership"] != "full_match":
-            ref_price, status = resolve_ep(ticker, env.panels, env.daily_panels, as_of,
-                                            spec.selection_point) if spec.selection_point else (None, "no_point_data")
-            out["watching"].append({**cand, "ref_price": ref_price})
-            continue
-
-        if spec.selection_point is None:
-            out["no_point_data"].append({**cand, "reason": "no selection point in spec"})
-            continue
-
-        ep, status = resolve_ep(ticker, env.panels, env.daily_panels, as_of, spec.selection_point)
-        if status == "no_point_data":
-            out["no_point_data"].append({**cand, "reason": "selection-point price unavailable"})
-            continue
-
-        event_conds = [c for c in spec.conditions if c.role == "event"]
-        still_valid = all(cand["values"].get(c.id, {}).get("uptrend", False) for c in event_conds) if event_conds else True
-        if still_valid:
-            out["entered"].append({**cand, "entry_price": ep})
-        else:
-            out["not_confirmed"].append({**cand, "entry_price": ep})
-    return out

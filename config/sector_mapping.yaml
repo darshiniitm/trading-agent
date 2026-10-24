@@ -1,0 +1,14 @@
+# Yahoo `sector` -> NSE index "Industry" taxonomy (spec §3.5). Unmapped Yahoo values stay as-is (quality fallback).
+# Taxonomies differ; this is a best-effort bridge, extend as gaps show up in the gap log.
+yahoo_to_nse:
+  "Financial Services": "Financial Services"
+  "Technology": "Information Technology"
+  "Healthcare": "Healthcare"
+  "Consumer Defensive": "Fast Moving Consumer Goods"
+  "Consumer Cyclical": "Consumer Durables"
+  "Basic Materials": "Metals & Mining"
+  "Industrials": "Capital Goods"
+  "Energy": "Oil Gas & Consumable Fuels"
+  "Utilities": "Power"
+  "Real Estate": "Realty"
+  "Communication Services": "Telecommunication"

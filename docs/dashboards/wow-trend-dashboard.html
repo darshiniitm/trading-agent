@@ -1,0 +1,776 @@
+<title>WoW Arm History</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --paper:#F5F6F8; --panel:#FFFFFF; --sunk:#EDEFF3;
+  --ink:#15181D; --ink-2:#454C57; --ink-3:#767E8B;
+  --rule:#DCE0E7; --rule-2:#C6CCD6;
+  --accent:#9C6316; --accent-soft:#F0E4D2;
+  --loss:#A32A20; --loss-soft:#F6E3E0;
+  --gain:#186049; --gain-soft:#DCEDE5;
+  --flag:#7A5AA8; --flag-soft:#EDE6F5;
+  --line2:#2E6E8E; --line2-soft:#DEECF2;
+  --line3:#8B3A9E; --line3-soft:#F1E1F5;
+  --pend:#6B7280; --pend-soft:#E7E9EC;
+  --shadow:0 1px 2px rgba(21,24,29,.06),0 8px 24px -12px rgba(21,24,29,.14);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1116; --panel:#161A21; --sunk:#1C212A;
+    --ink:#E7EAEF; --ink-2:#AAB2BF; --ink-3:#79828F;
+    --rule:#262C36; --rule-2:#333B47;
+    --accent:#D19A4E; --accent-soft:#332714;
+    --loss:#E0796C; --loss-soft:#331C19;
+    --gain:#5FBF97; --gain-soft:#12291F;
+    --flag:#B79AE0; --flag-soft:#241C33;
+    --line2:#7DB8D6; --line2-soft:#132732;
+    --line3:#D97FE8; --line3-soft:#3A1F3F;
+    --pend:#9AA3AF; --pend-soft:#232830;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1116; --panel:#161A21; --sunk:#1C212A;
+  --ink:#E7EAEF; --ink-2:#AAB2BF; --ink-3:#79828F;
+  --rule:#262C36; --rule-2:#333B47;
+  --accent:#D19A4E; --accent-soft:#332714;
+  --loss:#E0796C; --loss-soft:#331C19;
+  --gain:#5FBF97; --gain-soft:#12291F;
+  --flag:#B79AE0; --flag-soft:#241C33;
+  --line2:#7DB8D6; --line2-soft:#132732;
+  --line3:#D97FE8; --line3-soft:#3A1F3F;
+  --pend:#9AA3AF; --pend-soft:#232830;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1120px; margin:0 auto; padding:0 24px 96px}
+h1,h2,h3{font-family:Newsreader,Georgia,serif; font-weight:600; text-wrap:balance; margin:0}
+.num{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-variant-numeric:tabular-nums}
+
+header{border-bottom:1px solid var(--rule); padding:56px 0 28px; margin-bottom:44px}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:500}
+h1{font-size:clamp(32px,5vw,46px); line-height:1.1; margin:14px 0 12px; letter-spacing:-.01em}
+.standfirst{font-size:18px; color:var(--ink-2); max-width:70ch; margin:0}
+.meta{display:flex; flex-wrap:wrap; gap:8px 28px; margin-top:24px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--ink-3)}
+.meta b{color:var(--ink-2); font-weight:500}
+
+section{margin-bottom:60px; scroll-margin-top:20px}
+.step-head{display:flex; align-items:baseline; gap:16px; margin-bottom:8px}
+.step-n{font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; color:var(--accent); border:1px solid var(--accent); border-radius:3px; padding:2px 7px; flex:none; letter-spacing:.04em}
+h2{font-size:26px; letter-spacing:-.005em}
+.lede{color:var(--ink-2); margin:0 0 22px; max-width:74ch}
+.arrow{text-align:center; color:var(--rule-2); font-size:20px; margin:-34px 0 26px; font-family:"IBM Plex Mono",monospace}
+
+.card{background:var(--panel); border:1px solid var(--rule); border-radius:8px; box-shadow:var(--shadow); overflow:hidden}
+.card-head{padding:12px 18px; border-bottom:1px solid var(--rule); background:var(--sunk); font-family:"IBM Plex Mono",monospace; font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-2); font-weight:500; display:flex; justify-content:space-between; align-items:center; gap:12px}
+.card-head .side{font-weight:400; text-transform:none; letter-spacing:0; color:var(--ink-3)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-size:13.5px}
+th,td{padding:9px 14px; text-align:right; white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th:nth-child(2),td:nth-child(2){text-align:left}
+thead th{font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); font-weight:500; border-bottom:1px solid var(--rule-2); background:var(--panel)}
+tbody tr{border-bottom:1px solid var(--rule)}
+tbody tr:last-child{border-bottom:0}
+tbody td{color:var(--ink-2)}
+td.tick{font-family:"IBM Plex Mono",monospace; font-weight:500; color:var(--ink)}
+td.n{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums}
+.neg{color:var(--loss); font-weight:500}
+.pos{color:var(--gain); font-weight:500}
+tr.hl td{background:var(--accent-soft)}
+
+.pill{display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; padding:2px 7px; border-radius:3px; font-weight:500}
+.pill-out{background:var(--loss-soft); color:var(--loss)}
+.pill-in{background:var(--gain-soft); color:var(--gain)}
+.pill-flag{background:var(--accent-soft); color:var(--accent)}
+.pill-pend{background:var(--pend-soft); color:var(--pend)}
+.pill-arm{background:var(--flag-soft); color:var(--flag)}
+
+.callout{border-left:3px solid var(--accent); background:var(--panel); padding:16px 20px; margin:26px 0; border-radius:0 6px 6px 0; border-top:1px solid var(--rule); border-right:1px solid var(--rule); border-bottom:1px solid var(--rule)}
+.callout h3{font-size:17px; margin-bottom:6px}
+.callout p{margin:0; color:var(--ink-2); font-size:15px; max-width:74ch}
+.callout.flag{border-left-color:var(--flag)}
+.callout.pend{border-left-color:var(--pend)}
+.callout.loss{border-left-color:var(--loss)}
+
+.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); border-radius:8px; overflow:hidden}
+.stat{background:var(--panel); padding:16px 18px}
+.stat .k{font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3)}
+.stat .v{font-family:"IBM Plex Mono",monospace; font-size:23px; font-weight:500; margin-top:5px; letter-spacing:-.01em}
+.stat .s{font-size:12px; color:var(--ink-3); margin-top:2px}
+
+.two{display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:20px}
+.legend{display:flex; gap:18px; flex-wrap:wrap; font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink-2); padding:12px 18px; border-top:1px solid var(--rule)}
+.legend span{display:inline-flex; align-items:center; gap:6px}
+.sw{width:13px; height:3px; border-radius:2px; display:inline-block}
+.chart-wrap{padding:16px 8px 4px}
+svg text{font-family:"IBM Plex Mono",monospace; fill:var(--ink-3)}
+.axis-line{stroke:var(--rule-2); stroke-width:1}
+.gridline{stroke:var(--rule); stroke-width:1}
+.zero-line{stroke:var(--ink-3); stroke-width:1; stroke-dasharray:2 3}
+
+.checklist{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:0}
+.checklist li{display:flex; gap:12px; padding:11px 18px; border-bottom:1px solid var(--rule); font-size:14.5px; color:var(--ink-2)}
+.checklist li:last-child{border-bottom:0}
+.checklist .mk{flex:none; font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:600; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-top:1px}
+.mk.done{background:var(--gain-soft); color:var(--gain)}
+.mk.no{background:var(--loss-soft); color:var(--loss)}
+.mk.wait{background:var(--pend-soft); color:var(--pend)}
+.checklist b{color:var(--ink)}
+.foot{border-top:1px solid var(--rule); margin-top:56px; padding-top:20px; color:var(--ink-3); font-size:13.5px}
+code{font-family:"IBM Plex Mono",monospace; font-size:.9em; background:var(--sunk); padding:1px 5px; border-radius:3px}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+p{max-width:74ch}
+.tooltip{position:absolute; pointer-events:none; background:var(--panel); border:1px solid var(--rule-2); border-radius:5px; padding:6px 9px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink); box-shadow:var(--shadow); white-space:nowrap; opacity:0; transition:opacity .1s; z-index:5}
+.chart-holder{position:relative}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Week-over-week arm history &middot; built 2026-09-19</div>
+  <h1>WoW Arm History</h1>
+  <p class="standfirst">A study of a signal whose pooled expectancy is already known negative &mdash; run to find out whether it was ever positive, and when that stopped. Lane A: 104-week flag-matrix replay, 18 registered arms, read-only over already-graded records. This is not a hunt for a winner among the arms.</p>
+  <div class="meta">
+    <span><b>Spec</b> docs/wow-arm-history-analysis-plan.md v0.1</span>
+    <span><b>Weeks</b> 104 (2024-09-09 &rarr; 2026-08-31)</span>
+    <span><b>Lane A arms</b> 18, read-only</span>
+    <span><b>NIFTY 50 fetch</b> ^NSEI &mdash; reporting series only, never a gate</span>
+    <span><b>Findings</b> docs/wow_findings.md</span>
+  </div>
+</header>
+
+<!-- 00 cannot-conclude -->
+<section>
+  <div class="callout loss">
+    <h3>What this study cannot conclude</h3>
+    <p>104 weeks with a median of ~2 Control picks per week is a small sample carrying heavy market-factor correlation. It can distinguish &ldquo;consistently negative&rdquo; from &ldquo;was positive, now negative&rdquo;. It <strong>cannot</strong> establish a positive edge for any arm, and it <strong>cannot</strong> be the basis for graduating one. T4 is already killed by its own pre-registered DEV/VALIDATE protocol (2026-09-15 finding) &mdash; nothing here reopens that.</p>
+  </div>
+</section>
+
+<!-- 01 three-line -->
+<section>
+  <div class="step-head"><span class="step-n">01</span><h2>The three-line series &mdash; Control vs. NIFTY 50 vs. NIFTY MIDCAP 150</h2></div>
+  <p class="lede">Every week on the Lane A grid, three comparable open&rarr;close returns on the same holding-week bar. NIFTYMIDCAP150 is the fair benchmark (same cap segment as the eligible universe); NIFTY 50 is the opportunity-cost line &mdash; would doing nothing but holding large caps have beaten this. Both indices are gross, no costs; Control's basket carries 0.5% round-trip costs &mdash; a wedge that leans conservative against our own picks.</p>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-head">Cumulative curves, compounded weekly (cash weeks at 1.0)<span class="side">104 weeks</span></div>
+    <div class="chart-holder">
+      <div id="chart-cum" class="chart-wrap"></div>
+      <div class="tooltip" id="tt-cum"></div>
+    </div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--accent)"></i>Control basket</span>
+      <span><i class="sw" style="background:var(--line2)"></i>NIFTY MIDCAP 150</span>
+      <span><i class="sw" style="background:var(--line3)"></i>NIFTY 50</span>
+      <span><i class="sw" style="background:var(--flag)"></i>T1 replay (dev-backtest curve)</span>
+      <span><i class="sw" style="background:var(--flag); border-radius:50%; width:9px; height:9px"></i>T1 forward (1 live wk &mdash; dot, not a curve)</span>
+    </div>
+  </div>
+
+  <div class="stats" style="margin-bottom:20px">
+    <div class="stat"><div class="k">Control, 104 wks</div><div class="v neg" id="stat-basket-final">&mdash;</div><div class="s">compounded, cash-week neutral</div></div>
+    <div class="stat"><div class="k">NIFTY Midcap 150</div><div class="v pos" id="stat-midcap-final">&mdash;</div><div class="s">gross, same window</div></div>
+    <div class="stat"><div class="k">NIFTY 50</div><div class="v neg" id="stat-nifty50-final">&mdash;</div><div class="s">gross, same window</div></div>
+    <div class="stat"><div class="k">Max drawdown, Control</div><div class="v neg">-76.1%</div><div class="s">§4.2.1, shape only</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">Weekly spread &mdash; Control basket minus NIFTY MIDCAP 150<span class="side">pp, zero line shown</span></div>
+    <div class="chart-holder">
+      <div id="chart-spread" class="chart-wrap"></div>
+      <div class="tooltip" id="tt-spread"></div>
+    </div>
+  </div>
+
+  <div class="callout loss">
+    <h3>Same window, wildly different destinations</h3>
+    <p>Over these 104 weeks Control's own basket compounds to <strong>26.6%</strong> of its starting value (a -73.4% cumulative loss, cash weeks included) while NIFTY MIDCAP 150 gained <strong>+6.7%</strong> and NIFTY 50 lost only <strong>-3.6%</strong> &mdash; both fully investable, neither carrying a stop, a risk cap, or trading costs. This is the same fact the regression guard already carries (pooled net -1.52%/wk), shown as a shape instead of a number. The purple <strong>line</strong> is T1's own 104-week replay (a fresh historical backtest of the daily rolling-window scan, <span id="t1-replay-status">still backfilling</span> &mdash; dev evidence, same exit convention as Control so directly comparable in shape, never forward evidence); the purple <strong>dot</strong> is T1's one live forward week, 2026-09-07 &mdash; deliberately still just a marker, since a real evidence quality doesn't get blended into a dev-backtest line. See &sect;03b below for both reads.</p>
+  </div>
+</section>
+<div class="arrow">&darr;</div>
+
+<!-- 02 Q1 trend -->
+<section>
+  <div class="step-head"><span class="step-n">02</span><h2>Q1 &mdash; is there a trend? Disagreement, not a clean answer</h2></div>
+  <p class="lede">OLS-on-week-index with Newey-West(4) SE, cross-checked against the non-parametric Mann-Kendall test and a first-half/second-half block-bootstrap split. Per the plan's own §4.2 item 3: disagreement between the two trend tests is reported, not resolved.</p>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-head">Control &mdash; net_pct, 74 weeks-with-picks<span class="side">three independent reads</span></div>
+    <div class="stats" style="border:0; border-radius:0">
+      <div class="stat"><div class="k">OLS slope (Newey-West)</div><div class="v pos">+0.036%/wk</div><div class="s">p=0.007 &mdash; nominally significant</div></div>
+      <div class="stat"><div class="k">Mann-Kendall tau</div><div class="v">+0.124</div><div class="s">p=0.119 &mdash; NOT significant</div></div>
+      <div class="stat"><div class="k">First half mean</div><div class="v neg">-2.377%</div><div class="s">weeks 1&ndash;37</div></div>
+      <div class="stat"><div class="k">Second half mean</div><div class="v neg">-1.254%</div><div class="s">weeks 38&ndash;74</div></div>
+    </div>
+    <div style="padding:14px 18px;font-size:13.5px;color:var(--ink-3);border-top:1px solid var(--rule)">Half-split diff +0.993pp, block-bootstrap <strong>CI95 [-1.074, +2.988] &mdash; includes zero</strong>. Two of three tests do not confirm a trend; the p=0.007 OLS result would not survive Bonferroni correction across the 18-arm family this study tests (0.05/18 &asymp; 0.0028). Read as: <strong>no confirmed trend</strong>, not evidence of decay or of improvement.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">Trend tests, net_pct basis, every arm with &ge;26 weeks-with-picks<span class="side">OLS vs. Mann-Kendall agreement</span></div>
+    <div class="scroll"><table id="tbl-trend">
+      <thead><tr><th>Arm</th><th>Lane</th><th>Weeks</th><th>OLS slope</th><th>OLS p</th><th>MK tau</th><th>MK p</th><th>Agree?</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </div>
+</section>
+<div class="arrow">&darr;</div>
+
+<!-- 03 regime split -->
+<section>
+  <div class="step-head"><h2>Q1's third outcome &mdash; regime-conditional, and the thinnest evidence in this run</h2></div>
+  <p class="lede">Control split by <code>market_regime_bench_above_sma30w</code> (§4.3) &mdash; descriptive only, both sides sit below the 26-week trend floor, so no trend test runs on the split.</p>
+  <div class="two" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-head">Regime split<span class="side">mean net_pct</span></div>
+      <div class="chart-holder"><div id="chart-regime" class="chart-wrap"></div><div class="tooltip" id="tt-regime"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><code>n_picks</code> bucket split<span class="side">mean net_pct</span></div>
+      <div class="chart-holder"><div id="chart-npicks" class="chart-wrap"></div><div class="tooltip" id="tt-npicks"></div></div>
+    </div>
+  </div>
+  <div class="callout pend">
+    <h3>A 2.3pp swing, on 14 weeks</h3>
+    <p>Control loses <strong>-2.11%/wk</strong> on weeks the benchmark sits above its 30-week SMA (n=60) vs. <strong>+0.19%/wk</strong> when it doesn't (n=14). The sharpest single fact in this run, and also the thinnest &mdash; 14 weeks is barely half the 26-week trend floor. Reported as a lead worth re-checking as more weeks accumulate, not as a settled regime-conditional edge.</p>
+  </div>
+</section>
+<div class="arrow">&darr;</div>
+
+<!-- 04 Q2 paired -->
+<section>
+  <div class="step-head"><span class="step-n">03</span><h2>Q2 &mdash; which arm dominates paired vs. Control? Not a registered Test arm.</h2></div>
+  <p class="lede">Mean paired weekly difference vs. <code>control</code> on weeks both have &ge;1 pick, block-bootstrap CI. The paired difference is identical across net_pct / excess_eligible_pp / excess_bench_pp bases by construction &mdash; both arms share the same week's eligible-mean and benchmark, so those additive terms cancel in a same-week difference.</p>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-head">Paired delta vs. Control, ranked<span class="side">pp/week, CI95 whiskers, zero line</span></div>
+    <div class="chart-holder"><div id="chart-paired" class="chart-wrap"></div><div class="tooltip" id="tt-paired"></div></div>
+  </div>
+
+  <div class="callout loss">
+    <h3>The biggest edge belongs to the untradeable baseline</h3>
+    <p>The arm with the largest, CI-excludes-zero paired edge over Control is <strong><code>universe</code></strong> &mdash; buying the whole eligible universe equally every week: <strong>+0.918pp/wk, CI95 [+0.266, +1.773]</strong>, not tradeable as a strategy, no risk cap, no stop, no sizing rule. That restates the regression guard's own fact: Control's filters underperform a coin flip from their own eligible universe by close to a point a week. <code>t4_k7/8/9</code> show smaller, similarly CI-excludes-zero deltas (+0.67 to +0.71pp) &mdash; but T4 is already killed by its disciplined DEV/VALIDATE protocol; this pooled, undisciplined 104-week read does not reopen that. 17 arms were paired against Control; roughly 1-in-20 comparisons excludes zero by chance alone at an unadjusted 95% CI &mdash; 4 of 17 did, more than chance predicts but not overwhelmingly so, and none clear a Bonferroni-adjusted threshold. No arm graduates on this evidence.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-head">Full ranking<span class="side">net_pct basis</span></div>
+    <div class="scroll"><table id="tbl-paired">
+      <thead><tr><th>Arm</th><th>n paired wks</th><th>mean diff (pp)</th><th>CI95 lo</th><th>CI95 hi</th><th>Excludes zero?</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </div>
+</section>
+<div class="arrow">&darr;</div>
+
+<!-- 03b T1 vs control, lane C -->
+<section>
+  <div class="step-head"><h2>T1 vs. Control &mdash; two evidence qualities, kept apart <span class="pill pill-flag" style="margin-left:6px" id="t1-replay-pill">104-wk dev-backtest</span> <span class="pill pill-pend" style="margin-left:6px">forward n=1, suppressed</span></h2></div>
+  <p class="lede">T1 (the daily rolling-window shadow scan) has no flag-matrix-replay equivalent &mdash; it scans daily bars the weekly replay panel doesn't carry, so it can't be reconstructed in Lane A the way <code>t4_k*</code> or the threshold arms can. It lives only in <strong>Lane C</strong>, which now carries two <code>recording_mode</code>s under the <code>t1_shadow</code> arm: a fresh <strong>104-week historical replay</strong> (dev-backtest, commensurable with Control's own exit convention) and the still-thin <strong>live forward</strong> record. Never blended into one series.</p>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-head">T1 replay vs. Control replay &mdash; same weeks, both 104-week backtests<span class="side" id="t1-dev-status">&mdash;</span></div>
+    <div class="scroll"><table id="tbl-t1-dev">
+      <thead><tr><th>Arm</th><th>n paired wks</th><th>mean diff (pp)</th><th>CI95 lo</th><th>CI95 hi</th><th>Status</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <div style="padding:10px 18px;font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--rule)">Commensurable with Control's own 104-week replay (same cost, same gap-stop-aware exit) &mdash; but this is a <strong>dev-backtest read, not forward evidence</strong>. It does not reopen or override T4's own DEV/VALIDATE kill decision, and no arm graduates on it.</div>
+  </div>
+
+  <div class="stats" style="margin-bottom:20px">
+    <div class="stat"><div class="k">Graded Lane C forward weeks</div><div class="v" id="lc-n-weeks">&mdash;</div><div class="s">of 13 needed to un-suppress</div></div>
+    <div class="stat"><div class="k">control_live, 2026-09-07</div><div class="v pos" id="lc-control-net">&mdash;</div><div class="s">2 picks</div></div>
+    <div class="stat"><div class="k">t1_shadow, 2026-09-07</div><div class="v neg" id="lc-t1-net">&mdash;</div><div class="s">14 picks</div></div>
+    <div class="stat"><div class="k">Paired delta this week</div><div class="v neg" id="lc-delta">&mdash;</div><div class="s">n=1 &mdash; not a comparison yet</div></div>
+  </div>
+
+  <div class="callout pend">
+    <h3>Forward evidence is still one week &mdash; the dev-backtest doesn't change that</h3>
+    <p>On the single graded live forward week, Control's 2 picks made <strong>+4.35%</strong> while T1's 14-name basket made <strong>-0.04%</strong> &mdash; a -4.40pp gap, but from n=1, which is exactly what the suppression rule exists to stop anyone from reading into. <code>results/wow/paired_vs_control.csv</code>'s forward-mode row stays <code>status="insufficient history (n=1, floor=13)"</code> regardless of how much replay evidence accumulates above &mdash; the two are deliberately never pooled.</p>
+  </div>
+</section>
+<div class="arrow">&darr;</div>
+
+<!-- 05 arm level -->
+<section>
+  <div class="step-head"><span class="step-n">04</span><h2>Arm level &mdash; every registered Lane A arm, unsplit</h2></div>
+  <p class="lede">Week-equal-weight mean (headline) and pooled per-pick mean (secondary, labelled, never headline) for every arm, plus cash-week count and equity shape.</p>
+  <div class="card">
+    <div class="card-head">L2 summary, split=all<span class="side">18 arms</span></div>
+    <div class="scroll"><table id="tbl-arms">
+      <thead><tr><th>Arm</th><th>Wks w/ picks</th><th>Cash wks</th><th>Mean net_pct</th><th>Pooled mean (secondary)</th><th>Win-week rate</th><th>Equity final</th><th>Max DD</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </div>
+</section>
+<div class="arrow">&darr;</div>
+
+<!-- 06 diagnostics -->
+<section>
+  <div class="step-head"><span class="step-n">05</span><h2>Repetition diagnostics &mdash; the question that started this plan</h2></div>
+  <p class="lede">Control's own picks barely repeat week to week (an event-driven VStop flip has a ~2.6% pass rate). The candidate layer underneath is a different story &mdash; most of the 13 countable flags are state, not events, and persist.</p>
+
+  <div class="stats" style="margin-bottom:20px">
+    <div class="stat"><div class="k">Top-10-by-flags_met overlap</div><div class="v">30.7%</div><div class="s">mean, 103 week-pairs</div></div>
+    <div class="stat"><div class="k">flags_met lag-1 autocorr</div><div class="v">0.773</div><div class="s">n=27,074 ticker-weeks</div></div>
+    <div class="stat"><div class="k">Flags &ge;70% persistent</div><div class="v">7 / 13</div><div class="s">countable flags</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-head">Top-10-by-flags_met week-over-week overlap<span class="side">weekly, 103 points</span></div>
+    <div class="chart-holder"><div id="chart-overlap" class="chart-wrap"></div><div class="tooltip" id="tt-overlap"></div></div>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <div class="card-head">Per-flag week-over-week persistence<span class="side">ranked</span></div>
+      <div class="chart-holder"><div id="chart-persist" class="chart-wrap"></div><div class="tooltip" id="tt-persist"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-head">Most frequent top-decile names<span class="side">by flags_met, all 104 weeks</span></div>
+      <div class="scroll"><table id="tbl-decile">
+        <thead><tr><th>Ticker</th><th>Weeks in top decile</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="callout flag">
+    <h3>Lower than this plan's own earlier estimate &mdash; and that's the point</h3>
+    <p>The plan's own §1.1 write-up quoted ~40% top-10 overlap and 12/13 flags persistent. This run's reproducible methodology (<code>src/wow/diagnostics.py</code>) comes back at 30.7% and 7/13 &mdash; lower on both counts. Treat this run's numbers as the ones to trust going forward; the earlier figures came from a less formal look. <code>delta_flags_met</code> (this week minus last week, same ticker) is now a panel column, making this testable as a timing signal later without another data build &mdash; not attempted in this pass.</p>
+  </div>
+</section>
+
+<div class="foot">
+  <p style="margin:0 0 6px"><strong>Reproduce:</strong> <code>python -m tests.track_wow build</code> (panel + three-line + manifest) &rarr; <code>summarise</code> (arm_summary.csv, trend_tests.csv, paired_vs_control.csv) &rarr; <code>diagnostics</code> (repetition_diagnostics.csv) &rarr; <code>verify</code> (byte-identical rebuild check). Reads <code>results/feature_flags/replay/</code>, <code>results/experiments/</code>, <code>results/forward_test/</code> read-only; writes only <code>results/wow/</code> and, once, NIFTY 50 into <code>data_cache/</code>.</p>
+  <p style="margin:0">Source plan: <code>docs/wow-arm-history-analysis-plan.md</code> v0.1. Findings log: <code>docs/wow_findings.md</code>. NIFTY 50 (<code>^NSEI</code>) is a reporting series only &mdash; never referenced by any arm filter, gate, or score (T-12).</p>
+</div>
+</div>
+
+<script>
+const DATA = {"three_line": {"weeks": ["2024-09-09", "2024-09-16", "2024-09-23", "2024-09-30", "2024-10-07", "2024-10-14", "2024-10-21", "2024-10-28", "2024-11-04", "2024-11-11", "2024-11-18", "2024-11-25", "2024-12-02", "2024-12-09", "2024-12-16", "2024-12-23", "2024-12-30", "2025-01-06", "2025-01-13", "2025-01-20", "2025-01-27", "2025-02-03", "2025-02-10", "2025-02-17", "2025-02-24", "2025-03-03", "2025-03-10", "2025-03-17", "2025-03-24", "2025-03-31", "2025-04-07", "2025-04-14", "2025-04-21", "2025-04-28", "2025-05-05", "2025-05-12", "2025-05-19", "2025-05-26", "2025-06-02", "2025-06-09", "2025-06-16", "2025-06-23", "2025-06-30", "2025-07-07", "2025-07-14", "2025-07-21", "2025-07-28", "2025-08-04", "2025-08-11", "2025-08-18", "2025-08-25", "2025-09-01", "2025-09-08", "2025-09-15", "2025-09-22", "2025-09-29", "2025-10-06", "2025-10-13", "2025-10-20", "2025-10-27", "2025-11-03", "2025-11-10", "2025-11-17", "2025-11-24", "2025-12-01", "2025-12-08", "2025-12-15", "2025-12-22", "2025-12-29", "2026-01-05", "2026-01-12", "2026-01-19", "2026-01-26", "2026-02-02", "2026-02-09", "2026-02-16", "2026-02-23", "2026-03-02", "2026-03-09", "2026-03-16", "2026-03-23", "2026-03-30", "2026-04-06", "2026-04-13", "2026-04-20", "2026-04-27", "2026-05-04", "2026-05-11", "2026-05-18", "2026-05-25", "2026-06-01", "2026-06-08", "2026-06-15", "2026-06-22", "2026-06-29", "2026-07-06", "2026-07-13", "2026-07-20", "2026-07-27", "2026-08-03", "2026-08-10", "2026-08-17", "2026-08-24", "2026-08-31"], "basket": [null, -0.087, -6.938, -3.393, -8.568, null, null, null, null, null, null, null, -0.099, -6.938, -0.482, -0.861, -7.391, null, -2.757, null, null, -7.214, null, null, null, null, null, 1.546, 0.372, 3.594, null, 0.653, -2.987, -2.494, null, -9.394, 7.533, 0.522, -0.782, null, null, null, null, 0.074, -2.246, -4.714, -6.893, 1.005, null, -9.573, null, 1.961, -1.966, -4.188, -0.797, -0.687, 3.309, 0.067, -1.677, -5.255, -8.303, -2.608, -5.296, -2.909, -2.044, -13.442, -2.514, 2.005, -4.907, -1.638, -9.538, null, null, -0.8, -0.515, null, -1.974, null, -1.53, null, -1.93, 12.653, 4.021, -1.229, -0.817, 2.422, -3.434, 6.445, -1.712, -2.364, null, 0.586, -3.515, 0.559, 2.2, -0.887, -5.414, -0.023, -4.637, -1.357, 0.254, -3.458, 9.52, 1.66], "midcap": [-0.224, -0.037, -2.655, 0.841, -1.245, -5.704, 2.164, -0.582, -3.669, 1.144, 0.789, 3.607, 0.402, -3.462, -0.344, 1.671, -5.701, 0.901, -2.963, 1.65, 0.955, -7.42, 2.559, -4.09, 2.938, -2.222, 7.091, -1.154, -2.128, 7.786, 2.626, 0.828, 0.388, -1.158, 4.107, -0.744, 0.825, 2.712, -1.808, -0.68, 3.302, 0.142, -1.567, 0.873, -1.668, -1.767, -1.173, 0.847, 0.889, -3.558, 1.712, 1.536, 1.377, -4.116, 1.724, 1.49, 0.49, 0.063, 0.388, -0.212, 1.189, -1.152, 0.996, -1.187, -0.264, 0.096, -0.142, 1.642, -2.871, -0.054, -4.183, 1.964, 4.214, -0.84, 0.547, -0.561, 0.484, -2.679, 0.191, -0.274, 0.551, 7.418, 5.549, -0.98, 0.035, 2.741, -1.842, 1.754, -0.581, -1.813, 1.294, 1.584, -1.398, 0.647, 0.984, -0.309, -1.084, 1.249, 0.454, 0.004, -0.02, 0.261, -1.314, -1.402], "nifty50": [1.513, 1.184, -4.016, -0.478, -0.677, -3.107, 0.22, -0.689, -2.302, 1.279, -0.505, 2.224, 0.546, -4.71, 0.317, 0.873, -2.555, 0.034, -0.851, 2.363, 1.032, -2.61, -0.061, -2.144, 1.613, -0.553, 4.461, 0.017, -1.871, 4.918, 2.068, 0.377, 1.149, -1.685, 2.456, -0.609, -0.677, 1.351, -1.755, 1.537, 2.799, -0.782, -1.181, -0.72, -0.648, -0.876, -0.946, 1.066, -0.273, -2.094, 1.262, 1.256, 0.829, -2.312, 0.67, 1.48, 2.115, -0.114, -0.469, -0.796, 1.594, 0.462, 0.307, -0.529, -0.431, 0.14, -0.052, 1.018, -2.47, 0.099, -2.356, -0.949, 3.618, -1.613, 0.581, -1.946, -0.847, -3.004, -0.007, -0.021, 0.725, 5.576, 3.239, -2.023, 0.218, 0.468, -1.363, 1.01, -1.639, -1.217, 2.349, 0.118, -0.21, 0.869, -0.411, 1.227, -1.747, 1.902, -0.008, -0.876, -0.376, -0.451, -0.912, -2.031], "vs_midcap": [null, -0.05, -4.283, -4.234, -7.323, null, null, null, null, null, null, null, -0.501, -3.476, -0.138, -2.532, -1.69, null, 0.206, null, null, 0.206, null, null, null, null, null, 2.7, 2.5, -4.192, null, -0.175, -3.375, -1.335, null, -8.65, 6.708, -2.19, 1.026, null, null, null, null, -0.799, -0.578, -2.947, -5.72, 0.158, null, -6.015, null, 0.425, -3.344, -0.072, -2.522, -2.177, 2.82, 0.004, -2.065, -5.043, -9.492, -1.456, -6.292, -1.722, -1.78, -13.538, -2.372, 0.363, -2.036, -1.584, -5.355, null, null, 0.04, -1.062, null, -2.458, null, -1.721, null, -2.481, 5.235, -1.528, -0.249, -0.852, -0.319, -1.592, 4.691, -1.131, -0.551, null, -0.998, -2.117, -0.088, 1.216, -0.578, -4.33, -1.272, -5.091, -1.361, 0.274, -3.719, 10.834, 3.062], "basket_curve": [1.0, 0.9991, 0.9298, 0.8983, 0.8213, 0.8213, 0.8213, 0.8213, 0.8213, 0.8213, 0.8213, 0.8213, 0.8205, 0.7636, 0.7599, 0.7533, 0.6977, 0.6977, 0.6784, 0.6784, 0.6784, 0.6295, 0.6295, 0.6295, 0.6295, 0.6295, 0.6295, 0.6392, 0.6416, 0.6647, 0.6647, 0.669, 0.649, 0.6328, 0.6328, 0.5734, 0.6166, 0.6198, 0.6149, 0.6149, 0.6149, 0.6149, 0.6149, 0.6154, 0.6016, 0.5732, 0.5337, 0.5391, 0.5391, 0.4875, 0.4875, 0.497, 0.4873, 0.4668, 0.4631, 0.4599, 0.4752, 0.4755, 0.4675, 0.4429, 0.4062, 0.3956, 0.3746, 0.3637, 0.3563, 0.3084, 0.3006, 0.3067, 0.2916, 0.2868, 0.2595, 0.2595, 0.2595, 0.2574, 0.2561, 0.2561, 0.251, 0.251, 0.2472, 0.2472, 0.2424, 0.2731, 0.2841, 0.2806, 0.2783, 0.285, 0.2752, 0.293, 0.288, 0.2812, 0.2812, 0.2828, 0.2729, 0.2744, 0.2804, 0.2779, 0.2629, 0.2628, 0.2506, 0.2472, 0.2479, 0.2393, 0.2621, 0.2664], "midcap_curve": [0.9978, 0.9974, 0.9709, 0.9791, 0.9669, 0.9117, 0.9315, 0.926, 0.8921, 0.9023, 0.9094, 0.9422, 0.946, 0.9132, 0.9101, 0.9253, 0.8725, 0.8804, 0.8543, 0.8684, 0.8767, 0.8117, 0.8324, 0.7984, 0.8218, 0.8036, 0.8606, 0.8506, 0.8325, 0.8973, 0.9209, 0.9285, 0.9321, 0.9213, 0.9592, 0.952, 0.9599, 0.9859, 0.9681, 0.9615, 0.9933, 0.9947, 0.9791, 0.9876, 0.9712, 0.954, 0.9428, 0.9508, 0.9593, 0.9251, 0.941, 0.9554, 0.9686, 0.9287, 0.9447, 0.9588, 0.9635, 0.9641, 0.9678, 0.9658, 0.9773, 0.966, 0.9756, 0.9641, 0.9615, 0.9624, 0.9611, 0.9769, 0.9488, 0.9483, 0.9086, 0.9265, 0.9655, 0.9574, 0.9626, 0.9572, 0.9619, 0.9361, 0.9379, 0.9353, 0.9405, 1.0102, 1.0663, 1.0558, 1.0562, 1.0852, 1.0652, 1.0839, 1.0776, 1.058, 1.0717, 1.0887, 1.0735, 1.0804, 1.0911, 1.0877, 1.0759, 1.0893, 1.0943, 1.0943, 1.0941, 1.097, 1.0825, 1.0674], "nifty50_curve": [1.0151, 1.0271, 0.9859, 0.9812, 0.9745, 0.9443, 0.9463, 0.9398, 0.9182, 0.9299, 0.9252, 0.9458, 0.951, 0.9062, 0.909, 0.917, 0.8936, 0.8939, 0.8863, 0.9072, 0.9166, 0.8926, 0.8921, 0.873, 0.887, 0.8821, 0.9215, 0.9216, 0.9044, 0.9489, 0.9685, 0.9722, 0.9833, 0.9667, 0.9905, 0.9845, 0.9778, 0.991, 0.9736, 0.9886, 1.0162, 1.0083, 0.9964, 0.9892, 0.9828, 0.9742, 0.965, 0.9753, 0.9726, 0.9522, 0.9643, 0.9764, 0.9845, 0.9617, 0.9681, 0.9825, 1.0033, 1.0021, 0.9974, 0.9895, 1.0052, 1.0099, 1.013, 1.0076, 1.0033, 1.0047, 1.0042, 1.0144, 0.9893, 0.9903, 0.967, 0.9578, 0.9925, 0.9764, 0.9821, 0.963, 0.9548, 0.9262, 0.9261, 0.9259, 0.9326, 0.9846, 1.0165, 0.9959, 0.9981, 1.0028, 0.9891, 0.9991, 0.9827, 0.9708, 0.9936, 0.9947, 0.9927, 1.0013, 0.9972, 1.0094, 0.9918, 1.0106, 1.0105, 1.0017, 0.9979, 0.9934, 0.9844, 0.9644]}, "arm_summary_all": [{"arm": "control", "n_weeks_with_picks": 74, "n_cash_weeks": 30, "mean_net_pct": -1.6786, "win_week_rate": 0.2973, "pooled_mean_net_pct_secondary": -1.5218, "equity_final": 0.2664, "max_drawdown_pct": -76.071}, {"arm": "flip_all", "n_weeks_with_picks": 98, "n_cash_weeks": 6, "mean_net_pct": -1.3785, "win_week_rate": 0.2959, "pooled_mean_net_pct_secondary": -1.0037, "equity_final": 0.2381, "max_drawdown_pct": -78.003}, {"arm": "near_miss_rsi", "n_weeks_with_picks": 47, "n_cash_weeks": 57, "mean_net_pct": -1.7281, "win_week_rate": 0.2979, "pooled_mean_net_pct_secondary": -1.4684, "equity_final": 0.4173, "max_drawdown_pct": -59.59}, {"arm": "riskcap_rejected", "n_weeks_with_picks": 79, "n_cash_weeks": 25, "mean_net_pct": -0.9782, "win_week_rate": 0.3165, "pooled_mean_net_pct_secondary": -0.448, "equity_final": 0.4301, "max_drawdown_pct": -60.226}, {"arm": "t4_k10", "n_weeks_with_picks": 88, "n_cash_weeks": 16, "mean_net_pct": -0.2926, "win_week_rate": 0.4545, "pooled_mean_net_pct_secondary": -0.7525, "equity_final": 0.7329, "max_drawdown_pct": -38.143}, {"arm": "t4_k11", "n_weeks_with_picks": 44, "n_cash_weeks": 60, "mean_net_pct": -1.3966, "win_week_rate": 0.3182, "pooled_mean_net_pct_secondary": -1.2377, "equity_final": 0.5161, "max_drawdown_pct": -49.332}, {"arm": "t4_k7", "n_weeks_with_picks": 104, "n_cash_weeks": 0, "mean_net_pct": -0.6299, "win_week_rate": 0.4231, "pooled_mean_net_pct_secondary": -0.6322, "equity_final": 0.4981, "max_drawdown_pct": -51.159}, {"arm": "t4_k8", "n_weeks_with_picks": 104, "n_cash_weeks": 0, "mean_net_pct": -0.6474, "win_week_rate": 0.4135, "pooled_mean_net_pct_secondary": -0.6953, "equity_final": 0.4881, "max_drawdown_pct": -52.278}, {"arm": "t4_k9", "n_weeks_with_picks": 102, "n_cash_weeks": 2, "mean_net_pct": -0.6888, "win_week_rate": 0.4118, "pooled_mean_net_pct_secondary": -0.688, "equity_final": 0.476, "max_drawdown_pct": -53.41}, {"arm": "threshold-experiment_15", "n_weeks_with_picks": 74, "n_cash_weeks": 30, "mean_net_pct": -1.6786, "win_week_rate": 0.2973, "pooled_mean_net_pct_secondary": -1.5218, "equity_final": 0.2664, "max_drawdown_pct": -76.071}, {"arm": "threshold-experiment_17.5", "n_weeks_with_picks": 82, "n_cash_weeks": 22, "mean_net_pct": -1.3238, "win_week_rate": 0.3415, "pooled_mean_net_pct_secondary": -1.1575, "equity_final": 0.3161, "max_drawdown_pct": -71.012}, {"arm": "threshold-experiment_20", "n_weeks_with_picks": 90, "n_cash_weeks": 14, "mean_net_pct": -1.1973, "win_week_rate": 0.3667, "pooled_mean_net_pct_secondary": -0.8389, "equity_final": 0.3164, "max_drawdown_pct": -71.583}, {"arm": "threshold-experiment_22.5", "n_weeks_with_picks": 92, "n_cash_weeks": 12, "mean_net_pct": -1.3157, "win_week_rate": 0.3152, "pooled_mean_net_pct_secondary": -0.8364, "equity_final": 0.2758, "max_drawdown_pct": -75.678}, {"arm": "threshold-experiment_25", "n_weeks_with_picks": 94, "n_cash_weeks": 10, "mean_net_pct": -1.249, "win_week_rate": 0.3085, "pooled_mean_net_pct_secondary": -0.8557, "equity_final": 0.2854, "max_drawdown_pct": -74.908}, {"arm": "threshold-experiment_30", "n_weeks_with_picks": 94, "n_cash_weeks": 10, "mean_net_pct": -1.2743, "win_week_rate": 0.2979, "pooled_mean_net_pct_secondary": -0.8973, "equity_final": 0.2787, "max_drawdown_pct": -75.498}, {"arm": "threshold-experiment_40", "n_weeks_with_picks": 94, "n_cash_weeks": 10, "mean_net_pct": -1.2743, "win_week_rate": 0.2979, "pooled_mean_net_pct_secondary": -0.8973, "equity_final": 0.2787, "max_drawdown_pct": -75.498}, {"arm": "threshold-experiment_50", "n_weeks_with_picks": 94, "n_cash_weeks": 10, "mean_net_pct": -1.2743, "win_week_rate": 0.2979, "pooled_mean_net_pct_secondary": -0.8973, "equity_final": 0.2787, "max_drawdown_pct": -75.498}, {"arm": "universe", "n_weeks_with_picks": 104, "n_cash_weeks": 0, "mean_net_pct": -0.411, "win_week_rate": 0.4038, "pooled_mean_net_pct_secondary": -0.413, "equity_final": 0.6234, "max_drawdown_pct": -40.352}], "control_splits": [{"split": "all", "n_weeks_with_picks": 74, "mean_net_pct": -1.6786}, {"split": "regime_on", "n_weeks_with_picks": 60, "mean_net_pct": -2.1134}, {"split": "regime_off", "n_weeks_with_picks": 14, "mean_net_pct": 0.1847}, {"split": "npicks_1", "n_weeks_with_picks": 24, "mean_net_pct": -2.4247}, {"split": "npicks_2-3", "n_weeks_with_picks": 26, "mean_net_pct": -1.353}, {"split": "npicks_4+", "n_weeks_with_picks": 24, "mean_net_pct": -1.2852}], "trend_net": [{"lane": "A", "arm": "control", "n_weeks_with_picks": 74, "status": "ok", "ols_slope": 0.036, "ols_p": 0.007, "mk_tau": 0.124, "mk_p": 0.1191, "agree_direction": true, "half_first_mean": -2.3768, "half_second_mean": -1.2536, "half_diff_mean": 0.9925, "half_diff_ci_lo": -1.0742, "half_diff_ci_hi": 2.9883}, {"lane": "A", "arm": "flip_all", "n_weeks_with_picks": 98, "status": "ok", "ols_slope": 0.0227, "ols_p": 0.0398, "mk_tau": 0.1113, "mk_p": 0.1051, "agree_direction": true, "half_first_mean": -1.5947, "half_second_mean": -1.1792, "half_diff_mean": 0.5314, "half_diff_ci_lo": -1.2106, "half_diff_ci_hi": 2.1865}, {"lane": "A", "arm": "near_miss_rsi", "n_weeks_with_picks": 47, "status": "ok", "ols_slope": 0.0209, "ols_p": 0.2796, "mk_tau": 0.086, "mk_p": 0.3988, "agree_direction": true, "half_first_mean": -2.214, "half_second_mean": -1.3681, "half_diff_mean": 0.5118, "half_diff_ci_lo": -2.0247, "half_diff_ci_hi": 2.9819}, {"lane": "A", "arm": "riskcap_rejected", "n_weeks_with_picks": 79, "status": "ok", "ols_slope": 0.0062, "ols_p": 0.6615, "mk_tau": 0.0182, "mk_p": 0.8159, "agree_direction": true, "half_first_mean": -0.8274, "half_second_mean": -1.1329, "half_diff_mean": 0.0016, "half_diff_ci_lo": -1.8939, "half_diff_ci_hi": 1.9143}, {"lane": "A", "arm": "t4_k10", "n_weeks_with_picks": 88, "status": "ok", "ols_slope": 0.0131, "ols_p": 0.2146, "mk_tau": 0.0533, "mk_p": 0.4644, "agree_direction": true, "half_first_mean": -0.5916, "half_second_mean": -0.0435, "half_diff_mean": 0.6315, "half_diff_ci_lo": -0.8183, "half_diff_ci_hi": 2.1466}, {"lane": "A", "arm": "t4_k11", "n_weeks_with_picks": 44, "status": "ok", "ols_slope": 0.005, "ols_p": 0.7022, "mk_tau": 0.0613, "mk_p": 0.5643, "agree_direction": true, "half_first_mean": -1.3258, "half_second_mean": -1.4557, "half_diff_mean": -0.3283, "half_diff_ci_lo": -2.4174, "half_diff_ci_hi": 1.7612}, {"lane": "A", "arm": "t4_k7", "n_weeks_with_picks": 104, "status": "ok", "ols_slope": 0.0123, "ols_p": 0.0866, "mk_tau": 0.099, "mk_p": 0.1373, "agree_direction": true, "half_first_mean": -0.8953, "half_second_mean": -0.3645, "half_diff_mean": 0.6142, "half_diff_ci_lo": -0.3234, "half_diff_ci_hi": 1.5235}, {"lane": "A", "arm": "t4_k8", "n_weeks_with_picks": 104, "status": "ok", "ols_slope": 0.0127, "ols_p": 0.0933, "mk_tau": 0.1027, "mk_p": 0.1231, "agree_direction": true, "half_first_mean": -0.9161, "half_second_mean": -0.3787, "half_diff_mean": 0.6222, "half_diff_ci_lo": -0.393, "half_diff_ci_hi": 1.5945}, {"lane": "A", "arm": "t4_k9", "n_weeks_with_picks": 102, "status": "ok", "ols_slope": 0.0134, "ols_p": 0.0611, "mk_tau": 0.1074, "mk_p": 0.1105, "agree_direction": true, "half_first_mean": -1.0047, "half_second_mean": -0.385, "half_diff_mean": 0.7225, "half_diff_ci_lo": -0.2349, "half_diff_ci_hi": 1.677}, {"lane": "A", "arm": "threshold-experiment_15", "n_weeks_with_picks": 74, "status": "ok", "ols_slope": 0.036, "ols_p": 0.007, "mk_tau": 0.124, "mk_p": 0.1191, "agree_direction": true, "half_first_mean": -2.3768, "half_second_mean": -1.2536, "half_diff_mean": 0.9925, "half_diff_ci_lo": -1.0742, "half_diff_ci_hi": 2.9883}, {"lane": "A", "arm": "threshold-experiment_17.5", "n_weeks_with_picks": 82, "status": "ok", "ols_slope": 0.0186, "ols_p": 0.1277, "mk_tau": 0.0617, "mk_p": 0.414, "agree_direction": true, "half_first_mean": -1.4203, "half_second_mean": -1.252, "half_diff_mean": 0.0077, "half_diff_ci_lo": -1.6927, "half_diff_ci_hi": 1.7038}, {"lane": "A", "arm": "threshold-experiment_20", "n_weeks_with_picks": 90, "status": "ok", "ols_slope": 0.0129, "ols_p": 0.3057, "mk_tau": 0.0527, "mk_p": 0.4642, "agree_direction": true, "half_first_mean": -1.2303, "half_second_mean": -1.1696, "half_diff_mean": 0.038, "half_diff_ci_lo": -1.8043, "half_diff_ci_hi": 1.8846}, {"lane": "A", "arm": "threshold-experiment_22.5", "n_weeks_with_picks": 92, "status": "ok", "ols_slope": 0.0174, "ols_p": 0.1504, "mk_tau": 0.0788, "mk_p": 0.2671, "agree_direction": true, "half_first_mean": -1.484, "half_second_mean": -1.1679, "half_diff_mean": 0.3088, "half_diff_ci_lo": -1.4683, "half_diff_ci_hi": 2.1094}, {"lane": "A", "arm": "threshold-experiment_25", "n_weeks_with_picks": 94, "status": "ok", "ols_slope": 0.0189, "ols_p": 0.1171, "mk_tau": 0.0808, "mk_p": 0.2503, "agree_direction": true, "half_first_mean": -1.3429, "half_second_mean": -1.1629, "half_diff_mean": 0.3171, "half_diff_ci_lo": -1.4734, "half_diff_ci_hi": 2.0864}, {"lane": "A", "arm": "threshold-experiment_30", "n_weeks_with_picks": 94, "status": "ok", "ols_slope": 0.0195, "ols_p": 0.0984, "mk_tau": 0.0863, "mk_p": 0.2194, "agree_direction": true, "half_first_mean": -1.3956, "half_second_mean": -1.1629, "half_diff_mean": 0.3732, "half_diff_ci_lo": -1.3902, "half_diff_ci_hi": 2.1216}, {"lane": "A", "arm": "threshold-experiment_40", "n_weeks_with_picks": 94, "status": "ok", "ols_slope": 0.0195, "ols_p": 0.0984, "mk_tau": 0.0863, "mk_p": 0.2194, "agree_direction": true, "half_first_mean": -1.3956, "half_second_mean": -1.1629, "half_diff_mean": 0.3732, "half_diff_ci_lo": -1.3902, "half_diff_ci_hi": 2.1216}, {"lane": "A", "arm": "threshold-experiment_50", "n_weeks_with_picks": 94, "status": "ok", "ols_slope": 0.0195, "ols_p": 0.0984, "mk_tau": 0.0863, "mk_p": 0.2194, "agree_direction": true, "half_first_mean": -1.3956, "half_second_mean": -1.1629, "half_diff_mean": 0.3732, "half_diff_ci_lo": -1.3902, "half_diff_ci_hi": 2.1216}, {"lane": "A", "arm": "universe", "n_weeks_with_picks": 104, "status": "ok", "ols_slope": 0.0073, "ols_p": 0.3565, "mk_tau": 0.0482, "mk_p": 0.4704, "agree_direction": true, "half_first_mean": -0.4542, "half_second_mean": -0.3677, "half_diff_mean": 0.1312, "half_diff_ci_lo": -0.8899, "half_diff_ci_hi": 1.1691}, {"lane": "B", "arm": "V2_N2", "n_weeks_with_picks": 120, "status": "ok", "ols_slope": 0.0002, "ols_p": 0.181, "mk_tau": 0.0768, "mk_p": 0.2147, "agree_direction": true, "half_first_mean": -0.0098, "half_second_mean": 0.0071, "half_diff_mean": 0.0189, "half_diff_ci_lo": 0.0011, "half_diff_ci_hi": 0.037}, {"lane": "B", "arm": "V2_N4", "n_weeks_with_picks": 120, "status": "ok", "ols_slope": 0.0005, "ols_p": 0.0747, "mk_tau": 0.1518, "mk_p": 0.014, "agree_direction": true, "half_first_mean": -0.011, "half_second_mean": 0.0307, "half_diff_mean": 0.0446, "half_diff_ci_lo": 0.0142, "half_diff_ci_hi": 0.0741}, {"lane": "B", "arm": "V2_N8", "n_weeks_with_picks": 120, "status": "ok", "ols_slope": 0.0011, "ols_p": 0.0004, "mk_tau": 0.2529, "mk_p": 0.0, "agree_direction": true, "half_first_mean": -0.0085, "half_second_mean": 0.0736, "half_diff_mean": 0.0853, "half_diff_ci_lo": 0.0445, "half_diff_ci_hi": 0.1245}, {"lane": "B", "arm": "V3_week1", "n_weeks_with_picks": 120, "status": "ok", "ols_slope": -0.0001, "ols_p": 0.2577, "mk_tau": -0.0595, "mk_p": 0.3362, "agree_direction": true, "half_first_mean": 0.0343, "half_second_mean": 0.0326, "half_diff_mean": -0.0026, "half_diff_ci_lo": -0.0092, "half_diff_ci_hi": 0.0039}, {"lane": "B", "arm": "V3_weekN", "n_weeks_with_picks": 120, "status": "ok", "ols_slope": 0.0009, "ols_p": 0.0216, "mk_tau": 0.1923, "mk_p": 0.0019, "agree_direction": true, "half_first_mean": 0.0261, "half_second_mean": 0.0932, "half_diff_mean": 0.0692, "half_diff_ci_lo": 0.0261, "half_diff_ci_hi": 0.111}, {"lane": "B", "arm": "V4_week1", "n_weeks_with_picks": 120, "status": "ok", "ols_slope": 0.0001, "ols_p": 0.1012, "mk_tau": 0.0671, "mk_p": 0.2783, "agree_direction": true, "half_first_mean": -0.0068, "half_second_mean": 0.002, "half_diff_mean": 0.0108, "half_diff_ci_lo": 0.0019, "half_diff_ci_hi": 0.0195}, {"lane": "B", "arm": "V4_weekN", "n_weeks_with_picks": 120, "status": "ok", "ols_slope": 0.0011, "ols_p": 0.0013, "mk_tau": 0.2448, "mk_p": 0.0001, "agree_direction": true, "half_first_mean": -0.0047, "half_second_mean": 0.0736, "half_diff_mean": 0.0817, "half_diff_ci_lo": 0.0405, "half_diff_ci_hi": 0.1215}], "paired_net": [{"arm": "t4_k10", "n_paired_weeks": 66, "status": "ok", "mean_diff": 1.0941, "ci_lo": 0.4126, "ci_hi": 1.9939}, {"arm": "universe", "n_paired_weeks": 74, "status": "ok", "mean_diff": 0.9181, "ci_lo": 0.2656, "ci_hi": 1.7734}, {"arm": "t4_k9", "n_paired_weeks": 74, "status": "ok", "mean_diff": 0.7086, "ci_lo": 0.032, "ci_hi": 1.5969}, {"arm": "t4_k8", "n_paired_weeks": 74, "status": "ok", "mean_diff": 0.6913, "ci_lo": 0.0411, "ci_hi": 1.5687}, {"arm": "t4_k7", "n_paired_weeks": 74, "status": "ok", "mean_diff": 0.6723, "ci_lo": 0.0157, "ci_hi": 1.5662}, {"arm": "threshold-experiment_20", "n_paired_weeks": 74, "status": "ok", "mean_diff": 0.3275, "ci_lo": -0.0832, "ci_hi": 0.7703}, {"arm": "threshold-experiment_17.5", "n_paired_weeks": 74, "status": "ok", "mean_diff": 0.2735, "ci_lo": -0.1685, "ci_hi": 0.6244}, {"arm": "threshold-experiment_25", "n_paired_weeks": 74, "status": "ok", "mean_diff": 0.2659, "ci_lo": -0.1883, "ci_hi": 0.7651}, {"arm": "threshold-experiment_22.5", "n_paired_weeks": 74, "status": "ok", "mean_diff": 0.265, "ci_lo": -0.1602, "ci_hi": 0.7218}, {"arm": "threshold-experiment_50", "n_paired_weeks": 74, "status": "ok", "mean_diff": 0.2338, "ci_lo": -0.2157, "ci_hi": 0.7211}, {"arm": "threshold-experiment_40", "n_paired_weeks": 74, "status": "ok", "mean_diff": 0.2338, "ci_lo": -0.2157, "ci_hi": 0.7211}, {"arm": "threshold-experiment_30", "n_paired_weeks": 74, "status": "ok", "mean_diff": 0.2338, "ci_lo": -0.2157, "ci_hi": 0.7211}, {"arm": "flip_all", "n_paired_weeks": 74, "status": "ok", "mean_diff": 0.1137, "ci_lo": -0.2974, "ci_hi": 0.5722}, {"arm": "riskcap_rejected", "n_paired_weeks": 59, "status": "ok", "mean_diff": 0.0797, "ci_lo": -1.0249, "ci_hi": 0.9907}, {"arm": "threshold-experiment_15", "n_paired_weeks": 74, "status": "ok", "mean_diff": 0.0, "ci_lo": 0.0, "ci_hi": 0.0}, {"arm": "t4_k11", "n_paired_weeks": 41, "status": "ok", "mean_diff": -0.1859, "ci_lo": -0.959, "ci_hi": 0.8081}, {"arm": "near_miss_rsi", "n_paired_weeks": 36, "status": "ok", "mean_diff": -0.7814, "ci_lo": -1.88, "ci_hi": 0.3493}], "flag_persistence": [{"key": "C02_liquidity_2x", "value": 0.9991, "n": 26970.0}, {"key": "C03_cap_band_central", "value": 0.9447, "n": 11017.0}, {"key": "A02_vstop_uptrend", "value": 0.9402, "n": 12748.0}, {"key": "B03_sector_rs_13w_pos", "value": 0.914, "n": 15293.0}, {"key": "A04_risk_cap_ok", "value": 0.8691, "n": 10164.0}, {"key": "B01_sector_rs_4w_pos", "value": 0.7967, "n": 13849.0}, {"key": "A03_rsi_in_band", "value": 0.7606, "n": 10040.0}, {"key": "C01_risk_headroom_5pp", "value": 0.6922, "n": 5344.0}, {"key": "B02_sector_top_k", "value": 0.6206, "n": 6503.0}, {"key": "B06_rsi_sweetspot_core", "value": 0.5499, "n": 4997.0}, {"key": "B05_trend_quality_strong", "value": 0.2541, "n": 2109.0}, {"key": "B04_volume_expansion", "value": 0.2276, "n": 4073.0}, {"key": "A01_vstop_flip_up", "value": 0.0, "n": 701.0}], "autocorr": [{"key": "lag1", "value": 0.7727, "n": 27074.0}], "overlap_series": {"weeks": ["2024-09-16", "2024-09-23", "2024-09-30", "2024-10-07", "2024-10-14", "2024-10-21", "2024-10-28", "2024-11-04", "2024-11-11", "2024-11-18", "2024-11-25", "2024-12-02", "2024-12-09", "2024-12-16", "2024-12-23", "2024-12-30", "2025-01-06", "2025-01-13", "2025-01-20", "2025-01-27", "2025-02-03", "2025-02-10", "2025-02-17", "2025-02-24", "2025-03-03", "2025-03-10", "2025-03-17", "2025-03-24", "2025-03-31", "2025-04-07", "2025-04-14", "2025-04-21", "2025-04-28", "2025-05-05", "2025-05-12", "2025-05-19", "2025-05-26", "2025-06-02", "2025-06-09", "2025-06-16", "2025-06-23", "2025-06-30", "2025-07-07", "2025-07-14", "2025-07-21", "2025-07-28", "2025-08-04", "2025-08-11", "2025-08-18", "2025-08-25", "2025-09-01", "2025-09-08", "2025-09-15", "2025-09-22", "2025-09-29", "2025-10-06", "2025-10-13", "2025-10-20", "2025-10-27", "2025-11-03", "2025-11-10", "2025-11-17", "2025-11-24", "2025-12-01", "2025-12-08", "2025-12-15", "2025-12-22", "2025-12-29", "2026-01-05", "2026-01-12", "2026-01-19", "2026-01-26", "2026-02-02", "2026-02-09", "2026-02-16", "2026-02-23", "2026-03-02", "2026-03-09", "2026-03-16", "2026-03-23", "2026-03-30", "2026-04-06", "2026-04-13", "2026-04-20", "2026-04-27", "2026-05-04", "2026-05-11", "2026-05-18", "2026-05-25", "2026-06-01", "2026-06-08", "2026-06-15", "2026-06-22", "2026-06-29", "2026-07-06", "2026-07-13", "2026-07-20", "2026-07-27", "2026-08-03", "2026-08-10", "2026-08-17", "2026-08-24", "2026-08-31"], "values": [0.3, 0.3, 0.6, 0.4, 0.4, 0.2, 0.2, 0.2, 0.5, 0.5, 0.4, 0.3, 0.2, 0.3, 0.2, 0.6, 0.3, 0.2, 0.5, 0.6, 0.4, 0.5, 0.3, 0.4, 0.3, 0.5, 0.1, 0.1, 0.3, 0.7, 0.2, 0.3, 0.0, 0.2, 0.1, 0.0, 0.3, 0.1, 0.2, 0.6, 0.3, 0.1, 0.3, 0.1, 0.1, 0.2, 0.4, 0.5, 0.5, 0.4, 0.3, 0.3, 0.1, 0.1, 0.1, 0.3, 0.4, 0.3, 0.3, 0.5, 0.5, 0.5, 0.7, 0.3, 0.4, 0.4, 0.1, 0.3, 0.3, 0.4, 0.4, 0.5, 0.2, 0.2, 0.4, 0.3, 0.4, 0.1, 0.5, 0.3, 0.4, 0.0, 0.1, 0.0, 0.3, 0.1, 0.1, 0.3, 0.4, 0.6, 0.2, 0.0, 0.4, 0.0, 0.3, 0.3, 0.3, 0.2, 0.4, 0.4, 0.5, 0.6, 0.1]}, "top_decile": [{"key": "ANANDRATHI.NS", "value": 36.0}, {"key": "NAVINFLUOR.NS", "value": 36.0}, {"key": "ATUL.NS", "value": 36.0}, {"key": "NH.NS", "value": 31.0}, {"key": "SUMICHEM.NS", "value": 29.0}, {"key": "AARTIIND.NS", "value": 28.0}, {"key": "APOLLOTYRE.NS", "value": 28.0}, {"key": "DALBHARAT.NS", "value": 28.0}, {"key": "KIMS.NS", "value": 28.0}, {"key": "BAYERCROP.NS", "value": 27.0}, {"key": "RAMCOCEM.NS", "value": 27.0}, {"key": "CHOLAHLDNG.NS", "value": 26.0}, {"key": "MANAPPURAM.NS", "value": 26.0}, {"key": "SHYAMMETL.NS", "value": 26.0}, {"key": "ABSLAMC.NS", "value": 25.0}], "lane_c": {"control_live": {"signal_week": "2026-09-07", "n_picks": 2, "basket_net_pct": 4.3535}, "t1_shadow": {"signal_week": "2026-09-07", "n_picks": 14, "basket_net_pct": -0.0431}, "n_weeks_with_picks": 1}, "t1_replay_curve": [1.0008, 0.994, 0.9743, 0.9591, 0.9504, 0.8944, 0.925, 0.9085, 0.8649, 0.8886, 0.9, 0.9194, 0.9115, 0.8932, 0.9085, 0.8873, 0.8434, 0.8235, 0.7844, 0.7727, 0.7791, 0.7216, 0.7216, 0.6849, 0.6956, 0.673, 0.6904, 0.6846, 0.6778, 0.6744, 0.6881, 0.6802, 0.6684, 0.6938, 0.7475, 0.75, 0.7589, 0.7665, 0.7613, 0.7476, 0.7745, 0.7794, 0.7805, 0.7945, 0.7769, 0.7529, 0.7362, 0.7279, 0.7456, 0.7195, 0.7017, 0.7048, 0.7166, 0.6912, 0.6912, 0.691, 0.6859, 0.6837, 0.6856, 0.6652, 0.6474, 0.6298, 0.626, 0.6073, 0.591, 0.5772, 0.5729, 0.5721, 0.5519, 0.5558, 0.5269, 0.5341, 0.5434, 0.5432, 0.5453, 0.5412, 0.5305, 0.5098, 0.5106, 0.4896, 0.4876, 0.5467, 0.5829, 0.5842, 0.6033, 0.611, 0.5955, 0.5831, 0.5748, 0.5749, 0.5795, 0.5813, 0.5703, 0.5747, 0.57, 0.5762, 0.5691, 0.5628, 0.5747, 0.5694, 0.5756, 0.5605, 0.549, 0.5448], "t1_replay_filtered_curve": [0.9878, 0.9768, 0.9615, 0.9977, 0.9853, 0.9263, 0.95, 0.9251, 0.8851, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN], "t1_replay_n_weeks": 102, "lane_c_forward": [{"signal_week": "2026-09-07", "n_picks": 14, "basket_net_pct": -0.0431}], "t1_replay_vs_control": [{"lane": "C_vs_A_replay", "arm": "t1_shadow", "control_arm": "control", "basis": "net_pct", "recording_mode": "replay", "n_paired_weeks": 73, "status": "ok", "mean_diff": 0.9484, "ci_lo": 0.2901, "ci_hi": 1.7892}, {"lane": "C_vs_A_replay", "arm": "t1_shadow", "control_arm": "control", "basis": "excess_eligible_pp", "recording_mode": "replay", "n_paired_weeks": 0, "status": "insufficient history (n=0, floor=13)", "mean_diff": NaN, "ci_lo": NaN, "ci_hi": NaN}, {"lane": "C_vs_A_replay", "arm": "t1_shadow", "control_arm": "control", "basis": "excess_bench_pp", "recording_mode": "replay", "n_paired_weeks": 0, "status": "insufficient history (n=0, floor=13)", "mean_diff": NaN, "ci_lo": NaN, "ci_hi": NaN}, {"lane": "C_vs_A_replay", "arm": "t1_shadow_filtered", "control_arm": "control", "basis": "net_pct", "recording_mode": "replay", "n_paired_weeks": 72, "status": "ok", "mean_diff": 0.9233, "ci_lo": 0.239, "ci_hi": 1.7649}, {"lane": "C_vs_A_replay", "arm": "t1_shadow_filtered", "control_arm": "control", "basis": "excess_eligible_pp", "recording_mode": "replay", "n_paired_weeks": 0, "status": "insufficient history (n=0, floor=13)", "mean_diff": NaN, "ci_lo": NaN, "ci_hi": NaN}, {"lane": "C_vs_A_replay", "arm": "t1_shadow_filtered", "control_arm": "control", "basis": "excess_bench_pp", "recording_mode": "replay", "n_paired_weeks": 0, "status": "insufficient history (n=0, floor=13)", "mean_diff": NaN, "ci_lo": NaN, "ci_hi": NaN}], "t1_replay_trend": [{"lane": "C", "arm": "t1_shadow", "basis": "net_pct", "recording_mode": "replay", "n_weeks_with_picks": 102, "status": "ok", "ols_slope": 0.0095161921617632, "ols_se": 0.0097219406883333, "ols_t": 0.9788366815674012, "ols_p": 0.3276606820391168, "mk_tau": 0.0324208891477383, "mk_p": 0.6312516079456796, "half_first_mean": -0.6447509803921568, "half_second_mean": -0.4680509803921568, "half_diff_mean": 0.1970588409803921, "half_diff_ci_lo": -1.0352508823529412, "half_diff_ci_hi": 1.4881288725490196, "agree_direction": true}, {"lane": "C", "arm": "t1_shadow", "basis": "excess_eligible_pp", "recording_mode": "replay", "n_weeks_with_picks": 0, "status": "insufficient history (n=0, floor=26)", "ols_slope": NaN, "ols_se": NaN, "ols_t": NaN, "ols_p": NaN, "mk_tau": NaN, "mk_p": NaN, "half_first_mean": NaN, "half_second_mean": NaN, "half_diff_mean": NaN, "half_diff_ci_lo": NaN, "half_diff_ci_hi": NaN, "agree_direction": null}, {"lane": "C", "arm": "t1_shadow", "basis": "excess_bench_pp", "recording_mode": "replay", "n_weeks_with_picks": 0, "status": "insufficient history (n=0, floor=26)", "ols_slope": NaN, "ols_se": NaN, "ols_t": NaN, "ols_p": NaN, "mk_tau": NaN, "mk_p": NaN, "half_first_mean": NaN, "half_second_mean": NaN, "half_diff_mean": NaN, "half_diff_ci_lo": NaN, "half_diff_ci_hi": NaN, "agree_direction": null}, {"lane": "C", "arm": "t1_shadow_filtered", "basis": "net_pct", "recording_mode": "replay", "n_weeks_with_picks": 99, "status": "ok", "ols_slope": 0.0105918491546325, "ols_se": 0.0086610140566745, "ols_t": 1.2229340681499077, "ols_p": 0.2213545997392653, "mk_tau": 0.0632859204287775, "mk_p": 0.3549245911405669, "half_first_mean": -1.16788125, "half_second_mean": -0.7132470588235296, "half_diff_mean": 0.410437780245098, "half_diff_ci_lo": -0.6562258333333336, "half_diff_ci_hi": 1.523106878063725, "agree_direction": true}, {"lane": "C", "arm": "t1_shadow_filtered", "basis": "excess_eligible_pp", "recording_mode": "replay", "n_weeks_with_picks": 0, "status": "insufficient history (n=0, floor=26)", "ols_slope": NaN, "ols_se": NaN, "ols_t": NaN, "ols_p": NaN, "mk_tau": NaN, "mk_p": NaN, "half_first_mean": NaN, "half_second_mean": NaN, "half_diff_mean": NaN, "half_diff_ci_lo": NaN, "half_diff_ci_hi": NaN, "agree_direction": null}, {"lane": "C", "arm": "t1_shadow_filtered", "basis": "excess_bench_pp", "recording_mode": "replay", "n_weeks_with_picks": 0, "status": "insufficient history (n=0, floor=26)", "ols_slope": NaN, "ols_se": NaN, "ols_t": NaN, "ols_p": NaN, "mk_tau": NaN, "mk_p": NaN, "half_first_mean": NaN, "half_second_mean": NaN, "half_diff_mean": NaN, "half_diff_ci_lo": NaN, "half_diff_ci_hi": NaN, "agree_direction": null}]};
+
+function fmtPct(v, dp=2){ return v===null||v===undefined||Number.isNaN(v) ? "—" : (v>=0?"+":"") + v.toFixed(dp) + "%"; }
+function fmtPP(v, dp=3){ return v===null||v===undefined||Number.isNaN(v) ? "—" : (v>=0?"+":"") + v.toFixed(dp); }
+function cls(v){ return v>0 ? "pos" : (v<0 ? "neg" : ""); }
+
+function svgEl(tag, attrs){
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+
+// ---- line chart: multiple series over a shared week axis ----
+function lineChart(containerId, tooltipId, weeks, series, opts={}){
+  const container = document.getElementById(containerId);
+  const tooltip = document.getElementById(tooltipId);
+  const W = container.clientWidth || 1040, H = opts.height || 260;
+  const padL = 46, padR = 16, padT = 14, padB = 26;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+
+  let allVals = [];
+  series.forEach(s => s.values.forEach(v => { if (v !== null && !Number.isNaN(v)) allVals.push(v); }));
+  let vmin = Math.min(...allVals), vmax = Math.max(...allVals);
+  if (opts.includeZero) { vmin = Math.min(vmin, 0); vmax = Math.max(vmax, 0); }
+  const pad = (vmax - vmin) * 0.08 || 1;
+  vmin -= pad; vmax += pad;
+
+  const n = weeks.length;
+  const x = i => padL + (n <= 1 ? 0 : i / (n - 1) * plotW);
+  const y = v => padT + plotH - (v - vmin) / (vmax - vmin) * plotH;
+
+  const svg = svgEl("svg", {viewBox: `0 0 ${W} ${H}`, width: "100%", height: H, preserveAspectRatio: "none"});
+
+  // gridlines (horizontal, 4 bands) + y labels
+  const nTicks = 4;
+  for (let t = 0; t <= nTicks; t++) {
+    const v = vmin + (vmax - vmin) * t / nTicks;
+    const yy = y(v);
+    svg.appendChild(svgEl("line", {x1: padL, x2: W - padR, y1: yy, y2: yy, class: "gridline"}));
+    const lbl = svgEl("text", {x: 4, y: yy + 4, "font-size": 10});
+    lbl.textContent = (opts.pctSuffix ? v.toFixed(opts.dp ?? 1) + (opts.pctSuffix||"") : v.toFixed(opts.dp ?? 2));
+    svg.appendChild(lbl);
+  }
+  if (opts.includeZero) {
+    svg.appendChild(svgEl("line", {x1: padL, x2: W - padR, y1: y(0), y2: y(0), class: "zero-line"}));
+  }
+  svg.appendChild(svgEl("line", {x1: padL, x2: padL, y1: padT, y2: H - padB, class: "axis-line"}));
+
+  // x labels: first, mid, last week
+  [0, Math.floor((n-1)/2), n-1].forEach(i => {
+    const lbl = svgEl("text", {x: x(i), y: H - 6, "text-anchor": i===0?"start":(i===n-1?"end":"middle"), "font-size": 10});
+    lbl.textContent = weeks[i];
+    svg.appendChild(lbl);
+  });
+
+  series.forEach(s => {
+    if (s.markerOnly) {
+      // Sparse series (e.g. T1 — 1 graded week, no curve to draw): plot isolated
+      // points as markers only, never a connecting line implying history that isn't there.
+      s.values.forEach((v, i) => {
+        if (v === null || Number.isNaN(v)) return;
+        const m = svgEl("circle", {cx: x(i), cy: y(v), r: s.markerRadius || 5, fill: s.color,
+                                    stroke: "var(--panel)", "stroke-width": 1.5});
+        svg.appendChild(m);
+      });
+      return;
+    }
+    let d = "";
+    let started = false;
+    s.values.forEach((v, i) => {
+      if (v === null || Number.isNaN(v)) { started = false; return; }
+      d += (started ? "L" : "M") + x(i).toFixed(2) + "," + y(v).toFixed(2) + " ";
+      started = true;
+    });
+    svg.appendChild(svgEl("path", {d, fill: "none", stroke: s.color, "stroke-width": s.width || 1.8, "stroke-linejoin":"round"}));
+  });
+
+  // hover capture
+  const hoverLine = svgEl("line", {y1: padT, y2: H - padB, stroke: "var(--rule-2)", "stroke-width": 1, opacity: 0});
+  svg.appendChild(hoverLine);
+  const dots = series.map(s => svgEl("circle", {r: 3, fill: s.color, opacity: 0}));
+  dots.forEach(d => svg.appendChild(d));
+
+  const overlay = svgEl("rect", {x: padL, y: padT, width: plotW, height: plotH, fill: "transparent"});
+  overlay.addEventListener("mousemove", (e) => {
+    const rect = svg.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (W / rect.width);
+    let i = Math.round((mx - padL) / plotW * (n - 1));
+    i = Math.max(0, Math.min(n - 1, i));
+    hoverLine.setAttribute("x1", x(i)); hoverLine.setAttribute("x2", x(i)); hoverLine.setAttribute("opacity", 1);
+    let lines = [weeks[i]];
+    series.forEach((s, si) => {
+      const v = s.values[i];
+      dots[si].setAttribute("opacity", v===null||Number.isNaN(v) ? 0 : 1);
+      if (v !== null && !Number.isNaN(v)) { dots[si].setAttribute("cx", x(i)); dots[si].setAttribute("cy", y(v)); }
+      lines.push(s.label + ": " + (v===null||Number.isNaN(v) ? "—" : v.toFixed(opts.dp ?? 2) + (opts.pctSuffix||"")));
+    });
+    tooltip.innerHTML = lines.join("<br>");
+    tooltip.style.opacity = 1;
+    tooltip.style.left = (e.clientX - rect.left + 14) + "px";
+    tooltip.style.top = (e.clientY - rect.top - 10) + "px";
+  });
+  overlay.addEventListener("mouseleave", () => {
+    hoverLine.setAttribute("opacity", 0);
+    dots.forEach(d => d.setAttribute("opacity", 0));
+    tooltip.style.opacity = 0;
+  });
+  svg.appendChild(overlay);
+
+  container.innerHTML = "";
+  container.style.position = "relative";
+  container.appendChild(svg);
+}
+
+// ---- bar chart: single series, vertical bars, optional zero line ----
+function barChart(containerId, tooltipId, labels, values, opts={}){
+  const container = document.getElementById(containerId);
+  const tooltip = document.getElementById(tooltipId);
+  const W = container.clientWidth || 1040, H = opts.height || 220;
+  const padL = 46, padR = 16, padT = 14, padB = opts.padB || 26;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+
+  const clean = values.filter(v => v !== null && !Number.isNaN(v));
+  let vmin = Math.min(0, ...clean), vmax = Math.max(0, ...clean);
+  const pad = (vmax - vmin) * 0.1 || 1;
+  vmin -= pad; vmax += pad;
+
+  const n = labels.length;
+  const bw = plotW / n;
+  const x = i => padL + i * bw;
+  const y = v => padT + plotH - (v - vmin) / (vmax - vmin) * plotH;
+  const y0 = y(0);
+
+  const svg = svgEl("svg", {viewBox: `0 0 ${W} ${H}`, width: "100%", height: H, preserveAspectRatio: "none"});
+
+  const nTicks = 4;
+  for (let t = 0; t <= nTicks; t++) {
+    const v = vmin + (vmax - vmin) * t / nTicks;
+    const yy = y(v);
+    svg.appendChild(svgEl("line", {x1: padL, x2: W - padR, y1: yy, y2: yy, class: "gridline"}));
+    const lbl = svgEl("text", {x: 4, y: yy + 4, "font-size": 10});
+    lbl.textContent = v.toFixed(1);
+    svg.appendChild(lbl);
+  }
+  svg.appendChild(svgEl("line", {x1: padL, x2: W - padR, y1: y0, y2: y0, class: "zero-line"}));
+  svg.appendChild(svgEl("line", {x1: padL, x2: padL, y1: padT, y2: H - padB, class: "axis-line"}));
+
+  if (opts.showAllLabels) {
+    labels.forEach((lb, i) => {
+      const lbl = svgEl("text", {x: x(i) + bw/2, y: H - 6, "text-anchor": "middle", "font-size": opts.labelSize || 9});
+      lbl.textContent = lb;
+      if (opts.rotateLabels) lbl.setAttribute("transform", `rotate(-45 ${x(i)+bw/2} ${H-6})`);
+      svg.appendChild(lbl);
+    });
+  } else {
+    [0, Math.floor((n-1)/2), n-1].forEach(i => {
+      const lbl = svgEl("text", {x: x(i) + bw/2, y: H - 6, "text-anchor": "middle", "font-size": 10});
+      lbl.textContent = labels[i];
+      svg.appendChild(lbl);
+    });
+  }
+
+  const bars = [];
+  values.forEach((v, i) => {
+    if (v === null || Number.isNaN(v)) return;
+    const bx = x(i) + bw * 0.15, bw2 = Math.max(0, bw * 0.7);
+    const by = Math.min(y(v), y0), bh = Math.abs(y(v) - y0);
+    const color = opts.color ? opts.color(v, i) : (v >= 0 ? "var(--gain)" : "var(--loss)");
+    const bar = svgEl("rect", {x: bx, y: by, width: bw2, height: Math.max(bh, 1), fill: color, opacity: 0.88, rx: 1});
+    bars.push({bar, i, v});
+    svg.appendChild(bar);
+  });
+
+  bars.forEach(({bar, i, v}) => {
+    bar.addEventListener("mousemove", (e) => {
+      const rect = svg.getBoundingClientRect();
+      tooltip.innerHTML = labels[i] + "<br>" + (opts.fmt ? opts.fmt(v) : v.toFixed(2));
+      tooltip.style.opacity = 1;
+      tooltip.style.left = (e.clientX - rect.left + 14) + "px";
+      tooltip.style.top = (e.clientY - rect.top - 10) + "px";
+    });
+    bar.addEventListener("mouseleave", () => { tooltip.style.opacity = 0; });
+  });
+
+  container.innerHTML = "";
+  container.style.position = "relative";
+  container.appendChild(svg);
+}
+
+// ---- horizontal bar chart with CI whiskers (paired-vs-control) ----
+function hBarCIChart(containerId, tooltipId, rows, opts={}){
+  const container = document.getElementById(containerId);
+  const tooltip = document.getElementById(tooltipId);
+  const W = container.clientWidth || 1040;
+  const rowH = 22, padL = 190, padR = 60, padT = 10, padB = 24;
+  const H = rows.length * rowH + padT + padB;
+  const plotW = W - padL - padR;
+
+  let vmin = Math.min(0, ...rows.map(r => r.lo)), vmax = Math.max(0, ...rows.map(r => r.hi));
+  const pad = (vmax - vmin) * 0.1 || 0.5;
+  vmin -= pad; vmax += pad;
+
+  const x = v => padL + (v - vmin) / (vmax - vmin) * plotW;
+  const x0 = x(0);
+
+  const svg = svgEl("svg", {viewBox: `0 0 ${W} ${H}`, width: "100%", height: H, preserveAspectRatio: "none"});
+  svg.appendChild(svgEl("line", {x1: x0, x2: x0, y1: padT, y2: H - padB, class: "zero-line"}));
+
+  rows.forEach((r, i) => {
+    const cy = padT + i * rowH + rowH / 2;
+    const lbl = svgEl("text", {x: padL - 8, y: cy + 4, "text-anchor": "end", "font-size": 10.5});
+    lbl.textContent = r.label;
+    if (r.highlight) lbl.setAttribute("fill", "var(--ink)");
+    svg.appendChild(lbl);
+
+    svg.appendChild(svgEl("line", {x1: x(r.lo), x2: x(r.hi), y1: cy, y2: cy, stroke: "var(--ink-3)", "stroke-width": 1.5}));
+    svg.appendChild(svgEl("line", {x1: x(r.lo), x2: x(r.lo), y1: cy-4, y2: cy+4, stroke: "var(--ink-3)", "stroke-width": 1.5}));
+    svg.appendChild(svgEl("line", {x1: x(r.hi), x2: x(r.hi), y1: cy-4, y2: cy+4, stroke: "var(--ink-3)", "stroke-width": 1.5}));
+
+    const excludesZero = (r.lo > 0 || r.hi < 0);
+    const color = excludesZero ? (r.mean >= 0 ? "var(--gain)" : "var(--loss)") : "var(--pend)";
+    const dot = svgEl("circle", {cx: x(r.mean), cy: cy, r: 5, fill: color});
+    svg.appendChild(dot);
+
+    dot.addEventListener("mousemove", (e) => {
+      const rect = svg.getBoundingClientRect();
+      tooltip.innerHTML = `${r.label}<br>mean ${r.mean>=0?"+":""}${r.mean.toFixed(3)}pp<br>CI95 [${r.lo.toFixed(3)}, ${r.hi.toFixed(3)}]`;
+      tooltip.style.opacity = 1;
+      tooltip.style.left = (e.clientX - rect.left + 14) + "px";
+      tooltip.style.top = (e.clientY - rect.top - 10) + "px";
+    });
+    dot.addEventListener("mouseleave", () => { tooltip.style.opacity = 0; });
+  });
+
+  [vmin, 0, vmax].forEach(v => {
+    if (v === vmin || v === vmax) return;
+    const lbl = svgEl("text", {x: x0, y: H - 6, "text-anchor": "middle", "font-size": 10});
+    lbl.textContent = "0";
+    svg.appendChild(lbl);
+  });
+
+  container.innerHTML = "";
+  container.appendChild(svg);
+}
+
+function render(){
+  const tl = DATA.three_line;
+
+  // T1 has two evidence qualities on this chart, kept visually distinct:
+  //  - a REAL curve from its 104-week replay (dev-backtest, Lane C mode=replay) —
+  //    drawn as an actual line, same as Control/indices, once enough weeks exist.
+  //  - its 1 live forward week (2026-09-07) — still an isolated marker, never folded
+  //    into the replay line, since it's a different evidence quality (real, not dev).
+  const t1 = DATA.lane_c.t1_shadow;
+  const forwardWeeks = (DATA.lane_c_forward || []).map(r => r.signal_week);
+  const extraWeeks = forwardWeeks.filter(w => !tl.weeks.includes(w));
+  const chartWeeks = tl.weeks.concat(extraWeeks);
+  const padSeries = vals => vals.concat(extraWeeks.map(() => null));
+  const t1ReplayCurve = padSeries(DATA.t1_replay_curve || tl.weeks.map(() => null));
+  const t1ForwardMarker = chartWeeks.map(w => {
+    const row = (DATA.lane_c_forward || []).find(r => r.signal_week === w);
+    return row ? 1 + row.basket_net_pct / 100 : null;
+  });
+
+  // 01: cumulative curves
+  const cumSeries = [
+    {label: "Control", values: padSeries(tl.basket_curve), color: getVar("--accent")},
+    {label: "Midcap150", values: padSeries(tl.midcap_curve), color: getVar("--line2")},
+    {label: "Nifty50", values: padSeries(tl.nifty50_curve), color: getVar("--line3")},
+  ];
+  if ((DATA.t1_replay_n_weeks || 0) > 0) {
+    cumSeries.push({label: `T1 replay (${DATA.t1_replay_n_weeks} wk dev-backtest)`,
+                     values: t1ReplayCurve, color: getVar("--flag"), width: 1.6});
+  }
+  cumSeries.push({label: "T1 forward (live)", values: t1ForwardMarker, color: getVar("--flag"),
+                   markerOnly: true, markerRadius: 6});
+  lineChart("chart-cum", "tt-cum", chartWeeks, cumSeries, {dp: 3});
+
+  document.getElementById("stat-basket-final").textContent = ((tl.basket_curve.at(-1)-1)*100).toFixed(1) + "%";
+  document.getElementById("stat-midcap-final").textContent = "+" + ((tl.midcap_curve.at(-1)-1)*100).toFixed(1) + "%";
+  const n50final = (tl.nifty50_curve.at(-1)-1)*100;
+  const n50el = document.getElementById("stat-nifty50-final");
+  n50el.textContent = (n50final>=0?"+":"") + n50final.toFixed(1) + "%";
+  n50el.className = "v " + (n50final>=0?"pos":"neg");
+
+  const t1n = DATA.t1_replay_n_weeks || 0;
+  const t1StatusEl = document.getElementById("t1-replay-status");
+  if (t1StatusEl) t1StatusEl.textContent = t1n >= 100 ? `complete, ${t1n}/104 weeks graded (104 scanned)` : `in progress, ${t1n}/104 weeks so far`;
+
+  // 01: weekly spread bars
+  barChart("chart-spread", "tt-spread", tl.weeks, tl.vs_midcap, {
+    fmt: v => "vs Midcap150: " + fmtPP(v) + "pp", height: 200
+  });
+
+  // 02: trend table
+  const trendBody = document.querySelector("#tbl-trend tbody");
+  trendBody.innerHTML = "";
+  DATA.trend_net.forEach(r => {
+    const tr = document.createElement("tr");
+    if (r.arm === "control") tr.className = "hl";
+    tr.innerHTML = `<td class="tick">${r.arm}</td><td>${r.lane}</td><td class="n">${r.n_weeks_with_picks}</td>
+      <td class="n ${cls(r.ols_slope)}">${fmtPP(r.ols_slope,4)}</td><td class="n">${r.ols_p.toFixed(3)}</td>
+      <td class="n ${cls(r.mk_tau)}">${fmtPP(r.mk_tau,3)}</td><td class="n">${r.mk_p.toFixed(3)}</td>
+      <td>${r.agree_direction ? '<span class="pill pill-in">agree</span>' : '<span class="pill pill-out">disagree</span>'}</td>`;
+    trendBody.appendChild(tr);
+  });
+
+  // 03: regime + npicks split
+  const regimeRows = DATA.control_splits.filter(r => r.split === "regime_on" || r.split === "regime_off");
+  barChart("chart-regime", "tt-regime",
+    regimeRows.map(r => r.split.replace("regime_","") + ` (n=${r.n_weeks_with_picks})`),
+    regimeRows.map(r => r.mean_net_pct),
+    {showAllLabels: true, fmt: v => fmtPct(v) + "/wk", height: 200});
+
+  const npicksRows = DATA.control_splits.filter(r => r.split.startsWith("npicks_"));
+  barChart("chart-npicks", "tt-npicks",
+    npicksRows.map(r => r.split.replace("npicks_","") + ` (n=${r.n_weeks_with_picks})`),
+    npicksRows.map(r => r.mean_net_pct),
+    {showAllLabels: true, fmt: v => fmtPct(v) + "/wk", height: 200});
+
+  // 04: paired vs control
+  const pairedRows = DATA.paired_net.map(r => ({label: r.arm, mean: r.mean_diff, lo: r.ci_lo, hi: r.ci_hi, highlight: r.arm === "universe"}));
+  hBarCIChart("chart-paired", "tt-paired", pairedRows, {height: pairedRows.length * 22 + 40});
+
+  const pairedBody = document.querySelector("#tbl-paired tbody");
+  pairedBody.innerHTML = "";
+  DATA.paired_net.forEach(r => {
+    const excl = (r.ci_lo > 0 || r.ci_hi < 0);
+    const tr = document.createElement("tr");
+    if (r.arm === "universe") tr.className = "hl";
+    tr.innerHTML = `<td class="tick">${r.arm}</td><td class="n">${r.n_paired_weeks}</td>
+      <td class="n ${cls(r.mean_diff)}">${fmtPP(r.mean_diff)}</td><td class="n">${fmtPP(r.ci_lo)}</td><td class="n">${fmtPP(r.ci_hi)}</td>
+      <td>${excl ? '<span class="pill pill-in">yes</span>' : '<span class="pill pill-pend">no</span>'}</td>`;
+    pairedBody.appendChild(tr);
+  });
+
+  // 03b: Lane C, T1 vs Control
+  const lc = DATA.lane_c;
+  document.getElementById("lc-n-weeks").textContent = lc.n_weeks_with_picks + " / 13";
+  document.getElementById("lc-control-net").textContent = fmtPct(lc.control_live.basket_net_pct);
+  const t1El = document.getElementById("lc-t1-net");
+  t1El.textContent = fmtPct(lc.t1_shadow.basket_net_pct);
+  t1El.className = "v " + cls(lc.t1_shadow.basket_net_pct);
+  const delta = lc.t1_shadow.basket_net_pct - lc.control_live.basket_net_pct;
+  const deltaEl = document.getElementById("lc-delta");
+  deltaEl.textContent = fmtPP(delta) + "pp";
+  deltaEl.className = "v " + cls(delta);
+
+  // 03b: T1 replay vs Control replay (dev-backtest, cross-lane)
+  const devRows = DATA.t1_replay_vs_control || [];
+  const devStatusEl = document.getElementById("t1-dev-status");
+  const devPillEl = document.getElementById("t1-replay-pill");
+  if (devStatusEl) devStatusEl.textContent = `${t1n}/104 weeks scanned`;
+  if (devPillEl) devPillEl.textContent = t1n >= 100 ? `${t1n}-wk dev-backtest` : `${t1n}/104-wk dev-backtest (building)`;
+  const devBody = document.querySelector("#tbl-t1-dev tbody");
+  devBody.innerHTML = "";
+  if (devBody) {
+    const netRows = devRows.filter(r => r.basis === "net_pct");
+    if (netRows.length === 0) {
+      devBody.innerHTML = `<tr><td colspan="6" style="color:var(--ink-3)">Replay not built yet -- run <code>python -m tests.track_forward t1replay 2024-09-09 2026-08-31</code> then <code>tests.track_wow build && summarise</code>.</td></tr>`;
+    } else {
+      netRows.forEach(r => {
+        const tr = document.createElement("tr");
+        const ok = r.status === "ok";
+        tr.innerHTML = `<td class="tick">${r.arm}</td><td class="n">${r.n_paired_weeks}</td>
+          <td class="n ${ok ? cls(r.mean_diff) : ''}">${ok ? fmtPP(r.mean_diff) : '—'}</td>
+          <td class="n">${ok ? fmtPP(r.ci_lo) : '—'}</td><td class="n">${ok ? fmtPP(r.ci_hi) : '—'}</td>
+          <td>${ok ? '<span class="pill pill-in">ok</span>' : `<span class="pill pill-pend">${r.status}</span>`}</td>`;
+        devBody.appendChild(tr);
+      });
+    }
+  }
+
+  // 05: arm summary table
+  const armsBody = document.querySelector("#tbl-arms tbody");
+  armsBody.innerHTML = "";
+  const sortedArms = [...DATA.arm_summary_all].sort((a,b) => b.mean_net_pct - a.mean_net_pct);
+  sortedArms.forEach(r => {
+    const tr = document.createElement("tr");
+    if (r.arm === "control") tr.className = "hl";
+    tr.innerHTML = `<td class="tick">${r.arm}</td><td class="n">${r.n_weeks_with_picks}</td><td class="n">${r.n_cash_weeks}</td>
+      <td class="n ${cls(r.mean_net_pct)}">${fmtPct(r.mean_net_pct)}</td>
+      <td class="n" style="color:var(--ink-3)">${fmtPct(r.pooled_mean_net_pct_secondary)}</td>
+      <td class="n">${(r.win_week_rate*100).toFixed(1)}%</td>
+      <td class="n">${r.equity_final.toFixed(3)}</td>
+      <td class="n neg">${r.max_drawdown_pct.toFixed(1)}%</td>`;
+    armsBody.appendChild(tr);
+  });
+
+  // 06: overlap series
+  barChart("chart-overlap", "tt-overlap", DATA.overlap_series.weeks, DATA.overlap_series.values.map(v => v*100), {
+    fmt: v => v.toFixed(0) + "% overlap", height: 200, color: () => getVar("--flag")
+  });
+
+  // 06: per-flag persistence
+  const pf = [...DATA.flag_persistence].sort((a,b) => b.value - a.value);
+  barChart("chart-persist", "tt-persist", pf.map(r => r.key.split("_")[0]), pf.map(r => r.value*100), {
+    showAllLabels: true, rotateLabels: true, labelSize: 8.5, padB: 46, height: 240,
+    fmt: (v) => v.toFixed(1) + "% persistent",
+    color: (v) => v >= 70 ? getVar("--gain") : getVar("--pend")
+  });
+
+  // 06: top decile table
+  const decileBody = document.querySelector("#tbl-decile tbody");
+  decileBody.innerHTML = "";
+  DATA.top_decile.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td class="tick">${r.key}</td><td class="n">${r.value}</td>`;
+    decileBody.appendChild(tr);
+  });
+}
+
+function getVar(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+render();
+window.addEventListener("resize", () => { render(); });
+</script>

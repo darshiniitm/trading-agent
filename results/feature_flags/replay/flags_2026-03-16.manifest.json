@@ -3,8 +3,8 @@
   "signal_week": "2026-03-16",
   "holding_week": "2026-03-23",
   "recording_mode": "replay",
-  "created_utc": "2026-09-15T05:40:31+00:00",
-  "created_ist": "2026-09-15T11:10:30+05:30",
+  "created_utc": "2026-09-29T05:37:39+00:00",
+  "created_ist": "2026-09-29T11:07:37+05:30",
   "monday_open_deadline_ist": "2026-03-23T09:15:00+05:30",
   "registry_version": 1,
   "registry_checksum": "sha256:d8164388d645879ab937757c356184153873b26d53dbe865a48474be24cd648d",
@@ -14,39 +14,39 @@
   },
   "funnel": {
     "candidate_universe": 501,
-    "universe_market_cap_band": 266,
-    "liquidity_filter": 266,
+    "universe_market_cap_band": 267,
+    "liquidity_filter": 267,
     "vstop_flip": 2,
     "survivors_after_rsi_band": 1
   },
   "counts": {
-    "rows": 266,
+    "rows": 267,
     "flags_met_histogram": {
-      "1.0": 35,
+      "1.0": 39,
       "2.0": 50,
-      "3.0": 48,
-      "4.0": 48,
-      "5.0": 28,
+      "3.0": 51,
+      "4.0": 44,
+      "5.0": 27,
       "6.0": 12,
-      "7.0": 8,
-      "8.0": 14,
-      "9.0": 10,
-      "10.0": 5
+      "7.0": 7,
+      "8.0": 16,
+      "9.0": 9,
+      "10.0": 4
     },
     "prevalence_by_flag": {
-      "A01_vstop_flip_up": 0.0078,
-      "A02_vstop_uptrend": 0.2674,
-      "A03_rsi_in_band": 0.186,
-      "A04_risk_cap_ok": 0.2326,
-      "B01_sector_rs_4w_pos": 0.4264,
-      "B02_sector_top_k": 0.2248,
-      "B03_sector_rs_13w_pos": 0.6938,
-      "B04_volume_expansion": 0.1434,
-      "B05_trend_quality_strong": 0.0194,
-      "B06_rsi_sweetspot_core": 0.0969,
-      "C01_risk_headroom_5pp": 0.1589,
+      "A01_vstop_flip_up": 0.0077,
+      "A02_vstop_uptrend": 0.2664,
+      "A03_rsi_in_band": 0.1815,
+      "A04_risk_cap_ok": 0.2317,
+      "B01_sector_rs_4w_pos": 0.4633,
+      "B02_sector_top_k": 0.1853,
+      "B03_sector_rs_13w_pos": 0.6139,
+      "B04_volume_expansion": 0.1429,
+      "B05_trend_quality_strong": 0.027,
+      "B06_rsi_sweetspot_core": 0.0965,
+      "C01_risk_headroom_5pp": 0.1583,
       "C02_liquidity_2x": 0.9961,
-      "C03_cap_band_central": 0.3876
+      "C03_cap_band_central": 0.3861
     }
   },
   "t4": {
@@ -54,6 +54,11 @@
     "selected": []
   },
   "checks": [],
-  "caveats": [],
-  "replay_run_id": "replay_2026-09-15T11:08:40+05:30"
+  "caveats": [
+    "yfinance weekly bars / corporate-action adjustment not independently verified",
+    "market cap uses TODAY's shares outstanding held constant across history (no point-in-time share count available from open-source sources) \u2014 see design doc section 3.2",
+    "delisted / merged tickers are not included -> survivorship bias, backtest returns are likely biased upward",
+    "sector map is NSE index-classification 'Industry' field as of the CSV snapshot date, not strictly point-in-time historically"
+  ],
+  "replay_run_id": "replay_2026-09-29T11:03:48+05:30"
 }

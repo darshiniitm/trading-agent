@@ -1,0 +1,200 @@
+{
+ "program": {
+  "program_version": 5,
+  "universe": {
+   "source": "index",
+   "index": "NIFTY 50"
+  },
+  "sets": [
+   {
+    "id": "S1",
+    "from": "universe",
+    "label": "qualified stocks",
+    "eval": {
+     "mode": "latest",
+     "timeframe": "1D",
+     "bar": "last_completed"
+    },
+    "where": {
+     "all": [
+      "C1",
+      "C2",
+      "C3"
+     ]
+    }
+   }
+  ],
+  "conditions": [
+   {
+    "id": "C1",
+    "lhs": {
+     "ind": "bar",
+     "params": {
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "op": ">",
+    "rhs": {
+     "ind": "ema",
+     "params": {
+      "length": 20,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "phrase": "stocks above the 20 and 50 EMA"
+   },
+   {
+    "id": "C2",
+    "lhs": {
+     "ind": "bar",
+     "params": {
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "op": ">",
+    "rhs": {
+     "ind": "ema",
+     "params": {
+      "length": 50,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "phrase": "stocks above the 20 and 50 EMA"
+   },
+   {
+    "id": "C3",
+    "lhs": {
+     "ind": "rsi",
+     "params": {
+      "length": 14
+     },
+     "tf": "1D"
+    },
+    "op": ">",
+    "value": 55,
+    "phrase": "RSI above 55"
+   }
+  ],
+  "actions": [
+   {
+    "id": "A1",
+    "type": "trade_plan",
+    "set": "S1",
+    "entry": {
+     "at": "next_open"
+    },
+    "stop": {
+     "from_atr": {
+      "length": 14,
+      "mult": 2,
+      "tf": "1D"
+     }
+    },
+    "target": {
+     "r_multiple": 2
+    }
+   }
+  ],
+  "source_phrases": [
+   {
+    "path": "conditions.C1.rhs.params.length",
+    "phrase": "20",
+    "span": [
+     26,
+     28
+    ]
+   },
+   {
+    "path": "conditions.C2.rhs.params.length",
+    "phrase": "50",
+    "span": [
+     33,
+     35
+    ]
+   },
+   {
+    "path": "conditions.C3.value",
+    "phrase": "55",
+    "span": [
+     55,
+     57
+    ]
+   },
+   {
+    "path": "universe.index",
+    "phrase": "Nifty 50",
+    "span": [
+     0,
+     8
+    ]
+   }
+  ],
+  "needs_input": [],
+  "unsupported": [],
+  "ignored": [],
+  "unrecognised": [],
+  "answers": [],
+  "assumptions": [
+   {
+    "path": "actions.A1.stop.from_atr.length",
+    "label": "ATR standard length 14",
+    "value": 14,
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C1.params.source",
+    "label": "price = the close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C1.rhs.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C2.params.source",
+    "label": "price = the close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C2.rhs.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C3.params.length",
+    "label": "RSI length",
+    "value": 14,
+    "provenance": "assumed"
+   }
+  ],
+  "not_evaluable": []
+ },
+ "english": "From **NIFTY 50** stocks, on **daily** candles, find stocks where **the close is above EMA(20, close)**, and **the close is above EMA(50, close)**, and **RSI(14) is above 55**. Build a trade plan with a stop 2 × ATR(14) below entry, entering at the next open and a target of 2R.",
+ "issues": [],
+ "clauses": [
+  {
+   "id": "L1",
+   "text": "Nifty 50 stocks above the 20 and 50 EMA with RSI above 55. Entry at next day's open, stop loss 2 ATR below entry, target 2R.",
+   "span": [
+    0,
+    124
+   ],
+   "status": "ok",
+   "maps_to": "C1: the close [1D] > EMA(20, close); C2: the close [1D] > EMA(50, close); C3: RSI(?) [1D] > 55; A1: trade plan on S1 (C1 + C2 + C3), SL from ?; universe: NIFTY 50",
+   "questions": 0
+  }
+ ],
+ "reader": {
+  "calls": 0,
+  "dropped": []
+ }
+}

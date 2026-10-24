@@ -10,6 +10,8 @@ import { makeReader } from "../src/server/compiler/v5/reader";
 import { makeModelCritic } from "../src/server/compiler/v5/critic";
 import { casePasses, GOLDEN_INTERPRETER, slotMatches, slotReport, type SlotName } from "../src/server/compiler/v5/goldenInterpreter";
 import { ollamaFor } from "../src/server/compiler/callModel";
+import { loadLlmConfig } from "../src/server/llm/config";
+import { pushGauge } from "../src/server/telemetry/gauges";
 
 const models = process.argv.slice(2);
 if (models.length === 0) { console.error("usage: eval-interpreter-model.ts <ollama model> [...]"); process.exit(2); }
@@ -41,6 +43,9 @@ async function main() {
       slot_accuracy: slotReport(ok.map((r) => r.slots) as Record<SlotName, boolean>[]), reader_calls: calls, dropped_mentions: dropped,
       seconds: Math.round((Date.now() - t0) / 1000), threshold, rows };
     writeFileSync(path.join(outDir, `${model.replace(/[^\w.-]+/g, "_")}.json`), JSON.stringify(report, null, 1));
+    // Observability: golden_suite_accuracy{provider,model,suite_version}; OTLP; no-op without OTEL_EXPORTER_OTLP_ENDPOINT
+    const provider = loadLlmConfig().provider, suite = "interpreter-golden-needs-model-v1";
+    await pushGauge({ name: "golden_suite_accuracy", labels: { provider, model, suite_version: suite }, value: rate });
     console.log(`\n${model}: ${report.passed}/${rows.length} (${(rate * 100).toFixed(0)}%) in ${report.seconds}s, ${calls} reader calls, ${dropped} dropped`);
     console.log("  slots:", Object.entries(report.slot_accuracy).map(([k, v]) => `${k} ${(v * 100).toFixed(0)}%`).join("  "));
     if (threshold !== null && rate < threshold) { failed = true; console.log(`  below threshold ${threshold}`); }

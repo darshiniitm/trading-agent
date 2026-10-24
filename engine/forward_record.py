@@ -6,12 +6,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from engine.schemas import ScreenSpec
-
 OUT_DIR = Path("results/prompt_arms")
 
 
-def write_record(prompt_id: int, as_of: pd.Timestamp, entered: list[dict], spec: ScreenSpec) -> Path | None:
+def write_record(prompt_id: int, as_of: pd.Timestamp, entered: list[dict], program: dict, structure: str = "literal",
+                 scored: bool = True) -> Path | None:
     for row in entered:
         if "entry_price" not in row:
             raise ValueError(f"row for {row.get('ticker')} has no entry_price — only entered picks may be recorded")
@@ -26,7 +25,8 @@ def write_record(prompt_id: int, as_of: pd.Timestamp, entered: list[dict], spec:
         "prompt_id": prompt_id,
         "as_of": str(as_of.date()),
         "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "structure": spec.structure,
+        "structure": structure, "program": program,
+        "scored": scored,            # partial / low-coverage runs stay visible but do not count (data-fallback spec §7)
         "picks": entered,
         "graded": None,
     }

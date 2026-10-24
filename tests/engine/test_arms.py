@@ -3,34 +3,17 @@ import json
 import pytest
 
 from engine.arms import is_active, register_arm, retire_arm
-from engine.schemas import Condition, ScreenSpec, SelectionPoint, Stop
+from tests.engine.v5_fixtures import literal_program
 
 
 def _spec():
-    return ScreenSpec(spec_version=4, structure="literal", timeframe="1W", selection_point=None,
-                       conditions=[], stop=None, risk_cap_pct=None, near_miss=None)
+    return literal_program()
 
 
 def _literal_spec_with_selection_point():
-    # Same shape as tests/engine/test_screen_literal.py's _literal_spec() (corrected "8W"
-    # window for C2), plus a selection_point -- select_candidates() only ever moves a
-    # full_match candidate into "entered" when a selection_point lets resolve_ep find a
-    # real price, so the no-selection-point _spec() above (used by the pure-registry tests)
-    # can't exercise the /select write path at all.
-    return ScreenSpec(
-        spec_version=4, structure="literal", timeframe="1W",
-        selection_point=SelectionPoint(session_of_week=1, at="open"),
-        conditions=[
-            Condition(id="C1", role="filter", kind="field", name="mcap_cr", op="between", value=[10000, 50000]),
-            Condition(id="C2", role="filter", kind="field", name="traded_value_cr",
-                      params={"window": "8W"}, op=">=", value=10),
-            Condition(id="C3", role="event", kind="indicator", name="vstop",
-                      params={"length": 10, "mult": 2.0, "source": "close"}, op="flip", dir="long"),
-            Condition(id="C4", role="filter", kind="indicator", name="rsi",
-                      params={"length": 14}, op="between", value=[50, 65]),
-        ],
-        stop=Stop(**{"from": "C3"}), risk_cap_pct=None, near_miss=None,
-    )
+    # a trade plan that enters at the next week's open: /select only moves a full match into "entered"
+    # when a real entry price resolves, so the pure-registry _spec() above can't exercise the write path.
+    return literal_program(next_open=True)
 
 
 # Verified directly against literal_env's offline cache (data_cache_literal/) to produce
@@ -46,7 +29,7 @@ def _isolated_registry(tmp_path, monkeypatch):
 
 
 def test_newly_registered_arm_is_active():
-    register_arm(prompt_id=12, spec=_spec())
+    register_arm(prompt_id=12, program=_spec())
     assert is_active(12) is True
 
 
@@ -55,7 +38,7 @@ def test_unregistered_arm_is_not_active():
 
 
 def test_retired_arm_is_no_longer_active_but_registry_keeps_it():
-    register_arm(prompt_id=12, spec=_spec())
+    register_arm(prompt_id=12, program=_spec())
     retire_arm(12)
     assert is_active(12) is False
     from engine.arms import REGISTRY_PATH
@@ -65,8 +48,7 @@ def test_retired_arm_is_no_longer_active_but_registry_keeps_it():
 
 
 def test_register_endpoint_and_retire_endpoint(client):
-    spec = _spec().model_dump(by_alias=True)
-    resp = client.post("/arms/register", json={"prompt_id": 7, "spec": spec})
+    resp = client.post("/arms/register", json={"prompt_id": 7, "program": _spec()})
     assert resp.status_code == 200
     resp2 = client.post("/arms/7/retire")
     assert resp2.status_code == 200
@@ -93,12 +75,12 @@ def _picks_path(prompt_id: int):
 
 
 def test_select_writes_a_record_for_an_active_arm_with_run_kind_live(client):
-    spec = _literal_spec_with_selection_point().model_dump(by_alias=True)
-    reg = client.post("/arms/register", json={"prompt_id": 101, "spec": spec})
+    program = _literal_spec_with_selection_point()
+    reg = client.post("/arms/register", json={"prompt_id": 101, "program": program})
     assert reg.status_code == 200
 
     resp = client.post("/select", json={
-        "spec": spec, "as_of": _AS_OF_WITH_ENTERED_PICKS, "prompt_id": 101, "run_kind": "live",
+        "program": program, "as_of": _AS_OF_WITH_ENTERED_PICKS, "prompt_id": 101, "run_kind": "live",
     })
     assert resp.status_code == 200
     assert resp.json()["entered"], "fixture as_of must produce >=1 entered candidate for this test to be meaningful"
@@ -106,10 +88,10 @@ def test_select_writes_a_record_for_an_active_arm_with_run_kind_live(client):
 
 
 def test_select_does_not_write_for_a_never_registered_prompt_id(client):
-    spec = _literal_spec_with_selection_point().model_dump(by_alias=True)
+    program = _literal_spec_with_selection_point()
 
     resp = client.post("/select", json={
-        "spec": spec, "as_of": _AS_OF_WITH_ENTERED_PICKS, "prompt_id": 202, "run_kind": "live",
+        "program": program, "as_of": _AS_OF_WITH_ENTERED_PICKS, "prompt_id": 202, "run_kind": "live",
     })
     assert resp.status_code == 200
     assert resp.json()["entered"]
@@ -117,12 +99,12 @@ def test_select_does_not_write_for_a_never_registered_prompt_id(client):
 
 
 def test_select_does_not_write_for_a_retired_arm(client):
-    spec = _literal_spec_with_selection_point().model_dump(by_alias=True)
-    client.post("/arms/register", json={"prompt_id": 303, "spec": spec})
+    program = _literal_spec_with_selection_point()
+    client.post("/arms/register", json={"prompt_id": 303, "program": program})
     client.post("/arms/303/retire")
 
     resp = client.post("/select", json={
-        "spec": spec, "as_of": _AS_OF_WITH_ENTERED_PICKS, "prompt_id": 303, "run_kind": "live",
+        "program": program, "as_of": _AS_OF_WITH_ENTERED_PICKS, "prompt_id": 303, "run_kind": "live",
     })
     assert resp.status_code == 200
     assert resp.json()["entered"]
@@ -130,11 +112,11 @@ def test_select_does_not_write_for_a_retired_arm(client):
 
 
 def test_select_does_not_write_when_run_kind_omitted_defaults_to_dry_run(client):
-    spec = _literal_spec_with_selection_point().model_dump(by_alias=True)
-    client.post("/arms/register", json={"prompt_id": 404, "spec": spec})
+    program = _literal_spec_with_selection_point()
+    client.post("/arms/register", json={"prompt_id": 404, "program": program})
 
     resp = client.post("/select", json={
-        "spec": spec, "as_of": _AS_OF_WITH_ENTERED_PICKS, "prompt_id": 404,
+        "program": program, "as_of": _AS_OF_WITH_ENTERED_PICKS, "prompt_id": 404,
     })
     assert resp.status_code == 200
     assert resp.json()["entered"]

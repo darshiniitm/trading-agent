@@ -1,6 +1,7 @@
 import type Database from "better-sqlite3";
 import { programOf } from "@/server/programOf";
 import { screen } from "@/server/engine/client";
+import { task, tool } from "@/server/telemetry";
 
 function statusFor(membership: string): string {
   return membership === "full_match" ? "pending_selection" : "watching";
@@ -74,7 +75,7 @@ function persistCoverage(raw: Database.Database, runId: number, r: ScreenResult)
   }
 }
 
-export async function runWeeklyScreen(
+async function runWeeklyScreenImpl(
   raw: Database.Database,
   { promptId, asOf, kind }: { promptId: number; asOf: string; kind: "scheduled" | "catch_up" },
   fetchFn?: typeof fetch
@@ -190,5 +191,8 @@ export async function runWeeklyScreen(
     return runId;
   });
 
-  return { runId: txn() };
+  return { runId: tool("warehouse.write", txn, { argsOf: () => ({ tables: "runs, run_results, watchlist_entries, entry_events" }), captureOutput: false })() };
 }
+
+// observability: one task per weekly screen (scheduled, catch-up or the first run at confirm)
+export const runWeeklyScreen = task("weekly_screen", runWeeklyScreenImpl);

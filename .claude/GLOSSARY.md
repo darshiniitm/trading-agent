@@ -81,4 +81,6 @@ Source: `src/experiments/registry.py`.
 
 **D7 (weekly holiday-open defect)** — in a week whose Monday is an NSE holiday, yfinance's weekly
 bar reports the previous Friday's close as the open. Daily → weekly resampling
-(`src/data/resample.py:daily_to_weekly`) uses the first real session's open instead.
+(`src/data/resample.py:daily_to_weekly`) uses the first real session's open instead. **Fixed
+2026-09-16** in the forward-test/flag-matrix graders via `src/data/holding_week.py:corrected_week_bar()`,
+which prefers the holding week's own daily sessions when available. Source: `.claude/HARNESS.md` §7.

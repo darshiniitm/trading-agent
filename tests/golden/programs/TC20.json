@@ -1,0 +1,112 @@
+{
+ "program": {
+  "program_version": 5,
+  "universe": {
+   "source": "index",
+   "index": "NIFTY 100"
+  },
+  "sets": [
+   {
+    "id": "S1",
+    "from": "universe",
+    "label": "qualified stocks",
+    "eval": {
+     "mode": "latest",
+     "timeframe": "1D",
+     "bar": "last_completed"
+    },
+    "where": {
+     "all": [
+      "C1"
+     ]
+    }
+   }
+  ],
+  "conditions": [
+   {
+    "id": "C1",
+    "lhs": {
+     "ind": "bar",
+     "params": {
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "op": ">",
+    "rhs": {
+     "ind": "sma",
+     "params": {
+      "length": 200,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "phrase": "price above the 200 DMA"
+   }
+  ],
+  "actions": [],
+  "source_phrases": [
+   {
+    "path": "conditions.C1.rhs.params.length",
+    "phrase": "200",
+    "span": [
+     70,
+     73
+    ]
+   },
+   {
+    "path": "universe.index",
+    "phrase": "Nifty 100",
+    "span": [
+     0,
+     9
+    ]
+   }
+  ],
+  "needs_input": [],
+  "unsupported": [],
+  "ignored": [],
+  "unrecognised": [],
+  "answers": [],
+  "assumptions": [
+   {
+    "path": "conditions.C1.params.source",
+    "label": "price = the close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C1.rhs.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   }
+  ],
+  "not_evaluable": [
+   {
+    "id": "unsupported",
+    "text": "Nifty 100 stocks with P/E below 25, ROE above 15% and price above the 200 DMA",
+    "reason": "recognised: P/E ratio, Return on equity, not computable yet"
+   }
+  ]
+ },
+ "english": "From **NIFTY 100** stocks, on **daily** candles, find stocks where **the close is above SMA(200, close)**.",
+ "issues": [],
+ "clauses": [
+  {
+   "id": "L1",
+   "text": "Nifty 100 stocks with P/E below 25, ROE above 15% and price above the 200 DMA",
+   "span": [
+    0,
+    77
+   ],
+   "status": "ok",
+   "maps_to": "C1: the close [1D] > SMA(200, close); universe: NIFTY 100; recognised: P/E ratio, Return on equity, not computable yet",
+   "questions": 0
+  }
+ ],
+ "reader": {
+  "calls": 0,
+  "dropped": []
+ }
+}

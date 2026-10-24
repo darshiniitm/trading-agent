@@ -1,0 +1,51 @@
+# Data Resolution & Fallback Layer — defaults (docs/data-fallback-spec.md §1).
+# Every knob lives here so it can change without code edits.
+fallback:
+  allow_approx_universe: true        # approximated universe auto-applied, shown with an `approx` chip
+  unfeedable_policy: run_labeled     # condition with no data: run without it, labeled; run flagged partial
+scoring:
+  exclude_partial_runs: true         # only `complete` runs are scored forward-test arms
+coverage:
+  complete_min: 0.95
+  partial_min: 0.70                  # below this: low_coverage (still runs, banner shown)
+providers:
+  timeout_s: 15
+  retries: 2                         # retries after the first attempt, with backoff
+  backoff_s: 0.5
+  max_req_per_s: 2                   # per host
+  nse:
+    enabled: true
+  niftyindices:
+    enabled: true
+    user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+universe:
+  snapshot_tolerance_days: 183       # indices rebalance semi-annually
+  cache_dir: data_cache/index_lists
+  upload_dir: data_cache/uploads
+history:
+  buffer_pct: 0.20                   # fetch required_bars + 20%
+ohlcv:
+  cache_dir: data_cache/ohlcv/daily
+  bhavcopy_dir: data_cache/ohlcv/bhavcopy
+  mismatch_tolerance: 0.005          # >0.5% close difference between Yahoo and bhavcopy -> prefer bhavcopy
+  stale_after_trading_days: 3        # live source's last bar this many trading days behind -> stale
+  holidays_file: config/nse_holidays.yaml
+urls:                                # provider URLs live here, never in code. Verified 2026-10-07.
+  bhavcopy: "https://nsearchives.nseindia.com/content/cm/BhavCopy_NSE_CM_0_0_0_{yyyymmdd}_F_0000.csv.zip"
+  equity_master: "https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv"
+  google_quote: "https://www.google.com/finance/quote/{symbol}:NSE"   # close only; HTML layout is unofficial/fragile
+mcap:
+  shares_cache: data_cache/shares_outstanding.json
+  fresh_days: 7                      # previous value beyond this -> stale
+sector:
+  map_file: data_cache/sector/sector_map.parquet
+  mapping_file: config/sector_mapping.yaml
+corp_actions:
+  cache_dir: data_cache/corp_actions
+  jump_threshold: 0.40               # single-day move with no matching action -> possible_unadjusted_action
+  match_window_days: 3
+ops:
+  meta_db: data_cache/_meta/provenance.sqlite    # gap log + last-successful-fetch log (engine is the single writer)
+  equity_master_dir: data_cache/equity_master
+  prefetch_bhavcopy_days: 5
+  feasibility_timeout_s: 3

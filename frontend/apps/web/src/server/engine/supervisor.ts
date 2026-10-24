@@ -100,7 +100,7 @@ export class EngineSupervisor {
     const cmd = this.d.exists(venv) ? venv : "uvicorn";
     const child = this.d.spawn(cmd, ["--factory", "engine.app:create_app", "--host", "127.0.0.1", "--port", this.port], {
       cwd: dir, stdio: ["ignore", "pipe", "pipe"],
-      env: { ...this.d.env, ENGINE_PARENT_PID: String(process.pid), PYTHONUNBUFFERED: "1" },
+      env: { ...this.d.env, ENGINE_PARENT_PID: String(process.pid), PYTHONUNBUFFERED: "1", OTEL_SERVICE_NAME: this.d.env.ENGINE_OTEL_SERVICE_NAME ?? "prompt-screener-engine" },
     });
     this.child = child;
     const sink = (b: Buffer) => { this.log.push(...b.toString().split("\n").filter(Boolean)); if (this.log.length > LOG_LINES) this.log.splice(0, this.log.length - LOG_LINES); };

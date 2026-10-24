@@ -1,0 +1,21 @@
+sector,ew_ret_4w_pct,stocks,outperforming
+Textiles,4.55,5,True
+Realty,2.24,11,True
+Media Entertainment & Publication,1.73,4,True
+Telecommunication,1.4,9,True
+Capital Goods,1.22,68,True
+Financial Services,0.71,98,True
+Consumer Services,0.66,23,True
+Oil Gas & Consumable Fuels,0.35,19,True
+Healthcare,0.34,44,True
+Information Technology,-1.1,25,False
+Metals & Mining,-1.22,20,False
+Construction,-1.57,13,False
+Services,-1.71,14,False
+Consumer Durables,-3.11,16,False
+Chemicals,-3.24,26,False
+Power,-3.93,19,False
+Automobile and Auto Components,-4.39,40,False
+Fast Moving Consumer Goods,-4.57,28,False
+Construction Materials,-5.12,11,False
+Diversified,-11.28,1,False

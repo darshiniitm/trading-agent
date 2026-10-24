@@ -219,6 +219,35 @@ evidence only.
 **Note on the grid:** on a flip bar `R/EP = 2·ATR/close`; across 576 replay survivors it never
 exceeded 27.7%, so `_30`, `_40` and `_50` are expected to equal "no cap" almost every week.
 
+### 3.11 Literal — Dharmin's five-step brief, run without our interpretations
+
+Registered 26 Sep 2026, per `docs/literal-spec-plan.md` (the full spec, gap-by-gap
+comparison against Control's interpretation, and decisions 1–9). Unlike T1–T4 and the
+threshold experiment above, **Literal is not a Test arm and §3.5's graduation gate does not
+apply to it** — it does not compete against Control for a single verdict, it is a second,
+independently frozen implementation of the same five-step brief, kept running in parallel so
+the effect of the original interpretation gaps (G1–G10, `docs/literal-spec-plan.md`) is
+visible week by week.
+
+| field | value |
+|---|---|
+| **id** | Literal |
+| **Mechanism (only this changes)** | Universe = full NSE equity list (not the ~500-index proxy), history from 2024-01-01; signals = VStop(10,2) weekly `flip_up` AND RSI in [50, 65] (`combine: AND`); sector benchmark Nifty 50 (`^NSEI`), relative-strength lookbacks [4, 13, 1] weeks, report-only (no filter); trade EP = signal close, SL = VStop line, **no risk-cap filter** (`max_r_pct: null`), one confidence score. Own config `config/rules_literal.yaml`, own universe/weekly-bar cache, own immutable record/grade cadence (`tests/track_literal.py`), never touching Control's files. |
+| **Identical to Control** | VStop(10,2) recurrence, RSI(14) formula, weekly cadence, gap-stop-aware grading, 0.5% round-trip cost, the single shared `run_screen()` funnel (parameterized by `rules_literal.yaml` instead of `rules.yaml`). |
+| **Different from Control (acknowledged)** | Universe (full list vs. index proxy), no 15% risk-cap filter, T1 rescoped as a rolling Friday-window loop over Literal's own universe rather than the mid-week scan Control's T1 used. Each difference traces to a specific gap in `docs/literal-spec-plan.md`'s comparison table, not an unregistered strategy change. |
+| **Hypothesis** | None — Literal is not being tested against Control for edge. The question it answers is whether the five-step brief, implemented without the interpretation choices listed as gaps, behaves differently from Control's numbers, not which one is "better." |
+| **Kill / graduation** | Not applicable — there is no gate to clear and no capital decision attached. Control keeps recording for 4–6 weeks alongside Literal for a side-by-side read, then stops unless Dharmin wants it kept (`docs/literal-spec-plan.md`). |
+
+**Comparison rules:** same as Control's own (§3.4) — zero-survivor weeks count as 0.0%,
+never dropped; only `forward` records count as forward evidence; replay history back to
+2024-01-01 is backtest evidence, not forward evidence, even when it uses the exact same
+`run_screen()`/`grade_horizons()` code path as the live week.
+
+**Old Control-interpretation results stay in the ledger, unchanged:** the −1.37%/trade
+104-week walk-forward and every T1/threshold-experiment finding recorded before this section
+remain labelled "Control interpretation" — they are not evidence for or against Literal, and
+nothing about registering Literal edits or supersedes them (rule 6, append-only findings).
+
 ---
 
 ## 4. What not to do

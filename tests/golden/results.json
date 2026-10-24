@@ -1,0 +1,203 @@
+[
+ {
+  "id": "TC01",
+  "golden": 76,
+  "actual": 76,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "",
+  "english": "From **NIFTY 500** stocks, on **daily** candles, find stocks where **the close is above SMA(150, close)**, and **the close is above SMA(200, close)**, and **SMA(150, close) is above SMA(200, close)**, and **SMA(200, close) is higher than it was 21 bars ago**, and **SMA(50, close) is above SMA(150, close)**, and **SMA(50, close) is above SMA(200, close)**, and **the close is above SMA(50, close)**, and **the close is at least Lowest low of N bars(252) \u00d7 1.3**, and **the close is at least Highest high of N bars(252) \u00d7 0.75**, and **RS rating is at least 70**."
+ },
+ {
+  "id": "TC02",
+  "golden": 2,
+  "actual": 2,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "",
+  "english": "From **NIFTY 100** stocks, on **daily** candles, find stocks where **SMA(50, close) crossed above SMA(200, close) within the last 10 bars**, and **SMA(50, close) is above SMA(200, close)**."
+ },
+ {
+  "id": "TC03",
+  "golden": 3,
+  "actual": 3,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "",
+  "english": "From **NIFTY 500** stocks, on **daily** candles, find stocks where **the close is above Highest high of N bars(252)**, and **the volume is at least Average volume(20) \u00d7 2**."
+ },
+ {
+  "id": "TC04",
+  "golden": 11,
+  "actual": 11,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "",
+  "english": "From **NIFTY 100** stocks, on **daily** candles, find stocks where **the close is above SMA(200, close)**, and **RSI(2) is below 10**."
+ },
+ {
+  "id": "TC05",
+  "golden": 1,
+  "actual": 1,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "",
+  "english": "From **NIFTY 200** stocks, on **daily** candles, find stocks where **Supertrend(10, 3) flipped long (bullish) within the last 3 bars**, and **ADX(14) is above 25**."
+ },
+ {
+  "id": "TC06",
+  "golden": 10,
+  "actual": 10,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "",
+  "english": "From **NIFTY 200** stocks, on **daily** candles, find stocks where **MACD(12, 26, 9, close) crossed above MACD(12, 26, 9, close) signal line within the last 2 bars**, and **MACD(12, 26, 9, close) is above MACD(12, 26, 9, close) signal line**, and **MACD(12, 26, 9, close) is below 0**."
+ },
+ {
+  "id": "TC07",
+  "golden": 4,
+  "actual": 4,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "",
+  "english": "From **NIFTY 500** stocks, on **daily** candles, find stocks where **Bollinger squeeze (bandwidth at its N-bar low)(20, 2) equals 1**, and **the close is above Bollinger Bands(20, 2, close) upper band**."
+ },
+ {
+  "id": "TC08",
+  "golden": 15,
+  "actual": 15,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "",
+  "english": "From **NIFTY 200** stocks, on **daily** candles, find stocks where **Narrowest range of N bars(7) equals 1**, and **Inside bar() equals 1**."
+ },
+ {
+  "id": "TC09",
+  "golden": 1,
+  "actual": 1,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "",
+  "english": "From **NIFTY 200** stocks, on **daily** candles, find stocks where **EMA(9, close) crossed above EMA(21, close) within the last 3 bars**, and **EMA(9, close) is above EMA(21, close)**, and **the close is above EMA(200, close)**."
+ },
+ {
+  "id": "TC10",
+  "golden": 3,
+  "actual": 3,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "",
+  "english": "From **NIFTY 200** stocks, on **daily** candles, find stocks where **Ichimoku Cloud(9, 26, 52, 26) Tenkan-sen (conversion line) crossed above Ichimoku Cloud(9, 26, 52, 26) Kijun-sen (base line) within the last 3 bars**, and **Ichimoku Cloud(9, 26, 52, 26) Tenkan-sen (conversion line) is above Ichimoku Cloud(9, 26, 52, 26) Kijun-sen (base line)**, and **the close is above Ichimoku Cloud(9, 26, 52, 26) top of the cloud**."
+ },
+ {
+  "id": "TC11",
+  "golden": 4,
+  "actual": 4,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "",
+  "english": "From **all NSE** stocks, on **weekly** candles, find stocks where **market cap is between 10,000 and 50,000 crore**, and **VStop(10, 2, close) flipped long (bullish)**, and **RSI(14) is between 50 and 65**. Validate by re-running 1 week back and measuring 1/2/3-week returns."
+ },
+ {
+  "id": "TC12",
+  "golden": 20,
+  "actual": 20,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "",
+  "english": "From **NIFTY 200** stocks, on **daily** candles, find stocks where **Return skipping recent bars(252, 21) is above -100**. Rank them by **the condition's value**, newest first. Keep the top **20**."
+ },
+ {
+  "id": "TC13",
+  "golden": 16,
+  "actual": 16,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "",
+  "english": "From **NIFTY 500** stocks, on **daily** candles, find stocks where **the close is at most Lowest low of N bars(252) \u00d7 1.1**, and **RSI(14) crossed above 30 within the last 3 bars**, and **RSI(14) is above 30**."
+ },
+ {
+  "id": "TC14",
+  "golden": 2,
+  "actual": 2,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "",
+  "english": "From **NIFTY 500** stocks, on **daily** candles, find stocks where **Gap above previous high() is at least 0.02**, and **the close is above the open**, and **the volume is at least Average volume(20) \u00d7 1.5**."
+ },
+ {
+  "id": "TC15",
+  "golden": 8,
+  "actual": 8,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "",
+  "english": "From **NIFTY 500** stocks, on **weekly** candles, find stocks where **the close is above SMA(30, close)**, and **SMA(30, close) is higher than it was 4 bars ago**, and **the close is above Highest high of N bars(26)**, and **the volume is at least Average volume(10) \u00d7 2**."
+ },
+ {
+  "id": "TC16",
+  "golden": 9,
+  "actual": 9,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "",
+  "english": "From **NIFTY 500** stocks, on **daily** candles, find stocks where **the close is above 0**. Group them by **sector** and highlight sectors whose equal-weight 20-session return beats the whole universe, listing each one's top 3 stocks."
+ },
+ {
+  "id": "TC17",
+  "golden": 7,
+  "actual": 7,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "",
+  "english": "From **NIFTY 50** stocks, on **daily** candles, find stocks where **the close is above EMA(20, close)**, and **the close is above EMA(50, close)**, and **RSI(14) is above 55**. Build a trade plan with a stop 2 \u00d7 ATR(14) below entry, entering at the next open and a target of 2R."
+ },
+ {
+  "id": "TC18",
+  "golden": 23,
+  "actual": 23,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "",
+  "english": "From **NIFTY 200** stocks, on **daily** candles, find stocks where **EMA(20, close) is above EMA(50, close)**, and **EMA(50, close) is above EMA(200, close)**, and **the close is at least EMA(20, close)**, and **the close is at most EMA(20, close) \u00d7 1.02**."
+ },
+ {
+  "id": "TC19",
+  "golden": 116,
+  "actual": 116,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "",
+  "english": "From **all NSE** stocks, on **daily and weekly** candles, find stocks where **Average traded value (cr)(20) is above 25**, and **RSI(14) is above 60**, and **the close is above EMA(20, close)**, and **market cap is between 10,000 and 50,000 crore**."
+ },
+ {
+  "id": "TC20",
+  "golden": 51,
+  "actual": 51,
+  "status": "PASS",
+  "missing": [],
+  "extra": [],
+  "note": "fully qualified=0, partial=51",
+  "english": "From **NIFTY 100** stocks, on **daily** candles, find stocks where **the close is above SMA(200, close)**.",
+  "fully": 0
+ }
+]

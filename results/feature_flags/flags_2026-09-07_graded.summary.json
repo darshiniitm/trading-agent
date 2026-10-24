@@ -1,0 +1,23 @@
+{
+  "graded_utc": "2026-09-19T12:45:59+00:00",
+  "signal_week": "2026-09-07",
+  "n_rows": 264,
+  "n_missing_forward_bar": 0,
+  "eligible_mean_fwd_ret_oc_net_pct": -0.415,
+  "benchmark_week_pct": null,
+  "control_basket_net_pct": 4.353,
+  "t4_basket_net_pct": null,
+  "counts_by_flags_met": {
+    "1": 11,
+    "2": 41,
+    "3": 41,
+    "4": 30,
+    "5": 37,
+    "6": 38,
+    "7": 32,
+    "8": 22,
+    "9": 10,
+    "10": 1,
+    "11": 1
+  }
+}

@@ -3,8 +3,8 @@
   "signal_week": "2025-04-14",
   "holding_week": "2025-04-21",
   "recording_mode": "replay",
-  "created_utc": "2026-09-15T05:39:23+00:00",
-  "created_ist": "2026-09-15T11:09:22+05:30",
+  "created_utc": "2026-09-29T05:35:19+00:00",
+  "created_ist": "2026-09-29T11:05:18+05:30",
   "monday_open_deadline_ist": "2025-04-21T09:15:00+05:30",
   "registry_version": 1,
   "registry_checksum": "sha256:d8164388d645879ab937757c356184153873b26d53dbe865a48474be24cd648d",
@@ -23,26 +23,26 @@
     "rows": 271,
     "flags_met_histogram": {
       "1.0": 23,
-      "2.0": 46,
-      "3.0": 39,
-      "4.0": 38,
-      "5.0": 39,
+      "2.0": 50,
+      "3.0": 38,
+      "4.0": 37,
+      "5.0": 38,
       "6.0": 21,
-      "7.0": 26,
-      "8.0": 17,
-      "9.0": 10,
-      "10.0": 2
+      "7.0": 20,
+      "8.0": 22,
+      "9.0": 9,
+      "10.0": 3
     },
     "prevalence_by_flag": {
       "A01_vstop_flip_up": 0.092,
-      "A02_vstop_uptrend": 0.3448,
+      "A02_vstop_uptrend": 0.3487,
       "A03_rsi_in_band": 0.3563,
       "A04_risk_cap_ok": 0.1686,
-      "B01_sector_rs_4w_pos": 0.6513,
+      "B01_sector_rs_4w_pos": 0.6169,
       "B02_sector_top_k": 0.3487,
       "B03_sector_rs_13w_pos": 0.613,
       "B04_volume_expansion": 0.0613,
-      "B05_trend_quality_strong": 0.1073,
+      "B05_trend_quality_strong": 0.1188,
       "B06_rsi_sweetspot_core": 0.1762,
       "C01_risk_headroom_5pp": 0.0307,
       "C02_liquidity_2x": 0.977,
@@ -54,6 +54,11 @@
     "selected": []
   },
   "checks": [],
-  "caveats": [],
-  "replay_run_id": "replay_2026-09-15T11:08:40+05:30"
+  "caveats": [
+    "yfinance weekly bars / corporate-action adjustment not independently verified",
+    "market cap uses TODAY's shares outstanding held constant across history (no point-in-time share count available from open-source sources) \u2014 see design doc section 3.2",
+    "delisted / merged tickers are not included -> survivorship bias, backtest returns are likely biased upward",
+    "sector map is NSE index-classification 'Industry' field as of the CSV snapshot date, not strictly point-in-time historically"
+  ],
+  "replay_run_id": "replay_2026-09-29T11:03:48+05:30"
 }

@@ -16,6 +16,11 @@ import { resolvedJson, toSlotConditions, type SlotCondition } from "@/server/com
 import { getUserDefaults, type UserDefaults } from "@/server/userDefaults";
 import { feasibility, screenProgram, uploadUniverse } from "@/server/engine/client";
 import { getDraft, saveProgramState, updateDraft, type DraftRow } from "@/server/drafts";
+import { agent, task, tool } from "@/server/telemetry";
+import { inPromptRun } from "@/server/telemetry/run";
+import { buildFallbackPrompt } from "@/server/compiler/v5/fallback";
+import { buildModelPrompt } from "@/server/compiler/v5/modelRead";
+import { buildReaderPrompt } from "@/server/compiler/v5/reader";
 
 export type ProgramView = {
   program: ScreenProgram; clauses: ClauseView[]; normalised: string;
@@ -48,17 +53,38 @@ const defaultsOf = (raw: Database.Database, userId: number) => getUserDefaults(r
 // Compile the draft's prompt text to a v5 program. Recognisers do the parsing; the model (if given)
 // only sees lines no recogniser claimed, one schema-constrained call per line. Every slot the prompt left
 // open is then filled from the user's saved defaults and listed as a chip — nothing is asked.
-export async function compileProgramDraft(raw: Database.Database, draftId: number, { callModel, useModel = true }: { callModel?: CallModelFn; useModel?: boolean } = {}): Promise<ProgramView> {
+// observability (docs/production-llm-cloud-observability-plan.md): spans / rows are no-ops unless telemetry is installed.
+// agent_version = hash of the agent's static system prompt, so a prompt change shows up as a new version in Grafana.
+const staticText = (f: () => string) => { try { return f(); } catch { return ""; } };
+const AGENT_PROMPTS = {
+  clause_fallback: () => staticText(() => buildFallbackPrompt("").system),
+  model_reader: () => staticText(() => buildModelPrompt("", [], "", []).system),
+  reader: () => staticText(() => buildReaderPrompt({ norm: "", clauses: [], unresolved: [], found: [], annotations: [] }).system),
+  model_critic: () => makeModelCritic.toString(),
+};
+const tracedInterpret = task("interpret", interpret, { spanName: "interpreter.parse" });
+const tracedSave = tool("warehouse.write", saveProgramState, { argsOf: (_raw, draftId) => ({ table: "prompt_drafts", draft_id: draftId }), captureInput: false, captureOutput: false });
+const lookupOf = (raw: Database.Database, draftId: number) => () => { const d = getDraft(raw, draftId); return { userId: d?.userId, createdAt: d?.createdAt }; };
+
+export function compileProgramDraft(raw: Database.Database, draftId: number, opts: { callModel?: CallModelFn; useModel?: boolean } = {}): Promise<ProgramView> {
+  return inPromptRun({ draftId, stage: "compile", lookup: lookupOf(raw, draftId) }, () => compileProgramDraftInner(raw, draftId, opts));
+}
+
+async function compileProgramDraftInner(raw: Database.Database, draftId: number, { callModel, useModel = true }: { callModel?: CallModelFn; useModel?: boolean } = {}): Promise<ProgramView> {
   const draft = getDraft(raw, draftId);
   if (!draft) throw new Error(`draft ${draftId} not found`);
   if (!draft.promptText.trim()) throw new Error("draft has no prompt text yet");
   const defaults = defaultsOf(raw, draft.userId);
   const examples: Example[] = useModel ? similarExamples(raw, draft.promptText, 4) : [];
-  const r = await interpret(draft.promptText, {
-    defaults, fallback: useModel ? makeClauseFallback(callModel) : undefined, modelRead: useModel ? makeModelReader(callModel) : undefined,
-    reader: useModel ? makeReader(callModel) : undefined, critic: useModel ? makeModelCritic(callModel) : undefined, examples,
+  const r = await tracedInterpret(draft.promptText, {
+    defaults,
+    fallback: useModel ? agent("clause_fallback", makeClauseFallback(callModel), { versionOf: AGENT_PROMPTS.clause_fallback() }) : undefined,
+    modelRead: useModel ? agent("model_reader", makeModelReader(callModel), { versionOf: AGENT_PROMPTS.model_reader() }) : undefined,
+    reader: useModel ? agent("reader", makeReader(callModel), { versionOf: AGENT_PROMPTS.reader() }) : undefined,
+    critic: useModel ? agent("model_critic", makeModelCritic(callModel), { versionOf: AGENT_PROMPTS.model_critic() }) : undefined,
+    examples,
   });
-  const view = viewOf(saveProgramState(raw, draftId, { program: r.program, clauses: r.draft.clauses, normalised: r.draft.normalised }), defaults);
+  const view = viewOf(tracedSave(raw, draftId, { program: r.program, clauses: r.draft.clauses, normalised: r.draft.normalised }), defaults);
   // the model critic's issues are not stored with the draft; they ride along on this response
   return { ...view, issues: r.issues, reader: r.reader, ...(r.draft.modelError ? { modelError: r.draft.modelError } : {}) };
 }
@@ -105,13 +131,18 @@ export async function editProgramClause(raw: Database.Database, draftId: number,
   return view;
 }
 
-export async function screenProgramDraft(raw: Database.Database, draftId: number, asOf: string, fetchFn?: typeof fetch, table = false) {
+const tracedScreen = task("screen", screenProgram);
+export function screenProgramDraft(raw: Database.Database, draftId: number, asOf: string, fetchFn?: typeof fetch, table = false) {
+  return inPromptRun({ draftId, stage: "screen", lookup: lookupOf(raw, draftId) }, () => screenProgramDraftInner(raw, draftId, asOf, fetchFn, table));
+}
+
+async function screenProgramDraftInner(raw: Database.Database, draftId: number, asOf: string, fetchFn?: typeof fetch, table = false) {
   const { draft, defaults } = load(raw, draftId);
   const program = resolveProgram(draft.program!, defaults);
   const problems = programConfirmProblems(program);
   if (problems.length) throw new Error(`cannot run: ${problems.join("; ")}`);
   // user + draft ids are the tier-0 upload keys (data-fallback spec §9.4): an uploaded universe is used by the dry run
-  return screenProgram(program, asOf, fetchFn, table, { userId: draft.userId, promptId: draftId });
+  return tracedScreen(program, asOf, fetchFn, table, { userId: draft.userId, promptId: draftId });
 }
 
 // Non-blocking data check for the interpretation chips (spec §6.2): what each condition and the universe would run on.

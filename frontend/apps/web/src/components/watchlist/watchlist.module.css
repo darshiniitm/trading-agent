@@ -30,3 +30,20 @@
 .ok { color: var(--positive); } .no { color: var(--amber-text); }
 .note { width: 100%; min-height: 64px; }
 .dialogBody { font-size: 13.5px; }
+.viewBar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.viewTools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.ccyToggle { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--text-2); }
+.moreMenu { position: relative; }
+.moreMenu summary { list-style: none; cursor: pointer; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-0); font-size: 16px; line-height: 1; min-height: 36px; display: inline-flex; align-items: center; }
+.moreMenu summary::-webkit-details-marker { display: none; }
+.menuPanel { position: absolute; right: 0; top: calc(100% + 4px); z-index: 5; display: grid; min-width: 180px; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--r-md); padding: 4px; box-shadow: 0 4px 16px rgb(0 0 0 / 0.18); }
+.menuPanel button { background: none; border: 0; color: inherit; text-align: left; padding: 8px 10px; border-radius: var(--r-sm); }
+.menuPanel button:hover { background: var(--row-hover); }
+.pickList { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
+.sectionHead { width: 100%; background: var(--surface-0); border: 0; border-bottom: 1px solid var(--divider); text-align: left; padding: 8px 14px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); position: sticky; left: 0; }
+.sectionHead:hover { color: var(--text); }
+.symCell { position: sticky; left: 0; z-index: 1; background: inherit; min-width: 0; }
+.right { text-align: right; }
+.ratingIcon { font-family: var(--font-mono); letter-spacing: -2px; }
+.compactRow { padding-top: 3px; padding-bottom: 3px; }
+.asOfLine { display: block; width: 100%; font-size: 12px; color: var(--muted); }

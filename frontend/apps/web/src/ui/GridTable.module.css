@@ -2,7 +2,8 @@
 .inner { min-width: var(--min-width, 640px); }
 .head, .row { display: grid; grid-template-columns: var(--cols); gap: 10px; align-items: center; padding: 8px 14px; }
 .head { font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); border-bottom: 1px solid var(--divider); }
-.row { width: 100%; background: none; border: 0; border-bottom: 1px solid var(--divider); text-align: left; color: inherit; font-size: 13px; }
+.row { width: 100%; background: var(--surface-1); border: 0; border-bottom: 1px solid var(--divider); text-align: left; color: inherit; font-size: 13px; }
 .row:hover { background: var(--row-hover); }
 .selected { background: var(--row-selected); box-shadow: inset 2px 0 0 var(--blue); }
 .empty { padding: 20px; color: var(--muted); }
+.head > span:first-child { position: sticky; left: 0; z-index: 1; background: var(--surface-1); }

@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import { task } from "@/server/telemetry";
 
 export async function withJob<T>(
   raw: Database.Database,
@@ -40,7 +41,8 @@ export async function withJob<T>(
   }
 
   try {
-    const result = await fn();
+    // observability: every job (catch_up, validate_prior, ...) is a task in the run's trace; a no-op unless telemetry is installed
+    const result = await task(`job.${key.type}`, fn, { argsOf: () => ({ prompt_id: key.promptId, as_of: key.asOf }), captureOutput: false })();
     const status = opts.isComplete && !opts.isComplete(result) ? "queued" : "done";
     raw.prepare("UPDATE jobs SET status = ?, attempts = ?, error = NULL, finished_at = ? WHERE job_id = ?").run(status, attempts + 1, new Date().toISOString(), jobId);
     return { result, skipped: false };

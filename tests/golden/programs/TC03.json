@@ -1,0 +1,152 @@
+{
+ "program": {
+  "program_version": 5,
+  "universe": {
+   "source": "index",
+   "index": "NIFTY 500"
+  },
+  "sets": [
+   {
+    "id": "S1",
+    "from": "universe",
+    "label": "qualified stocks",
+    "eval": {
+     "mode": "latest",
+     "timeframe": "1D",
+     "bar": "last_completed"
+    },
+    "where": {
+     "all": [
+      "C1",
+      "C2"
+     ]
+    }
+   }
+  ],
+  "conditions": [
+   {
+    "id": "C1",
+    "lhs": {
+     "ind": "bar",
+     "params": {
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "op": ">",
+    "rhs": {
+     "ind": "high_n",
+     "params": {
+      "lookback": 252,
+      "skip": 1
+     },
+     "tf": "1D"
+    },
+    "phrase": "closing at a new 52-week high"
+   },
+   {
+    "id": "C2",
+    "lhs": {
+     "ind": "bar",
+     "params": {
+      "source": "volume"
+     },
+     "tf": "1D"
+    },
+    "op": ">=",
+    "rhs": {
+     "ind": "volume_avg",
+     "params": {
+      "length": 20,
+      "skip": 1
+     },
+     "tf": "1D"
+    },
+    "rhs_mult": 2,
+    "phrase": "with volume at least 2 times the 20-day average"
+   }
+  ],
+  "actions": [],
+  "source_phrases": [
+   {
+    "path": "conditions.C2.rhs.params.length",
+    "phrase": "20",
+    "span": [
+     86,
+     88
+    ]
+   },
+   {
+    "path": "universe.index",
+    "phrase": "Nifty 500",
+    "span": [
+     0,
+     9
+    ]
+   }
+  ],
+  "needs_input": [],
+  "unsupported": [],
+  "ignored": [],
+  "unrecognised": [],
+  "answers": [],
+  "assumptions": [
+   {
+    "path": "conditions.C1.params.source",
+    "label": "price = the close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C1.rhs.params.lookback",
+    "label": "52 weeks = 252 trading sessions",
+    "value": 252,
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C1.rhs.params.skip",
+    "label": "new high = above the previous 252 sessions' high (today excluded)",
+    "value": 1,
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C2.params.source",
+    "label": "volume",
+    "value": "volume",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C2.rhs_mult",
+    "label": "volume at least 2x its average",
+    "value": 2,
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C2.rhs.params.skip",
+    "label": "average of the previous bars (today excluded)",
+    "value": 1,
+    "provenance": "assumed"
+   }
+  ],
+  "not_evaluable": []
+ },
+ "english": "From **NIFTY 500** stocks, on **daily** candles, find stocks where **the close is above Highest high of N bars(252)**, and **the volume is at least Average volume(20) × 2**.",
+ "issues": [],
+ "clauses": [
+  {
+   "id": "L1",
+   "text": "Nifty 500 stocks closing at a new 52-week high today with volume at least 2 times the 20-day average",
+   "span": [
+    0,
+    100
+   ],
+   "status": "ok",
+   "maps_to": "C1: the close [1D] > Highest high of N bars(252, 1); C2: the volume [1D] ≥ Average volume(20, 1) × 2; universe: NIFTY 500",
+   "questions": 0
+  }
+ ],
+ "reader": {
+  "calls": 0,
+  "dropped": []
+ }
+}

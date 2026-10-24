@@ -1,0 +1,11 @@
+{
+ "run_at": "2026-10-22T18:23:13.014Z",
+ "model": "gemma4:31b",
+ "p95_budget_ms": 5000,
+ "checks": {
+  "accuracy_not_below_local": true,
+  "p95_within_budget": false,
+  "zero_bad_json": true
+ },
+ "pass": false
+}

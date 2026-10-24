@@ -16,6 +16,8 @@ from pathlib import Path
 import pandas as pd
 import requests
 
+from src.data.atomic import atomic_write_csv, atomic_write_json, atomic_write_parquet, read_json_or_none, read_parquet_or_none
+
 NSE_ARCHIVE_URLS = {
     "midcap150": "https://archives.nseindia.com/content/indices/ind_niftymidcap150list.csv",
     "smallcap250": "https://archives.nseindia.com/content/indices/ind_niftysmallcap250list.csv",
@@ -100,7 +102,7 @@ class OpenSourceAdapter(SourceAdapter):
         r = requests.get(url, headers=UA, timeout=20)
         r.raise_for_status()
         df = pd.read_csv(io.StringIO(r.text))
-        df.to_csv(cache_path, index=False)
+        atomic_write_csv(df, cache_path)
         return df
 
     def _load_universe_raw(self) -> pd.DataFrame:
@@ -130,7 +132,7 @@ class OpenSourceAdapter(SourceAdapter):
             r = requests.get(FULL_EQUITY_LIST_URL, headers=UA, timeout=30)
             r.raise_for_status()
             df = pd.read_csv(io.StringIO(r.text))
-            df.to_csv(cache_path, index=False)
+            atomic_write_csv(df, cache_path)
         df.columns = [c.strip() for c in df.columns]
         df = df[df["SERIES"].astype(str).str.strip() == "EQ"]
         df = df.rename(columns={
@@ -175,10 +177,10 @@ class OpenSourceAdapter(SourceAdapter):
         meta_path = self.cache_dir / f"weekly_ohlcv_{history_weeks}w.meta.json"
         cached_tickers = set()
         panel = None
-        if cache_path.exists() and meta_path.exists():
-            meta = json.loads(meta_path.read_text())
-            if time.time() - meta.get("fetched_at", 0) < 12 * 3600:
-                panel = pd.read_parquet(cache_path)
+        meta = read_json_or_none(meta_path) if cache_path.exists() else None
+        if meta is not None and time.time() - meta.get("fetched_at", 0) < 12 * 3600:
+            panel = read_parquet_or_none(cache_path)   # unreadable -> None: a cache miss, refetched below
+            if panel is not None:
                 cached_tickers = set(panel["ticker"].unique())
 
         missing = [t for t in tickers if t not in cached_tickers]
@@ -208,8 +210,8 @@ class OpenSourceAdapter(SourceAdapter):
             new_panel = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
             panel = pd.concat([panel, new_panel], ignore_index=True) if panel is not None else new_panel
             panel = panel.drop_duplicates(subset=["ticker", "date"]).sort_values(["ticker", "date"])
-            panel.to_parquet(cache_path, index=False)
-            meta_path.write_text(json.dumps({"fetched_at": time.time()}))
+            atomic_write_parquet(panel, cache_path)
+            atomic_write_json(meta_path, {"fetched_at": time.time()})
 
         out = {}
         for t in tickers:
@@ -226,10 +228,10 @@ class OpenSourceAdapter(SourceAdapter):
         meta_path = self.cache_dir / f"daily_ohlcv_{history_days}d.meta.json"
         cached_tickers = set()
         panel = None
-        if cache_path.exists() and meta_path.exists():
-            meta = json.loads(meta_path.read_text())
-            if time.time() - meta.get("fetched_at", 0) < 12 * 3600:
-                panel = pd.read_parquet(cache_path)
+        meta = read_json_or_none(meta_path) if cache_path.exists() else None
+        if meta is not None and time.time() - meta.get("fetched_at", 0) < 12 * 3600:
+            panel = read_parquet_or_none(cache_path)   # unreadable -> None: a cache miss, refetched below
+            if panel is not None:
                 cached_tickers = set(panel["ticker"].unique())
 
         missing = [t for t in tickers if t not in cached_tickers]
@@ -259,8 +261,8 @@ class OpenSourceAdapter(SourceAdapter):
             new_panel = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
             panel = pd.concat([panel, new_panel], ignore_index=True) if panel is not None else new_panel
             panel = panel.drop_duplicates(subset=["ticker", "date"]).sort_values(["ticker", "date"])
-            panel.to_parquet(cache_path, index=False)
-            meta_path.write_text(json.dumps({"fetched_at": time.time()}))
+            atomic_write_parquet(panel, cache_path)
+            atomic_write_json(meta_path, {"fetched_at": time.time()})
 
         out = {}
         for t in tickers:
@@ -273,16 +275,18 @@ class OpenSourceAdapter(SourceAdapter):
         d = self.daily_ohlcv([ticker], history_days)
         return d.get(ticker, pd.DataFrame())
 
-    def shares_outstanding(self, tickers: list[str]) -> dict[str, float]:
+    def shares_outstanding(self, tickers: list[str], progress=None) -> dict[str, float]:
         import yfinance as yf
 
         cache_path = self.cache_dir / "shares_outstanding.json"
         cached = {}
         if cache_path.exists() and (time.time() - cache_path.stat().st_mtime) < 24 * 3600:
-            cached = json.loads(cache_path.read_text())
+            cached = read_json_or_none(cache_path) or {}
 
         missing = [t for t in tickers if t not in cached]
-        for t in missing:
+        for i, t in enumerate(missing):
+            if progress and i % 25 == 0:
+                progress(i, len(missing))
             try:
                 fi = yf.Ticker(t).fast_info
                 shares = fi.get("shares")
@@ -290,7 +294,7 @@ class OpenSourceAdapter(SourceAdapter):
                     cached[t] = float(shares)
             except Exception:
                 continue
-        cache_path.write_text(json.dumps(cached))
+        atomic_write_json(cache_path, cached)
         return {t: cached[t] for t in tickers if t in cached}
 
     def benchmark_series(self, ticker: str, history_weeks: int) -> pd.DataFrame:

@@ -14,6 +14,8 @@ multiple-testing denominator and the reason `holdout_ext` exists. Machine-writte
 | 2026-09-15 | Threshold experiment sizing | same replay | dev | **counts only**, no returns |
 | 2026-09-16 | Harness defect-fix baseline restatement | 2024-09-09 → 2026-08-31 | dev | Portfolio series corrected; still negative |
 | 2026-09-16 | `holdout_ext` universe sizing | 2019-12-02 → 2021-06-28 | holdout_ext | **counts only**, no returns |
+| 2026-09-16 | V2 fixed N-week hold dev backtest (`scripts/run_v2_backtest.py`) | 2021-07-05 → 2024-07-01 | dev | N=2/4/8 all positive expectancy on dev; kill not triggered |
+| 2026-09-16 | V3 pullback-limit + V4 same-week-confirmation dev backtest (`scripts/run_v3_v4_backtest.py`) | 2021-07-05 → 2024-07-01 | dev | Both beat Control's own paired 1-week baseline on the same signals; neither kill triggered |
 
-Untouched for returns as of 2026-09-16: signal weeks 2021-07 → 2024-08 (dev, unread) and
+Untouched for returns as of 2026-09-16: signal weeks 2024-07 → 2024-08 (dev, ~4 weeks unread) and
 2019-12 → 2021-06 (`holdout_ext`).

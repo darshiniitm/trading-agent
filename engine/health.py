@@ -20,14 +20,21 @@ def engine_git_sha() -> str:
 
 
 def health_payload(offline: bool = False) -> dict:
-    try:
-        env = load_environment("literal", offline=offline)
-        bar_date = last_bar_date(env)
-    except Exception:
-        bar_date = None
+    """Never loads market data itself: while the engine is still warming it reports where it is (the app shows that)."""
+    from engine.warmup import STATE
+    warm = STATE.snapshot()
+    if offline:
+        warm = {**warm, "state": "ready", "retryable": False}
+    bar_date = None
+    if warm["state"] == "ready":
+        try:
+            bar_date = last_bar_date(load_environment("literal", offline=offline))
+        except Exception:
+            bar_date = None
     return {
         "status": "ok",
         "engine_git_sha": engine_git_sha(),
         "last_bar_date": bar_date,
         "data_snapshot_hash": None,
+        "warm": warm,
     }

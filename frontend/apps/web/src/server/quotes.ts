@@ -1,7 +1,7 @@
 import { postQuotes } from "@/server/engine/client";
 
 // chgPct is the day change vs the previous close; omitted when the engine sent no prev_close.
-export type Quote = { price: number | null; asOf: string | null; error: string | null; chgPct?: number };
+export type Quote = { price: number | null; asOf: string | null; error: string | null; chgPct?: number; chg?: number; prevClose?: number; volume?: number };
 
 const CACHE_MS = 60_000;
 let cache = new Map<string, { quote: Quote; fetchedAtMs: number }>();
@@ -10,10 +10,15 @@ export function _resetQuoteCacheForTests() {
   cache = new Map();
 }
 
-function toQuote(raw: { price: number; source: string; source_ts: string; prev_close?: number } | { error: string }): Quote {
+function toQuote(raw: { price: number; source: string; source_ts: string; prev_close?: number; volume?: number } | { error: string }): Quote {
   if ("error" in raw) return { price: null, asOf: null, error: raw.error };
   const quote: Quote = { price: raw.price, asOf: raw.source_ts, error: null };
-  if (typeof raw.prev_close === "number" && raw.prev_close > 0) quote.chgPct = ((raw.price - raw.prev_close) / raw.prev_close) * 100;
+  if (typeof raw.prev_close === "number" && raw.prev_close > 0) {
+    quote.chgPct = ((raw.price - raw.prev_close) / raw.prev_close) * 100;
+    quote.chg = raw.price - raw.prev_close;
+    quote.prevClose = raw.prev_close;
+  }
+  if (typeof raw.volume === "number" && raw.volume >= 0) quote.volume = raw.volume;
   return quote;
 }
 

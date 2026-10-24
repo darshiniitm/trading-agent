@@ -58,6 +58,7 @@ re-deriving them from code each time.
 | Holiday-week bar correction (D7 fix) | `src/data/holding_week.py:corrected_week_bar()` |
 | Literal spec — Dharmin's brief, run literally, parallel to Control | `config/rules_literal.yaml`, `scripts/bootstrap_literal.py`, `tests/track_literal.py` (record/grade/replay + T1-redefined rolling ledger), `tests/offline.py:env_literal()` — spec `docs/literal-spec-plan.md`; frozen old mid-week scan under `midweek_scan_*` (`src/screen/t1_scan.py`, shared with Control's own separate T1) |
 | 1-/2-/3-week horizon grading (Literal "Step 5 extended") | `src/backtest/horizons.py` (`grade_horizons()`), maturity loop + replay + weekly report in `tests/track_literal.py` (`maturity_loop()`, `replay_horizons()`, `weekly_report()`), block-bootstrap stats in `src/backtest/stats.py` |
+| Watchlist views (P6, display only) | `engine/metrics.py`, `engine/fundamentals.py`, `engine/metrics_service.py`, `frontend/apps/web/src/server/viewData.ts` — notes in `docs/watchlist-views-implementation-plan.md` |
 | Console/CSV reporting | `src/report/report.py` |
 | One-off CLI entry points | `scripts/run_screen.py`, `scripts/run_backtest.py`, `scripts/rsi_param_study.py`, `scripts/survivorship_check.py`, `scripts/common.py` (shared bootstrap), `scripts/weekly_selection_run.sh` (Control record → flag trigger → audit, chained) |
 

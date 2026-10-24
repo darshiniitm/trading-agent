@@ -1,0 +1,203 @@
+{
+ "program": {
+  "program_version": 5,
+  "universe": {
+   "source": "nse_all"
+  },
+  "sets": [
+   {
+    "id": "S1",
+    "from": "universe",
+    "label": "Midcaps between 10,000 and 50,000 crore with average daily turnover above 25 crore, weekly RSI above 60 and price above the 20-week EMA",
+    "where": {
+     "all": [
+      "C4"
+     ]
+    }
+   },
+   {
+    "id": "S2",
+    "from": "S1",
+    "label": "qualified stocks",
+    "eval": {
+     "mode": "literal",
+     "timeframe": null,
+     "bar": "last_completed"
+    },
+    "where": {
+     "all": [
+      "C1",
+      "C2",
+      "C3"
+     ]
+    }
+   }
+  ],
+  "conditions": [
+   {
+    "id": "C1",
+    "lhs": {
+     "ind": "turnover_avg",
+     "params": {
+      "length": 20
+     },
+     "tf": "1D"
+    },
+    "op": ">",
+    "value": 25,
+    "phrase": "average daily turnover above 25 cr"
+   },
+   {
+    "id": "C2",
+    "lhs": {
+     "ind": "rsi",
+     "params": {
+      "length": 14
+     },
+     "tf": "1W"
+    },
+    "op": ">",
+    "value": 60,
+    "phrase": "weekly RSI above 60"
+   },
+   {
+    "id": "C3",
+    "lhs": {
+     "ind": "bar",
+     "params": {
+      "source": "close"
+     },
+     "tf": "1W"
+    },
+    "op": ">",
+    "rhs": {
+     "ind": "ema",
+     "params": {
+      "length": 20,
+      "source": "close"
+     },
+     "tf": "1W"
+    },
+    "phrase": "price above the 20-week EMA"
+   },
+   {
+    "id": "C4",
+    "lhs": {
+     "field": "mcap_cr"
+    },
+    "op": "between",
+    "value": [
+     10000,
+     50000
+    ],
+    "phrase": "between 10,000 and 50,000 cr"
+   }
+  ],
+  "actions": [],
+  "source_phrases": [
+   {
+    "path": "conditions.C1.value",
+    "phrase": "25",
+    "span": [
+     74,
+     76
+    ]
+   },
+   {
+    "path": "conditions.C2.value",
+    "phrase": "60",
+    "span": [
+     101,
+     103
+    ]
+   },
+   {
+    "path": "conditions.C3.rhs.params.length",
+    "phrase": "20",
+    "span": [
+     124,
+     126
+    ]
+   },
+   {
+    "path": "conditions.C4.value.0",
+    "phrase": "10,000",
+    "span": [
+     16,
+     22
+    ]
+   },
+   {
+    "path": "conditions.C4.value.1",
+    "phrase": "50,000",
+    "span": [
+     27,
+     33
+    ]
+   }
+  ],
+  "needs_input": [],
+  "unsupported": [],
+  "ignored": [],
+  "unrecognised": [],
+  "answers": [],
+  "assumptions": [
+   {
+    "path": "conditions.C1.params.length",
+    "label": "average over the last 20 sessions",
+    "value": 20,
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C2.params.length",
+    "label": "RSI length",
+    "value": 14,
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C3.params.source",
+    "label": "price = the close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C3.rhs.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "universe.source",
+    "label": "universe",
+    "value": "nse_all",
+    "provenance": "assumed",
+    "options": [
+     {
+      "label": "all NSE stocks",
+      "value": "nse_all"
+     }
+    ]
+   }
+  ],
+  "not_evaluable": []
+ },
+ "english": "From **all NSE** stocks, on **daily and weekly** candles, find stocks where **Average traded value (cr)(20) is above 25**, and **RSI(14) is above 60**, and **the close is above EMA(20, close)**, and **market cap is between 10,000 and 50,000 crore**.",
+ "issues": [],
+ "clauses": [
+  {
+   "id": "L1",
+   "text": "Midcaps between 10,000 and 50,000 crore with average daily turnover above 25 crore, weekly RSI above 60 and price above the 20-week EMA",
+   "span": [
+    0,
+    135
+   ],
+   "status": "ok",
+   "maps_to": "C1: Average traded value (cr)(20) [1D] > 25; C2: RSI(?) [1W] > 60; C3: the close [1W] > EMA(20, close); C4: Market cap between 10,000–50,000 cr",
+   "questions": 0
+  }
+ ],
+ "reader": {
+  "calls": 0,
+  "dropped": []
+ }
+}

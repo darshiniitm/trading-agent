@@ -3,6 +3,8 @@ import { db } from "@/server/db/client";
 import { withUser } from "@/server/auth/requireUser";
 import { getUserDefaults, setUserDefaults } from "@/server/userDefaults";
 
+export const dynamic = "force-dynamic";
+
 // The saved defaults the interpreter fills open slots from (docs/prompt-interpreter-spec.md §4, level 2).
 const Body = z.object({
   price_source: z.enum(["open", "high", "low", "close"]),

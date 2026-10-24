@@ -11,13 +11,26 @@ import { resolveProgram } from "@/server/compiler/v5/resolve";
 import { resolvedJson } from "@/server/compiler/v5/slots";
 import { saveAccepted } from "@/server/learning";
 import { getUserDefaults } from "@/server/userDefaults";
+import { tool } from "@/server/telemetry";
+import { inPromptRun } from "@/server/telemetry/run";
 
-export async function confirmDraft(
+type Confirmed = { promptId: number; watchlistId: number; selectionWarning: string | null };
+
+// observability: the whole confirm is the last stage of the draft's run; `prompt.run` is emitted when it finishes
+export function confirmDraft(raw: Database.Database, draftId: number, asOf: string, fetchFn?: typeof fetch): Promise<Confirmed> {
+  return inPromptRun({
+    draftId, stage: "confirm",
+    lookup: () => { const d = getDraft(raw, draftId); return { userId: d?.userId, createdAt: d?.createdAt }; },
+    summarize: (r: Confirmed) => ({ promptId: r.promptId, outcome: r.selectionWarning ? "confirmed_with_warning" : "confirmed" }),
+  }, () => confirmDraftInner(raw, draftId, asOf, fetchFn));
+}
+
+async function confirmDraftInner(
   raw: Database.Database,
   draftId: number,
   asOf: string,
   fetchFn?: typeof fetch
-): Promise<{ promptId: number; watchlistId: number; selectionWarning: string | null }> {
+): Promise<Confirmed> {
   const draft = getDraft(raw, draftId);
   if (!draft) throw new Error(`draft ${draftId} not found`);
   if (draft.status === "confirmed") throw new Error("draft already confirmed");
@@ -151,7 +164,7 @@ export async function confirmDraft(
     return { promptId, watchlistId, parent };
   });
 
-  const { promptId, watchlistId, parent } = createPromptAndWatchlist();
+  const { promptId, watchlistId, parent } = tool("warehouse.write", createPromptAndWatchlist, { spanName: "warehouse.write", argsOf: () => ({ tables: "prompts, prompt_conditions, watchlists, prompt_drafts" }), captureOutput: false })();
 
   // runWeeklyScreen does its own HTTP round-trip, so it can't live inside the
   // synchronous better-sqlite3 transaction above. A 422 from the engine must

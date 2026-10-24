@@ -17,10 +17,13 @@ export type GridCond = { condNo: number; label: string };
 const COLS = "minmax(140px,1.3fr) 70px 64px 64px 150px 90px 110px 120px 90px";
 const signClass = (n: number | null | undefined) => (n === null || n === undefined ? "" : n < 0 ? styles.neg : styles.pos);
 
-export function WatchlistGrid({ entries, conditions, quotes, stale, closes, selectedId, onSelect }: {
+export function WatchlistGrid({ entries, conditions, quotes, stale, closes, selectedId, onSelect, ccy = "INR", usdPerInr = null }: {
   entries: GridEntry[]; conditions: GridCond[]; quotes: Record<string, QuoteLike>; stale: Set<string>;
-  closes: Record<string, number[]>; selectedId: number | null; onSelect: (id: number) => void;
+  closes: Record<string, number[]>; selectedId: number | null; onSelect: (id: number) => void; ccy?: "INR" | "USD"; usdPerInr?: number | null;
 }) {
+  // Currency-in-USD converts the money columns (LTP, Entry / Stop) only; with no FX rate they stay in INR.
+  const usd = ccy === "USD" && usdPerInr !== null;
+  const money = (n: number | null | undefined) => (n === null || n === undefined ? "—" : fmtPrice(usd ? n * usdPerInr! : n) + (usd ? " USD" : ""));
   const ref = useRef<HTMLDivElement>(null);
   function onKeyDown(ev: React.KeyboardEvent) {
     if (ev.key !== "ArrowDown" && ev.key !== "ArrowUp") return;
@@ -43,13 +46,13 @@ export function WatchlistGrid({ entries, conditions, quotes, stale, closes, sele
           return (
             <button type="button" data-entry={e.entryId} aria-pressed={selectedId === e.entryId} className={`${gridRowClass} ${selectedId === e.entryId ? gridSelectedClass : ""}`} onClick={() => onSelect(e.entryId)}>
               <span><strong className="mono">{e.symbol}</strong>{e.name ? <><br /><span className={styles.sub}>{e.name}</span></> : null}</span>
-              <span className="mono" title={q?.error ?? undefined}>{q ? (q.error ? "n/a" : fmtPrice(q.price)) : "—"}{stale.has(e.symbol) && <> <Pill tone="amber">stale</Pill></>}</span>
+              <span className="mono" title={q?.error ?? undefined}>{q ? (q.error ? "n/a" : money(q.price)) : "—"}{stale.has(e.symbol) && <> <Pill tone="amber">stale</Pill></>}</span>
               <span className={`mono ${signClass(q?.chgPct)}`}>{fmtSignedPct(q?.chgPct)}</span>
               <span className={styles.sub}>{fmtDate(e.addedAsOf)}</span>
               <span><StatusChip status={e.status} /></span>
               <span className={`mono ${signClass(since?.pct)}`}>{since ? `${fmtSignedPct(since.pct)}${since.ref ? " ref" : ""}` : "—"}</span>
               <span><ConditionFlags conds={conditions.map((c) => ({ id: `C${c.condNo}`, label: c.label, met: !e.failedIds.includes(`C${c.condNo}`) }))} /></span>
-              <span className="mono">{e.entryPrice ? fmtPrice(e.entryPrice) : "—"} / {e.stop ? fmtPrice(e.stop) : "—"}</span>
+              <span className="mono">{e.entryPrice ? money(e.entryPrice) : "—"} / {e.stop ? money(e.stop) : "—"}</span>
               <span><Sparkline values={closes[e.symbol]} /></span>
             </button>
           );

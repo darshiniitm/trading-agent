@@ -174,5 +174,132 @@
       "detail": "every arm partitions the 3 survivors with a usable stop"
     }
   ],
-  "graded": null
+  "graded": {
+    "per_arm": {
+      "threshold-experiment_15": {
+        "cap_pct": 15.0,
+        "selected_n": 2,
+        "selected_basket_net_pct": 4.353,
+        "selected_winners": 2,
+        "selected_worst_trade_pct": 3.421,
+        "rejected_n": 1,
+        "rejected_basket_net_pct": -5.511,
+        "rejected_winners": 0,
+        "rejected_worst_trade_pct": -5.511,
+        "selected_minus_control_pct": 0.0,
+        "selected_minus_rejected_pct": 9.864
+      },
+      "threshold-experiment_17.5": {
+        "cap_pct": 17.5,
+        "selected_n": 2,
+        "selected_basket_net_pct": 4.353,
+        "selected_winners": 2,
+        "selected_worst_trade_pct": 3.421,
+        "rejected_n": 1,
+        "rejected_basket_net_pct": -5.511,
+        "rejected_winners": 0,
+        "rejected_worst_trade_pct": -5.511,
+        "selected_minus_control_pct": 0.0,
+        "selected_minus_rejected_pct": 9.864
+      },
+      "threshold-experiment_20": {
+        "cap_pct": 20.0,
+        "selected_n": 3,
+        "selected_basket_net_pct": 1.065,
+        "selected_winners": 2,
+        "selected_worst_trade_pct": -5.511,
+        "rejected_n": 0,
+        "rejected_basket_net_pct": null,
+        "rejected_winners": 0,
+        "rejected_worst_trade_pct": null,
+        "selected_minus_control_pct": -3.288,
+        "selected_minus_rejected_pct": null
+      },
+      "threshold-experiment_22.5": {
+        "cap_pct": 22.5,
+        "selected_n": 3,
+        "selected_basket_net_pct": 1.065,
+        "selected_winners": 2,
+        "selected_worst_trade_pct": -5.511,
+        "rejected_n": 0,
+        "rejected_basket_net_pct": null,
+        "rejected_winners": 0,
+        "rejected_worst_trade_pct": null,
+        "selected_minus_control_pct": -3.288,
+        "selected_minus_rejected_pct": null
+      },
+      "threshold-experiment_25": {
+        "cap_pct": 25.0,
+        "selected_n": 3,
+        "selected_basket_net_pct": 1.065,
+        "selected_winners": 2,
+        "selected_worst_trade_pct": -5.511,
+        "rejected_n": 0,
+        "rejected_basket_net_pct": null,
+        "rejected_winners": 0,
+        "rejected_worst_trade_pct": null,
+        "selected_minus_control_pct": -3.288,
+        "selected_minus_rejected_pct": null
+      },
+      "threshold-experiment_30": {
+        "cap_pct": 30.0,
+        "selected_n": 3,
+        "selected_basket_net_pct": 1.065,
+        "selected_winners": 2,
+        "selected_worst_trade_pct": -5.511,
+        "rejected_n": 0,
+        "rejected_basket_net_pct": null,
+        "rejected_winners": 0,
+        "rejected_worst_trade_pct": null,
+        "selected_minus_control_pct": -3.288,
+        "selected_minus_rejected_pct": null
+      },
+      "threshold-experiment_40": {
+        "cap_pct": 40.0,
+        "selected_n": 3,
+        "selected_basket_net_pct": 1.065,
+        "selected_winners": 2,
+        "selected_worst_trade_pct": -5.511,
+        "rejected_n": 0,
+        "rejected_basket_net_pct": null,
+        "rejected_winners": 0,
+        "rejected_worst_trade_pct": null,
+        "selected_minus_control_pct": -3.288,
+        "selected_minus_rejected_pct": null
+      },
+      "threshold-experiment_50": {
+        "cap_pct": 50.0,
+        "selected_n": 3,
+        "selected_basket_net_pct": 1.065,
+        "selected_winners": 2,
+        "selected_worst_trade_pct": -5.511,
+        "rejected_n": 0,
+        "rejected_basket_net_pct": null,
+        "rejected_winners": 0,
+        "rejected_worst_trade_pct": null,
+        "selected_minus_control_pct": -3.288,
+        "selected_minus_rejected_pct": null
+      }
+    },
+    "control_arm": "threshold-experiment_15",
+    "checks": [
+      {
+        "id": "X4",
+        "status": "PASS",
+        "detail": "Control picks record unchanged since the threshold record was written (graded block excluded)"
+      },
+      {
+        "id": "X5",
+        "status": "PASS",
+        "detail": "every member has a graded row; missing=[]"
+      },
+      {
+        "id": "X6",
+        "status": "PASS",
+        "detail": "threshold-experiment_15 selected basket 4.353 vs Control graded basket_net_pct 4.353"
+      }
+    ],
+    "benchmark_week_pct": null,
+    "graded_utc": "2026-09-19T12:45:57+00:00"
+  }
 }

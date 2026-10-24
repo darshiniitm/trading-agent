@@ -228,9 +228,12 @@ All results carry `src/data/adapter.py: KNOWN_CAVEATS`. `holdout_ext` is older t
 | 2 | `src/data/segments.py` (dev / holdout_ext / forward, one-pass guard, read ledger) | ✅ |
 | 2 | `tests/offline.py:env_extended()` (2019+ weekly bars from daily) | ✅ uses `daily_ohlcv_1820d.parquet` (from 2019-05-13) |
 | 2 | `scripts/backfill_history.py --start 2019-01-01` | ✅ written; ⏳ needs to be run on the Mac (no network in this session) |
-| 2 | `holdout_ext` sizing, counts only | ✅ 83 signal weeks (2019-12-02 → 2021-06-28); 133–189 names in band vs 264 today |
-| 4–5 | V2 engine → V3, V4; V7a, V7b; G calibration | not started |
+| 2 | `holdout_ext` sizing, counts only | ✅ 83 signal weeks (2019-12-02 → 2021-06-28); 133–189 names in band vs 264 today (pre-2019-01-backfill cache; see below) |
+| 4–5 | V2 engine → V3, V4 | ✅ 16 Sep 2026, dev 2021-07-05 → 2024-07-01; both clear their kill criteria vs Control's own paired baseline — see findings |
+| 4–5 | V7a, V7b; G calibration | not started |
 
-**New finding — D7.** yfinance weekly bars in weeks whose Monday is an NSE holiday report the previous Friday's close as the open (4,519 ticker-weeks, ~3.7%). Every grader that takes EP from the weekly bar is affected — `track_forward._grade_rows`, `simulate_week_forward`, `grade_matrix`, and the threshold experiment. **Mon 14 Sep 2026 was an NSE holiday, so the 2026-09-07 record's grade will use Fri 11 Sep's close as EP.** Proposed fix (needs a decision because it changes Control's grader): take EP and the week's low from the daily bars of the holding week when they exist, falling back to the weekly bar otherwise; re-grade nothing retroactively, log the change.
+**D7 — fixed 16 Sep 2026.** yfinance weekly bars in weeks whose Monday is an NSE holiday reported the previous Friday's close as the open (4,519 ticker-weeks, ~3.7%). Every grader that took EP from the weekly bar — `track_forward._grade_rows`, `simulate_week_forward`, `grade_matrix`, and the threshold experiment (derives from Control's own graded detail) — now prefers the holding week's own daily sessions via `src/data/holding_week.py:corrected_week_bar()`, falling back to the weekly bar unchanged when daily coverage is missing. Nothing was re-graded retroactively. See findings 2026-09-16.
 
-**Next steps, in order:** decide D7 → run `backfill_history.py` on the Mac → build the V2 engine on `env_extended()` over `dev` 2021-07 → 2024-08 (the unread part first) → V3/V4 → V7a/V7b → G.
+**`scripts/backfill_history.py --start 2019-01-01` run 16 Sep 2026** (network worked from the session that ran it) — `data_cache/daily_ohlcv_since_2019-01-01.parquet`, 501/502 tickers, from 2019-01-01. `env_extended()` now prefers this file, so `holdout_ext`'s full 2019-01 → 2021-06-28 span is available; the sizing row above still reflects the pre-backfill 2019-05-13 cache and should be re-run before `holdout_ext` is actually read for a finalist.
+
+**Next steps, in order:** V7a/V7b (short-side diagnostics) → G (guardrail calibration) → decide whether V3's 100% fill rate (findings 2026-09-16) needs a second look before trusting it → pick ≤2 finalists for the one-pass `holdout_ext` read (phase 6).

@@ -1,0 +1,284 @@
+{
+ "program": {
+  "program_version": 5,
+  "universe": {
+   "source": "nse_all"
+  },
+  "sets": [
+   {
+    "id": "S1",
+    "from": "universe",
+    "label": "All stocks between 10K- 50K cr Market Cap \"from 1, stocks whose friday closing Weekly timeframe",
+    "where": {
+     "all": [
+      "C1"
+     ]
+    }
+   },
+   {
+    "id": "S2",
+    "from": "S1",
+    "label": "qualified stocks",
+    "eval": {
+     "mode": "literal",
+     "timeframe": "1W",
+     "bar": "last_completed"
+    },
+    "where": {
+     "all": [
+      "C2",
+      "C3"
+     ]
+    }
+   }
+  ],
+  "conditions": [
+   {
+    "id": "C1",
+    "lhs": {
+     "field": "mcap_cr"
+    },
+    "op": "between",
+    "value": [
+     10000,
+     50000
+    ],
+    "phrase": "between 10K- 50K cr Market Cap"
+   },
+   {
+    "id": "C2",
+    "lhs": {
+     "ind": "vstop",
+     "params": {
+      "length": 10,
+      "mult": 2,
+      "source": "close"
+     },
+     "tf": "1W"
+    },
+    "op": "flip",
+    "dir": "long",
+    "within_bars": 1,
+    "phrase": "flipped on VStop 10,2"
+   },
+   {
+    "id": "C3",
+    "lhs": {
+     "ind": "rsi",
+     "params": {
+      "length": 14
+     },
+     "tf": "1W"
+    },
+    "op": "between",
+    "value": [
+     50,
+     65
+    ],
+    "phrase": "RSI Range 50 to 65"
+   }
+  ],
+  "actions": [
+   {
+    "id": "A1",
+    "type": "validate",
+    "of": "program",
+    "shift": {
+     "weeks": -1
+    },
+    "horizons_w": [
+     1,
+     2,
+     3
+    ]
+   }
+  ],
+  "source_phrases": [
+   {
+    "path": "conditions.C1.value.0",
+    "phrase": "10K",
+    "span": [
+     19,
+     22
+    ]
+   },
+   {
+    "path": "conditions.C1.value.1",
+    "phrase": "50K",
+    "span": [
+     24,
+     27
+    ]
+   },
+   {
+    "path": "conditions.C2.params.length",
+    "phrase": "10",
+    "span": [
+     113,
+     115
+    ]
+   },
+   {
+    "path": "conditions.C2.params.mult",
+    "phrase": "2",
+    "span": [
+     116,
+     117
+    ]
+   },
+   {
+    "path": "conditions.C3.value.0",
+    "phrase": "50",
+    "span": [
+     128,
+     130
+    ]
+   },
+   {
+    "path": "conditions.C3.value.1",
+    "phrase": "65",
+    "span": [
+     134,
+     136
+    ]
+   },
+   {
+    "path": "actions.A1.shift.weeks",
+    "phrase": "previous week",
+    "span": [
+     182,
+     195
+    ]
+   }
+  ],
+  "needs_input": [],
+  "unsupported": [],
+  "ignored": [],
+  "unrecognised": [],
+  "answers": [],
+  "assumptions": [
+   {
+    "path": "actions.A1.horizons_w",
+    "label": "return horizons (weeks)",
+    "value": [
+     1,
+     2,
+     3
+    ],
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C2.params.source",
+    "label": "VStop price source",
+    "value": "close",
+    "provenance": "assumed",
+    "options": [
+     {
+      "label": "open",
+      "value": "open"
+     },
+     {
+      "label": "high",
+      "value": "high"
+     },
+     {
+      "label": "low",
+      "value": "low"
+     },
+     {
+      "label": "close",
+      "value": "close"
+     }
+    ]
+   },
+   {
+    "path": "conditions.C2.tf",
+    "label": "VStop timeframe",
+    "value": "1W",
+    "provenance": "assumed",
+    "options": [
+     {
+      "label": "daily",
+      "value": "1D"
+     },
+     {
+      "label": "weekly",
+      "value": "1W"
+     },
+     {
+      "label": "monthly",
+      "value": "1M"
+     }
+    ]
+   },
+   {
+    "path": "conditions.C3.params.length",
+    "label": "RSI length",
+    "value": 14,
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C3.tf",
+    "label": "RSI timeframe",
+    "value": "1W",
+    "provenance": "inferred",
+    "options": [
+     {
+      "label": "daily",
+      "value": "1D"
+     },
+     {
+      "label": "weekly",
+      "value": "1W"
+     },
+     {
+      "label": "monthly",
+      "value": "1M"
+     }
+    ]
+   }
+  ],
+  "not_evaluable": []
+ },
+ "english": "From **all NSE** stocks, on **weekly** candles, find stocks where **market cap is between 10,000 and 50,000 crore**, and **VStop(10, 2, close) flipped long (bullish)**, and **RSI(14) is between 50 and 65**. Validate by re-running 1 week back and measuring 1/2/3-week returns.",
+ "issues": [],
+ "clauses": [
+  {
+   "id": "L1",
+   "text": "All stocks between 10K- 50K cr Market Cap \"from 1, stocks whose friday closing Weekly timeframe",
+   "span": [
+    0,
+    95
+   ],
+   "status": "ok",
+   "maps_to": "universe: all NSE stocks; C1: Market cap between 10,000–50,000 cr",
+   "questions": 0
+  },
+  {
+   "id": "L2",
+   "text": "flipped on VStop 10,2",
+   "span": [
+    96,
+    117
+   ],
+   "status": "ok",
+   "maps_to": "C2: VStop(10, 2, ?) flips long",
+   "questions": 0
+  },
+  {
+   "id": "L3",
+   "text": "RSI Range 50 to 65\" Backtest and validate with same strategy on previous week data and validate with their returns in this week",
+   "span": [
+    118,
+    245
+   ],
+   "status": "ok",
+   "maps_to": "C3: RSI(?) between 50–65; A1: re-run 1 week back, measure 1/2/3-week return",
+   "questions": 0
+  }
+ ],
+ "reader": {
+  "calls": 0,
+  "dropped": []
+ }
+}

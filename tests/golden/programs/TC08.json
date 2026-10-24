@@ -1,0 +1,111 @@
+{
+ "program": {
+  "program_version": 5,
+  "universe": {
+   "source": "index",
+   "index": "NIFTY 200"
+  },
+  "sets": [
+   {
+    "id": "S1",
+    "from": "universe",
+    "label": "qualified stocks",
+    "eval": {
+     "mode": "latest",
+     "timeframe": "1D",
+     "bar": "last_completed"
+    },
+    "where": {
+     "all": [
+      "C1",
+      "C2"
+     ]
+    }
+   }
+  ],
+  "conditions": [
+   {
+    "id": "C1",
+    "lhs": {
+     "ind": "narrow_range",
+     "params": {
+      "length": 7
+     },
+     "tf": "1D"
+    },
+    "op": "==",
+    "value": 1,
+    "phrase": "NR7"
+   },
+   {
+    "id": "C2",
+    "lhs": {
+     "ind": "inside_day",
+     "params": {},
+     "tf": "1D"
+    },
+    "op": "==",
+    "value": 1,
+    "phrase": "inside day"
+   }
+  ],
+  "actions": [],
+  "source_phrases": [
+   {
+    "path": "conditions.C1.params.length",
+    "phrase": "7",
+    "span": [
+     14,
+     15
+    ]
+   },
+   {
+    "path": "universe.index",
+    "phrase": "Nifty 200",
+    "span": [
+     37,
+     46
+    ]
+   }
+  ],
+  "needs_input": [],
+  "unsupported": [],
+  "ignored": [],
+  "unrecognised": [],
+  "answers": [],
+  "assumptions": [
+   {
+    "path": "conditions.C1.value",
+    "label": "NR7 = today's range is the narrowest of the last 7 bars",
+    "value": 1,
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C2.value",
+    "label": "inside day = high below and low above yesterday's",
+    "value": 1,
+    "provenance": "assumed"
+   }
+  ],
+  "not_evaluable": []
+ },
+ "english": "From **NIFTY 200** stocks, on **daily** candles, find stocks where **Narrowest range of N bars(7) equals 1**, and **Inside bar() equals 1**.",
+ "issues": [],
+ "clauses": [
+  {
+   "id": "L1",
+   "text": "Toby Crabel NR7 inside day setups in Nifty 200 for tomorrow's breakout",
+   "span": [
+    0,
+    70
+   ],
+   "status": "ok",
+   "maps_to": "C1: Narrowest range of N bars(7) [1D] == 1; C2: Inside bar() [1D] == 1; universe: NIFTY 200",
+   "questions": 0
+  }
+ ],
+ "reader": {
+  "calls": 0,
+  "dropped": []
+ }
+}

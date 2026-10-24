@@ -1,0 +1,277 @@
+{
+  "record_id": "threshold_2026-09-21",
+  "experiment": "threshold-experiment",
+  "registry_checksum": "sha256:262b4c344c8d421b135983710b986473aeabc333b51dca0594c53bef9da43767",
+  "caps_pct": [
+    15,
+    17.5,
+    20,
+    22.5,
+    25,
+    30,
+    40,
+    50
+  ],
+  "control_arm": "threshold-experiment_15",
+  "created_utc": "2026-09-28T15:04:12+00:00",
+  "created_ist": "2026-09-28T20:34:12+05:30",
+  "signal_week": "2026-09-21",
+  "holding_week": "2026-09-28",
+  "monday_open_deadline_ist": "2026-09-28T09:15:00+05:30",
+  "recording_mode": "late_backfill",
+  "picks_file": "results/forward_test/picks_2026-09-21.json",
+  "picks_record_id": "fwd_2026-09-21",
+  "picks_created_utc": "2026-09-28T15:04:08+00:00",
+  "picks_fingerprint": "sha256:5b918ed9eac41925f509841d8918dc70157904cd36157461089652efb327897d",
+  "rule": "SELECTED iff (signal_close - vstop_line_SL) / signal_close <= cap/100 (mirrors build_trades)",
+  "n_survivors": 2,
+  "arms": {
+    "threshold-experiment_15": {
+      "cap_pct": 15.0,
+      "selected": [],
+      "rejected": [
+        "HBLENGINE.NS",
+        "WHIRLPOOL.NS"
+      ]
+    },
+    "threshold-experiment_17.5": {
+      "cap_pct": 17.5,
+      "selected": [
+        "HBLENGINE.NS",
+        "WHIRLPOOL.NS"
+      ],
+      "rejected": []
+    },
+    "threshold-experiment_20": {
+      "cap_pct": 20.0,
+      "selected": [
+        "HBLENGINE.NS",
+        "WHIRLPOOL.NS"
+      ],
+      "rejected": []
+    },
+    "threshold-experiment_22.5": {
+      "cap_pct": 22.5,
+      "selected": [
+        "HBLENGINE.NS",
+        "WHIRLPOOL.NS"
+      ],
+      "rejected": []
+    },
+    "threshold-experiment_25": {
+      "cap_pct": 25.0,
+      "selected": [
+        "HBLENGINE.NS",
+        "WHIRLPOOL.NS"
+      ],
+      "rejected": []
+    },
+    "threshold-experiment_30": {
+      "cap_pct": 30.0,
+      "selected": [
+        "HBLENGINE.NS",
+        "WHIRLPOOL.NS"
+      ],
+      "rejected": []
+    },
+    "threshold-experiment_40": {
+      "cap_pct": 40.0,
+      "selected": [
+        "HBLENGINE.NS",
+        "WHIRLPOOL.NS"
+      ],
+      "rejected": []
+    },
+    "threshold-experiment_50": {
+      "cap_pct": 50.0,
+      "selected": [
+        "HBLENGINE.NS",
+        "WHIRLPOOL.NS"
+      ],
+      "rejected": []
+    }
+  },
+  "rows": [
+    {
+      "ticker": "HBLENGINE.NS",
+      "name": "HBL Engineering Ltd.",
+      "sector": "Capital Goods",
+      "control_status": "SHADOW_rejected_by_risk_cap",
+      "signal_close": 806.0,
+      "vstop_line_SL": 679.9609,
+      "r_pct": 15.6376,
+      "confidence": null,
+      "threshold-experiment_15": "REJECTED",
+      "threshold-experiment_17.5": "SELECTED",
+      "threshold-experiment_20": "SELECTED",
+      "threshold-experiment_22.5": "SELECTED",
+      "threshold-experiment_25": "SELECTED",
+      "threshold-experiment_30": "SELECTED",
+      "threshold-experiment_40": "SELECTED",
+      "threshold-experiment_50": "SELECTED"
+    },
+    {
+      "ticker": "WHIRLPOOL.NS",
+      "name": "Whirlpool of India Ltd.",
+      "sector": "Consumer Durables",
+      "control_status": "SHADOW_rejected_by_risk_cap",
+      "signal_close": 918.9,
+      "vstop_line_SL": 770.0594,
+      "r_pct": 16.1977,
+      "confidence": null,
+      "threshold-experiment_15": "REJECTED",
+      "threshold-experiment_17.5": "SELECTED",
+      "threshold-experiment_20": "SELECTED",
+      "threshold-experiment_22.5": "SELECTED",
+      "threshold-experiment_25": "SELECTED",
+      "threshold-experiment_30": "SELECTED",
+      "threshold-experiment_40": "SELECTED",
+      "threshold-experiment_50": "SELECTED"
+    }
+  ],
+  "checks": [
+    {
+      "id": "X1",
+      "status": "PASS",
+      "detail": "threshold-experiment_15 selected=[] vs Control TRADE=[]"
+    },
+    {
+      "id": "X2",
+      "status": "PASS",
+      "detail": "selected sets nested by increasing cap"
+    },
+    {
+      "id": "X3",
+      "status": "PASS",
+      "detail": "every arm partitions the 2 survivors with a usable stop"
+    }
+  ],
+  "graded": {
+    "per_arm": {
+      "threshold-experiment_15": {
+        "cap_pct": 15.0,
+        "selected_n": 0,
+        "selected_basket_net_pct": 0.0,
+        "selected_winners": 0,
+        "selected_worst_trade_pct": null,
+        "rejected_n": 2,
+        "rejected_basket_net_pct": -3.699,
+        "rejected_winners": 0,
+        "rejected_worst_trade_pct": -4.083,
+        "selected_minus_control_pct": 0.0,
+        "selected_minus_rejected_pct": null
+      },
+      "threshold-experiment_17.5": {
+        "cap_pct": 17.5,
+        "selected_n": 2,
+        "selected_basket_net_pct": -3.699,
+        "selected_winners": 0,
+        "selected_worst_trade_pct": -4.083,
+        "rejected_n": 0,
+        "rejected_basket_net_pct": null,
+        "rejected_winners": 0,
+        "rejected_worst_trade_pct": null,
+        "selected_minus_control_pct": -3.699,
+        "selected_minus_rejected_pct": null
+      },
+      "threshold-experiment_20": {
+        "cap_pct": 20.0,
+        "selected_n": 2,
+        "selected_basket_net_pct": -3.699,
+        "selected_winners": 0,
+        "selected_worst_trade_pct": -4.083,
+        "rejected_n": 0,
+        "rejected_basket_net_pct": null,
+        "rejected_winners": 0,
+        "rejected_worst_trade_pct": null,
+        "selected_minus_control_pct": -3.699,
+        "selected_minus_rejected_pct": null
+      },
+      "threshold-experiment_22.5": {
+        "cap_pct": 22.5,
+        "selected_n": 2,
+        "selected_basket_net_pct": -3.699,
+        "selected_winners": 0,
+        "selected_worst_trade_pct": -4.083,
+        "rejected_n": 0,
+        "rejected_basket_net_pct": null,
+        "rejected_winners": 0,
+        "rejected_worst_trade_pct": null,
+        "selected_minus_control_pct": -3.699,
+        "selected_minus_rejected_pct": null
+      },
+      "threshold-experiment_25": {
+        "cap_pct": 25.0,
+        "selected_n": 2,
+        "selected_basket_net_pct": -3.699,
+        "selected_winners": 0,
+        "selected_worst_trade_pct": -4.083,
+        "rejected_n": 0,
+        "rejected_basket_net_pct": null,
+        "rejected_winners": 0,
+        "rejected_worst_trade_pct": null,
+        "selected_minus_control_pct": -3.699,
+        "selected_minus_rejected_pct": null
+      },
+      "threshold-experiment_30": {
+        "cap_pct": 30.0,
+        "selected_n": 2,
+        "selected_basket_net_pct": -3.699,
+        "selected_winners": 0,
+        "selected_worst_trade_pct": -4.083,
+        "rejected_n": 0,
+        "rejected_basket_net_pct": null,
+        "rejected_winners": 0,
+        "rejected_worst_trade_pct": null,
+        "selected_minus_control_pct": -3.699,
+        "selected_minus_rejected_pct": null
+      },
+      "threshold-experiment_40": {
+        "cap_pct": 40.0,
+        "selected_n": 2,
+        "selected_basket_net_pct": -3.699,
+        "selected_winners": 0,
+        "selected_worst_trade_pct": -4.083,
+        "rejected_n": 0,
+        "rejected_basket_net_pct": null,
+        "rejected_winners": 0,
+        "rejected_worst_trade_pct": null,
+        "selected_minus_control_pct": -3.699,
+        "selected_minus_rejected_pct": null
+      },
+      "threshold-experiment_50": {
+        "cap_pct": 50.0,
+        "selected_n": 2,
+        "selected_basket_net_pct": -3.699,
+        "selected_winners": 0,
+        "selected_worst_trade_pct": -4.083,
+        "rejected_n": 0,
+        "rejected_basket_net_pct": null,
+        "rejected_winners": 0,
+        "rejected_worst_trade_pct": null,
+        "selected_minus_control_pct": -3.699,
+        "selected_minus_rejected_pct": null
+      }
+    },
+    "control_arm": "threshold-experiment_15",
+    "checks": [
+      {
+        "id": "X4",
+        "status": "PASS",
+        "detail": "Control picks record unchanged since the threshold record was written (graded block excluded)"
+      },
+      {
+        "id": "X5",
+        "status": "PASS",
+        "detail": "every member has a graded row; missing=[]"
+      },
+      {
+        "id": "X6",
+        "status": "PASS",
+        "detail": "threshold-experiment_15 selected basket 0.0 vs Control graded basket_net_pct 0.0"
+      }
+    ],
+    "benchmark_week_pct": null,
+    "graded_utc": "2026-10-02T17:10:22+00:00"
+  }
+}

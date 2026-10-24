@@ -4,6 +4,7 @@ import { describeApiError } from "@/lib/apiError";
 import { isWarmingBody } from "@/lib/engineStatus";
 import { useEngineStatus } from "@/lib/useEngineStatus";
 import { EngineBuffer, RunningPanel } from "@/components/EngineStatus";
+import { DataRefresh } from "@/components/DataRefresh";
 import { FeasibilityChip, RunHeader, UnevaluatedSection, UploadControl, reasonText } from "@/components/DataStatus";
 import type { Feasibility } from "@/server/engine/client";
 import { ruleLine, type Slot } from "@/lib/conditionLabel";
@@ -321,6 +322,7 @@ export function InterpretationView({ draftId, promptText, hasProgram = false, on
               {feas.universe.can_upload && <UploadControl draftId={draftId} onUploaded={() => void screenNow(view, asOf)} />}
             </div>
           )}
+          {view.ready && <DataRefresh />}
           {run && <RunHeader coverage={run.run_coverage} conditionLabels={Object.fromEntries(view.conditions.map((c) => [c.id, ruleLine(c)]))} />}
           {run && <AllStocks table={table} state={tableState} conditions={view.conditions} setLabels={Object.fromEntries(Object.entries(run.sets ?? {}).map(([k, v]: [string, any]) => [k, v.label ?? k]))} />}
           {run && <DryRunResult run={run} conditions={view.conditions} />}

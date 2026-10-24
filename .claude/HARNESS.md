@@ -70,14 +70,30 @@ Separately, `docs/forward_test_findings.md` is **append-only**: add a new dated 
   current bar's stop, invisible trade-builder rejections (`trade_rejections`), R/target not
   recomputed off the fill. Don't reintroduce: `tests/test_backtest_engine.py` and
   `tests/test_harness_fixes.py` now assert the fixed behaviour.
-- **D7 — yfinance weekly bars in Monday-holiday weeks use the previous Friday's close as the
-  week's open.** Every grader that takes EP from the weekly bar (`track_forward._grade_rows`,
-  `simulate_week_forward`, `flags.grade.grade_matrix`, the threshold experiment) books EP = signal
-  close in those weeks (~3.7% of ticker-weeks; the 2026-09-07 record's holding week is one).
-  Unfixed pending Dharmin's decision. For new history use `src/data/resample.py` (daily → weekly),
-  which is correct.
-- **RSI on a flat/constant price series returns 100 instead of 50** (`src/indicators/rsi.py`,
-  `avg_loss == 0` edge case) — a neutral series should not read as maximally overbought.
+- **FIXED 2026-09-16 (D7 — see findings):** yfinance weekly bars in Monday-holiday weeks used
+  the previous Friday's close as the week's open. `src/data/holding_week.py:corrected_week_bar()`
+  now prefers the holding week's own daily sessions (via `adapter.daily_ohlcv()`) for EP/low/close
+  when available, falling back to the weekly bar unchanged otherwise; wired into
+  `track_forward._grade_rows` (and therefore `grade()`, `grade_t1()`, and the threshold experiment,
+  which derives from Control's own graded detail — HARNESS §12), `flags.grade.grade_matrix`, and
+  `simulate_week_forward` (opt-in `daily_panels=` param — omitting it, as existing dev backtests
+  still do, changes nothing). Nothing was re-graded retroactively (rule 4); `tests/test_d7_holding_week.py`
+  is the probe. Weekly history resampled from daily bars (`src/data/resample.py`) never had this
+  defect either way.
+- **FIXED 2026-09-26 (D4 — see findings):** RSI on a flat/constant price series returned 100
+  instead of 50 (`src/indicators/rsi.py`, `avg_gain == 0 and avg_loss == 0` case conflated with
+  "no losses, but real gains," correctly 100). Now returns 50 (neutral) for the flat case only.
+  Shared file — Control uses it too; going forward only, no past record re-graded (rule 4).
+  Don't reintroduce: `tests/test_indicators_properties.py::test_rsi_flat_series_is_neutral_not_100`
+  probes this.
+- **Residual D7-adjacent defect, not yet fixed:** even with a fresh daily cache,
+  `corrected_week_bar` (`src/data/holding_week.py`) can still pick the wrong open on a holiday
+  Monday. yfinance's daily bars return a zero-volume placeholder row *on* the holiday Monday
+  itself (open/high/low/close all equal to the prior Friday's close, `volume=0`) before the
+  first real session; `corrected_week_bar` takes `days.iloc[0]["open"]` after sorting by date
+  with no volume filter, so it can pick that placeholder — numerically identical to the
+  pre-D7-fix bug it exists to fix. `tests/test_d7_holding_week.py`'s synthetic panels all use a
+  nonzero volume, so this case isn't covered yet. See the 2026-09-14-week findings entry.
 - **`build_trades()` no longer rejects `R <= 0`** (Dharmin's decision, 15 Sep 2026). Unreachable in
   practice today (EP = signal close ≥ VStop line for every uptrend survivor), but if anything ever
   passes `next_week_open` a negative-R trade would now be built. Don't pass it without restoring the

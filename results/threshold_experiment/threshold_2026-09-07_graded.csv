@@ -1,0 +1,4 @@
+ticker,name,sector,control_status,signal_close,vstop_line_SL,r_pct,confidence,threshold-experiment_15,threshold-experiment_17.5,threshold-experiment_20,threshold-experiment_22.5,threshold-experiment_25,threshold-experiment_30,threshold-experiment_40,threshold-experiment_50,EP_actual,exit_reason,exit_price,ret_pct,ret_pct_net,r_multiple
+JUBLPHARMA.NS,Jubilant Pharmova Ltd.,Healthcare,TRADE,1025.1,889.7214,13.2064,72.8,SELECTED,SELECTED,SELECTED,SELECTED,SELECTED,SELECTED,SELECTED,SELECTED,1025.2,week_close,1065.4,3.921,3.421,0.297
+PINELABS.NS,Pine Labs Ltd.,Financial Services,SHADOW_rejected_by_risk_cap,198.85,159.8666,19.6044,,REJECTED,REJECTED,SELECTED,SELECTED,SELECTED,SELECTED,SELECTED,SELECTED,202.17,week_close,192.04,-5.011,-5.511,-0.239
+SPLPETRO.NS,Supreme Petrochem Ltd.,Chemicals,TRADE,820.5,704.6848,14.1152,61.8,SELECTED,SELECTED,SELECTED,SELECTED,SELECTED,SELECTED,SELECTED,SELECTED,818.35,week_close,865.7,5.786,5.286,0.417
