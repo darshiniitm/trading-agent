@@ -11,6 +11,9 @@
 [build.environment]
   NODE_VERSION = "20"
   NEXT_TELEMETRY_DISABLED = "1"
+  # GRAFANA_PG_DATABASE is a database *name* (a short word like "postgres"), not a credential. Netlify's scanner flags every
+  # occurrence of that word in the repo (env examples, lockfile, tests). The real secrets stay scanned.
+  SECRETS_SCAN_OMIT_KEYS = "GRAFANA_PG_DATABASE"
 
 # Netlify-authored functions only (netlify/functions); the Next.js routes are bundled by the Next adapter, which reads
 # serverComponentsExternalPackages in next.config.mjs. `pg` stays external so one copy of the driver is shared.
