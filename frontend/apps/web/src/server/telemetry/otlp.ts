@@ -5,9 +5,11 @@ export type Signal = "traces" | "metrics" | "logs";
 
 export const otlpConfigured = (env: NodeJS.ProcessEnv) => Boolean(env.OTEL_EXPORTER_OTLP_ENDPOINT || env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT);
 
+const unquote = (v: string | undefined) => (v ?? "").trim().replace(/^["']+|["']+$/g, "");
+
 export function endpointFor(env: NodeJS.ProcessEnv, signal: Signal): string {
-  const specific = env[`OTEL_EXPORTER_OTLP_${signal.toUpperCase()}_ENDPOINT`];
-  return specific || `${(env.OTEL_EXPORTER_OTLP_ENDPOINT ?? "").replace(/\/+$/, "")}/v1/${signal}`;
+  const specific = unquote(env[`OTEL_EXPORTER_OTLP_${signal.toUpperCase()}_ENDPOINT`]);
+  return specific || `${unquote(env.OTEL_EXPORTER_OTLP_ENDPOINT).replace(/\/+$/, "")}/v1/${signal}`;
 }
 
 /** OTEL_EXPORTER_OTLP_HEADERS: comma-separated key=value, values URL-decoded (`Basic%20abc` -> `Basic abc`). */
