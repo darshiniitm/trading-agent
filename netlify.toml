@@ -1,0 +1,22 @@
+# Netlify site for the prompt-screener web app (docs/netlify-production-plan.md §6).
+# The screening engine is NOT here: Netlify runs JS/TS functions only, so the engine is a separate always-on service
+# (Dockerfile.engine / fly.engine.toml) reached over ENGINE_BASE_URL with ENGINE_TOKEN.
+#
+# Site settings in the Netlify UI: Base directory `frontend`, Package directory `apps/web`.
+[build]
+  base    = "frontend"
+  command = "npm ci && npm run build -w apps/web"
+  publish = "apps/web/.next"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# Netlify-authored functions only (netlify/functions); the Next.js routes are bundled by the Next adapter, which reads
+# serverComponentsExternalPackages in next.config.mjs. `pg` stays external so one copy of the driver is shared.
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["pg"]
+
+# Deploy Previews must use the STAGING Supabase project and engine, never production data.
+# Set these per deploy context in the UI (Site configuration -> Environment variables -> scopes), not here.

@@ -20,6 +20,31 @@ async function fresh(text = SAMPLE) {
 const ctx = (id: number) => ({ params: { draftId: String(id) } });
 const post = (body: unknown) => new Request("http://x", { method: "POST", body: JSON.stringify(body) });
 
+const INDIRECT = `Nifty 100 stocks
+Take the 6 day and 30 day simple averages of the close
+Tell me when the faster one goes over the slower one`;
+
+describe("compileProgramDraft deadline (a Netlify function is cut off at 60 s)", () => {
+  it("stops waiting on a model that never answers and returns the rules' reading instead of hanging", async () => {
+    const id = await fresh(INDIRECT);
+    const hang = vi.fn(() => new Promise<string>(() => {}));
+    const started = Date.now();
+    const v = await compileProgramDraft(raw, id, { callModel: hang as any, deadlineMs: 150 });
+    expect(Date.now() - started).toBeLessThan(5000);
+    expect(hang).toHaveBeenCalled();
+    expect(v.program).toBeTruthy();
+    expect(v.clauses.length).toBeGreaterThan(0);
+  }, 10_000);
+
+  it("a model that answers in time is unaffected by the deadline", async () => {
+    const id = await fresh(SAMPLE);
+    const callModel = vi.fn();
+    const v = await compileProgramDraft(raw, id, { callModel, deadlineMs: 5000 });
+    expect(callModel).not.toHaveBeenCalled();
+    expect(v.ready).toBe(true);
+  });
+});
+
 describe("compileProgramDraft", () => {
   it("compiles the sample prompt with zero model calls, zero questions, and persists the resolved program", async () => {
     const id = await fresh();

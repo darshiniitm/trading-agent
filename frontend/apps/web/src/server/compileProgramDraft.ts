@@ -10,6 +10,7 @@ import { toFiveSlots } from "@/server/compiler/v5/slots5";
 import { coverage } from "@/server/compiler/v5/coverage";
 import { learnFromClauseEdit, recordEdit, similarExamples } from "@/server/learning";
 import { makeClauseFallback, type CallModelFn } from "@/server/compiler/v5/fallback";
+import { callClaude } from "@/server/compiler/callModel";
 import { makeModelReader } from "@/server/compiler/v5/modelRead";
 import { applyChipEdit, resolveProgram } from "@/server/compiler/v5/resolve";
 import { resolvedJson, toSlotConditions, type SlotCondition } from "@/server/compiler/v5/slots";
@@ -67,11 +68,28 @@ const tracedSave = tool("warehouse.write", saveProgramState, { argsOf: (_raw, dr
 // inPromptRun opens its span synchronously, so the draft is read first and handed over.
 const lookupOf = async (raw: Db, draftId: number) => { const d = await getDraft(raw, draftId); return () => ({ userId: d?.userId, createdAt: d?.createdAt }); };
 
-export async function compileProgramDraft(raw: Db, draftId: number, opts: { callModel?: CallModelFn; useModel?: boolean } = {}): Promise<ProgramView> {
+// A Netlify function is cut off at 60 s and the interpreter can make several model calls, so on Netlify the model gets a shared time
+// budget; once it is spent a call fails like an unreachable model does, and the rules' reading stands (docs/netlify-production-plan.md §6.2).
+// COMPILE_DEADLINE_MS overrides (0 = none, the default off Netlify).
+export const compileDeadlineMs = (env: NodeJS.ProcessEnv = process.env) => Number(env.COMPILE_DEADLINE_MS ?? (env.NETLIFY ? 50_000 : 0));
+
+export function withDeadline(call: CallModelFn, deadlineAt: number, now: () => number = Date.now): CallModelFn {
+  const spent = () => new Error("the time budget for this request ran out before the model answered");
+  return (system, user, format, opts) => {
+    const left = deadlineAt - now();
+    if (left <= 0) return Promise.reject(spent());
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const late = new Promise<never>((_, reject) => { timer = setTimeout(() => reject(spent()), left); });
+    return Promise.race([call(system, user, format, opts), late]).finally(() => clearTimeout(timer));
+  };
+}
+
+export async function compileProgramDraft(raw: Db, draftId: number, opts: { callModel?: CallModelFn; useModel?: boolean; deadlineMs?: number } = {}): Promise<ProgramView> {
   return inPromptRun({ draftId, stage: "compile", lookup: await lookupOf(raw, draftId) }, () => compileProgramDraftInner(raw, draftId, opts));
 }
 
-async function compileProgramDraftInner(raw: Db, draftId: number, { callModel, useModel = true }: { callModel?: CallModelFn; useModel?: boolean } = {}): Promise<ProgramView> {
+async function compileProgramDraftInner(raw: Db, draftId: number, { callModel: given, useModel = true, deadlineMs = compileDeadlineMs() }: { callModel?: CallModelFn; useModel?: boolean; deadlineMs?: number } = {}): Promise<ProgramView> {
+  const callModel = deadlineMs > 0 && useModel ? withDeadline(given ?? callClaude, Date.now() + deadlineMs) : given;
   const draft = await getDraft(raw, draftId);
   if (!draft) throw new Error(`draft ${draftId} not found`);
   if (!draft.promptText.trim()) throw new Error("draft has no prompt text yet");
