@@ -101,14 +101,14 @@ describe("GET /api/health route wiring", () => {
   it("returns the engine's /health body unchanged", async () => {
     const health = { status: "ok", engine_git_sha: "abc", last_bar_date: "2026-10-02", data_snapshot_hash: null };
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, text: async () => JSON.stringify(health) }));
-    const res = await healthRoute();
+    const res = await healthRoute(new Request("http://x/api/health"));
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual(health);
   });
 
   it("returns 502 with an error body when the engine is unreachable", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("ECONNREFUSED")));
-    const res = await healthRoute();
+    const res = await healthRoute(new Request("http://x/api/health"));
     expect(res.status).toBe(502);
     expect((await res.json()).error).toMatch(/engine unreachable/);
   });

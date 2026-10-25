@@ -72,7 +72,7 @@ describe("anonymous requests", () => {
       ["listPrompts", listPrompts(r())], ["explore", explore(r())], ["settings", settings(r())],
     ];
     for (const [name, p] of calls) expect({ name, status: (await p).status }).toEqual({ name, status: 401 });
-    expect((await healthRoute()).status).not.toBe(401);
+    expect((await healthRoute(new Request("http://x/api/health"))).status).not.toBe(401);
   });
 });
 

@@ -26,8 +26,8 @@ async function deepHealth() {
   return Response.json({ ok, db: app.db, engine, model: app.model }, { status: ok ? 200 : 503, headers: { "cache-control": "no-store" } });
 }
 
-export async function GET(req?: Request) {
-  if (req && new URL(req.url).searchParams.get("deep") === "1") return deepHealth();
+export async function GET(req: Request) {
+  if (new URL(req.url).searchParams.get("deep") === "1") return deepHealth();
   try {
     return Response.json(await getHealth());
   } catch (err) {
