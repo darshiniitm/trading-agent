@@ -3,7 +3,7 @@ import path from "node:path";
 import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
 import { createTestDb } from "@/server/db/test-db";
-import { moveSqliteToPostgres } from "@/server/db/sqliteMove";
+import { moveSqliteToPostgres } from "../scripts/sqlite-legacy/sqliteMove";
 import { prep } from "./helpers/prep";
 
 const LEGACY = path.join(process.cwd(), "scripts", "sqlite-legacy", "migrations");

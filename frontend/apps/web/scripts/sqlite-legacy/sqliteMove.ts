@@ -1,9 +1,9 @@
-import { insertMany, type Db } from "./pg";
-import { resetIdentitySequences } from "./sequences";
+import { insertMany, type Db } from "../../src/server/db/pg";
+import { resetIdentitySequences } from "../../src/server/db/sequences";
 
 // One-off data move: the app's SQLite file (data/app.db at migration 0012) into screener_app on Postgres
 // (docs/netlify-production-plan.md §4.3). Numeric ids are kept, everything happens in one transaction, and a target that already
-// holds app data is refused. Used by scripts/migrate-sqlite-to-pg.ts; not imported by the running app.
+// holds app data is refused. Used by scripts/migrate-sqlite-to-pg.ts; kept out of src/ so no app code can import it (it names the P6 view tables).
 
 type Sqlite = { prepare(sql: string): { all(...p: unknown[]): any[] } };
 

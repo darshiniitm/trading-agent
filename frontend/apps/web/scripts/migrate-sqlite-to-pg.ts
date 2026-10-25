@@ -4,7 +4,7 @@
 import Database from "better-sqlite3";
 import path from "node:path";
 import { closeDb, db } from "../src/server/db/client";
-import { moveSqliteToPostgres } from "../src/server/db/sqliteMove";
+import { moveSqliteToPostgres } from "./sqlite-legacy/sqliteMove";
 
 async function main() {
   const file = path.resolve(process.argv[2] ?? path.join(process.cwd(), "data", "app.db"));
