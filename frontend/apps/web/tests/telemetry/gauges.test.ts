@@ -4,7 +4,7 @@ import type { AddressInfo } from "node:net";
 import { afterEach, describe, expect, it } from "vitest";
 import { AggregationTemporality, InMemoryMetricExporter, PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { pushGauge, pushGauges } from "@/server/telemetry/gauges";
-import { endpointFor, headersFrom, otlpConfigured } from "@/server/telemetry/otlp";
+import { endpointFor, headersFrom, otlpConfigured, serviceInstanceId } from "@/server/telemetry/otlp";
 import { initTelemetry, resetBootstrapForTests } from "@/server/telemetry/bootstrap";
 import { resetRuntime, task, withRunCtx, newRunCtx } from "@/server/telemetry";
 import { setLlmTelemetry } from "@/server/llm/telemetry";
@@ -78,5 +78,15 @@ describe("headersFrom tolerance", () => {
     expect(h.Authorization).toBe("Basic QUJD");
     expect(h["x-scope"]).toBe("a  b");
     expect(headersFrom({ OTEL_EXPORTER_OTLP_HEADERS: "authorization=Bearer%20%20tok" } as any).authorization).toBe("Bearer tok");
+  });
+});
+
+describe("serviceInstanceId", () => {
+  it("tells serverless instances apart in Grafana (cold starts are new instances)", () => {
+    expect(serviceInstanceId({ AWS_LAMBDA_LOG_STREAM_NAME: "2026/10/25/[$LATEST]abc" } as any)).toBe("2026/10/25/[$LATEST]abc");
+    expect(serviceInstanceId({ NETLIFY: "true", DEPLOY_ID: "d1" } as any)).toMatch(/^d1-/);
+  });
+  it("is absent off serverless, so a long-lived server keeps its single resource identity", () => {
+    expect(serviceInstanceId({} as any)).toBeUndefined();
   });
 });

@@ -85,14 +85,14 @@ describe("confirmDraft", () => {
   it("does not block on a missing hypothesis or kill criterion (optional add-ons)", async () => {
     const raw = await createTestDb();
     const draftId = await readyDraft(raw, { hypothesis: "", killCriterion: "" });
-    await expect(await confirmDraft(raw, draftId, "2026-10-02", fakeScreenFetch([]) as any)).resolves.toMatchObject({ promptId: 1 });
+    await expect(confirmDraft(raw, draftId, "2026-10-02", fakeScreenFetch([]) as any)).resolves.toMatchObject({ promptId: 1 });
   });
 
   it("blocks when the prompt has not been interpreted", async () => {
     const raw = await createTestDb();
     const userId = await ensureOwnerUser(raw);
     const { draftId } = await createDraft(raw, { userId });
-    await expect(await confirmDraft(raw, draftId, "2026-10-02", fakeScreenFetch([]) as any)).rejects.toThrow(/confirm blocked:/);
+    await expect(confirmDraft(raw, draftId, "2026-10-02", fakeScreenFetch([]) as any)).rejects.toThrow(/confirm blocked:/);
   });
 
   it("propagates a 422 from the engine without writing anything", async () => {
@@ -100,7 +100,7 @@ describe("confirmDraft", () => {
     const draftId = await readyDraft(raw);
     // engine/app.py's HTTPException(422, detail=[...]) serializes to {"detail": [...]}, not {"errors": [...]}.
     const fetchFn = vi.fn().mockResolvedValue({ ok: false, status: 422, text: async () => JSON.stringify({ detail: [{ condition_id: "C2", message: "unsupported" }] }) });
-    await expect(await confirmDraft(raw, draftId, "2026-10-02", fetchFn as any)).rejects.toBeInstanceOf(EngineError);
+    await expect(confirmDraft(raw, draftId, "2026-10-02", fetchFn as any)).rejects.toBeInstanceOf(EngineError);
     const count = await prep(raw, "SELECT COUNT(*) AS n FROM prompts").get() as any;
     expect(count.n).toBe(0);
   });
@@ -109,7 +109,7 @@ describe("confirmDraft", () => {
     const raw = await createTestDb();
     const draftId = await readyDraft(raw);
     await confirmDraft(raw, draftId, "2026-10-02", fakeScreenFetch([]) as any);
-    await expect(await confirmDraft(raw, draftId, "2026-10-09", fakeScreenFetch([]) as any)).rejects.toThrow(/already confirmed/);
+    await expect(confirmDraft(raw, draftId, "2026-10-09", fakeScreenFetch([]) as any)).rejects.toThrow(/already confirmed/);
   });
 
   it("writes every candidate correctly at real-world scale (hundreds of candidates in one screen)", async () => {
@@ -147,7 +147,7 @@ describe("confirmDraft", () => {
     await updateDraft(raw, secondDraftId, { title: "Same brief again", hypothesis: "same hypothesis", killCriterion: "same kill criterion" });
     // the same semantics reached by different wording: the phrase text and answer log must not change identity
     await saveProgramState(raw, secondDraftId, { program: program({ conditions: program().conditions.map((c) => ({ ...c, phrase: "worded differently" })) }), clauses: [], normalised: "" });
-    await expect(await confirmDraft(raw, secondDraftId, "2026-10-09", fakeScreenFetch([]) as any)).rejects.toThrow(
+    await expect(confirmDraft(raw, secondDraftId, "2026-10-09", fakeScreenFetch([]) as any)).rejects.toThrow(
       new RegExp(`Prompt ${firstPromptId}`)
     );
 

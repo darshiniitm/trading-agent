@@ -20,12 +20,12 @@ import { GET as getHealth } from "@/../app/api/data/health/route";
 import { POST as postPrefetch } from "@/../app/api/data/prefetch/route";
 import { prep } from "./helpers/prep";
 
-const OWNER = { authUserId: "test-owner-uuid", email: "owner@example.com", emailVerified: true, displayName: "Owner", provider: "email" };
-const OTHER = { authUserId: "u-other", email: "other@example.com", emailVerified: true, displayName: "Other", provider: "google" };
+const OWNER = { authUserId: "00000000-0000-4000-8000-1fd6d1071c77", email: "owner@example.com", emailVerified: true, displayName: "Owner", provider: "email" };
+const OTHER = { authUserId: "00000000-0000-4000-8000-8e1868009208", email: "other@example.com", emailVerified: true, displayName: "Other", provider: "google" };
 const as = (who: typeof OWNER | null) => setIdentityResolver(async () => who);
 const r = (method = "GET") => new Request("http://localhost/x", { method });
 
-beforeEach(async () => { raw = await createTestDb(); await ensureOwnerUser(raw); await prep(raw, "INSERT INTO signup_allowlist (email, created_at) VALUES ('other@example.com', 'x')").run(); beat.mockClear(); as(OWNER); });
+beforeEach(async () => { raw = await createTestDb(); await ensureOwnerUser(raw); await prep(raw, "INSERT INTO signup_allowlist (email, created_at) VALUES ('other@example.com', now())").run(); beat.mockClear(); as(OWNER); });
 afterEach(async () => as(OWNER));
 
 describe("/api/data/refresh", () => {

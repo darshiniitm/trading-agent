@@ -69,7 +69,7 @@ describe("confirmDraft — versioning", () => {
 
     const { draftId: editDraftId } = await createEditDraft(raw, { promptId: v1Id, userId: await ensureOwnerUser(raw) });
     const failingFetch = vi.fn().mockResolvedValue({ ok: false, status: 500, text: async () => JSON.stringify({ error: "engine down" }) });
-    await expect(await confirmDraft(raw, editDraftId, "2026-10-09", failingFetch as any)).rejects.toThrow();
+    await expect(confirmDraft(raw, editDraftId, "2026-10-09", failingFetch as any)).rejects.toThrow();
 
     const v1 = await prep(raw, "SELECT status, closed_at FROM prompts WHERE prompt_id = ?").get(v1Id) as any;
     expect(v1.status).toBe("confirmed");

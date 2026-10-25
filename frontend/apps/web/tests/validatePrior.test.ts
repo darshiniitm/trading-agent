@@ -23,7 +23,7 @@ async function seedGradableRun(raw: Db, { gradedRunsBefore }: { gradedRunsBefore
   await prep(raw, `INSERT INTO watchlists (watchlist_id, user_id, prompt_id, name, created_at) VALUES (1, ?, 1, 'wl', ?)`).run(ownerId, now);
 
   for (let i = 0; i < gradedRunsBefore; i++) {
-    await prep(raw, `INSERT INTO runs (prompt_id, as_of, kind, status, finished_at) VALUES (1, ?, 'scheduled', 'done', ?)`).run(`2026-0${1 + i}-01`, now);
+    await prep(raw, `INSERT INTO runs (prompt_id, as_of, kind, status, finished_at) VALUES (1, ?, 'scheduled', 'done', ?)`).run(new Date(Date.UTC(2025, 0, 3 + 7 * i)).toISOString().slice(0, 10), now);
   }
   const runInfo = await prep(raw, `INSERT INTO runs (prompt_id, as_of, kind, status, finished_at) VALUES (1, '2026-10-02', 'scheduled', 'done', ?)`).run(now);
   const runId = Number(runInfo.lastInsertRowid);
@@ -57,7 +57,7 @@ async function seedPromptWithGradedRuns(raw: Db, gradedRunsBefore: number) {
      VALUES (1, ?, 1, 'Prompt 1', 'x', 'literal', ?, 'h', 'confirmed', 1, 'hyp', 'kill', ?)`
   ).run(ownerId, JSON.stringify(SPEC), now);
   for (let i = 0; i < gradedRunsBefore; i++) {
-    await prep(raw, `INSERT INTO runs (prompt_id, as_of, kind, status, finished_at) VALUES (1, ?, 'scheduled', 'done', ?)`).run(`2026-0${1 + i}-01`, now);
+    await prep(raw, `INSERT INTO runs (prompt_id, as_of, kind, status, finished_at) VALUES (1, ?, 'scheduled', 'done', ?)`).run(new Date(Date.UTC(2025, 0, 3 + 7 * i)).toISOString().slice(0, 10), now);
   }
 }
 

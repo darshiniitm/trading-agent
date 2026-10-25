@@ -146,5 +146,6 @@ export function createPgStore(o: PgStoreOpts): RunStore {
 export function createStoreFromEnv(env: NodeJS.ProcessEnv = process.env, deps: Pick<PgStoreOpts, "poolFactory" | "onDrop"> = {}): RunStore {
   const url = env.TELEMETRY_DB_URL || env.SUPABASE_DB_URL;
   if (!url) return noopStore;
-  return createPgStore({ connectionString: url, ...deps, poolFactory: deps.poolFactory ? (cs, opts) => deps.poolFactory!(cs, opts) : undefined });
+  // on Netlify nothing may run between requests, so rows are written by the per-request flush (telemetry/flush.ts), not a timer
+  return createPgStore({ connectionString: url, ...(env.NETLIFY ? { flushMs: 0 } : {}), ...deps, poolFactory: deps.poolFactory ? (cs, opts) => deps.poolFactory!(cs, opts) : undefined });
 }

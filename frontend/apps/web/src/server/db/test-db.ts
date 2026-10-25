@@ -62,6 +62,7 @@ export function pgliteDb(pg: PGlite): Db {
 let shared: { pg: PGlite; db: Db; seedSymbols: Record<string, unknown>[] } | undefined;
 
 async function reset(s: NonNullable<typeof shared>) {
+  await s.pg.exec("SET search_path = screener_app, public");   // a test may have changed it
   const tables = await s.pg.query<{ t: string }>("SELECT quote_ident(table_name) AS t FROM information_schema.tables WHERE table_schema = 'screener_app' AND table_type = 'BASE TABLE'");
   await s.pg.exec(`TRUNCATE ${tables.rows.map((r) => `screener_app.${r.t}`).join(", ")} RESTART IDENTITY CASCADE`);
   await insertMany(s.db, "symbols", Object.keys(s.seedSymbols[0]), s.seedSymbols.map((r) => Object.values(r)));
@@ -69,10 +70,10 @@ async function reset(s: NonNullable<typeof shared>) {
 
 /** An empty app database (migrations applied, only the migration's own seed rows). Each call starts clean. */
 export async function createTestDb(): Promise<Db> {
-  if (shared) { await reset(shared); return shared.db; }
+  if (shared) { await reset(shared); return pgliteDb(shared.pg); }   // a fresh handle: per-handle memos (owner seed) must not outlive the data
   template ??= ensureTemplate();
   const pg = new PGlite({ ...options(), loadDataDir: await template });
-  await pg.exec("SET search_path = screener_app, public");
+  await pg.exec("SET search_path = screener_app, public; SET TIME ZONE 'UTC'");   // like Supabase; PGlite otherwise takes the host zone
   const db = pgliteDb(pg);
   shared = { pg, db, seedSymbols: await db.all("SELECT * FROM symbols ORDER BY symbol") };
   return db;

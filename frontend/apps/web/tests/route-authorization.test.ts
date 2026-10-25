@@ -32,8 +32,8 @@ import { POST as createDraft } from "@/../app/api/drafts/route";
 import { GET as healthRoute } from "@/../app/api/health/route";
 import { prep } from "./helpers/prep";
 
-const OWNER = { authUserId: "test-owner-uuid", email: "owner@example.com", emailVerified: true, displayName: "Owner", provider: "email" };
-const OTHER = { authUserId: "u-other", email: "other@example.com", emailVerified: true, displayName: "Other", provider: "google" };
+const OWNER = { authUserId: "00000000-0000-4000-8000-1fd6d1071c77", email: "owner@example.com", emailVerified: true, displayName: "Owner", provider: "email" };
+const OTHER = { authUserId: "00000000-0000-4000-8000-8e1868009208", email: "other@example.com", emailVerified: true, displayName: "Other", provider: "google" };
 const as = (who: typeof OWNER | null) => setIdentityResolver(async () => who);
 const r = (method = "GET", body?: unknown) => new Request("http://localhost/x", { method, body: body === undefined ? undefined : JSON.stringify(body) });
 const ctx = (p: any) => ({ params: p });
@@ -41,7 +41,7 @@ const ctx = (p: any) => ({ params: p });
 async function world() {
   raw = await createTestDb();
   const owner = await ensureOwnerUser(raw);
-  await prep(raw, "INSERT INTO signup_allowlist (email, created_at) VALUES ('other@example.com', 'x')").run();
+  await prep(raw, "INSERT INTO signup_allowlist (email, created_at) VALUES ('other@example.com', now())").run();
   const now = new Date().toISOString();
   const spec = JSON.stringify(program());
   const mk = async (id: number, visibilityValue: "private" | "shared") => {
@@ -123,7 +123,7 @@ describe("another signed-in user", () => {
   });
 
   it("an uninvited Google account is refused with 403 not_invited", async () => {
-    await world(); as({ ...OTHER, authUserId: "u-x", email: "stranger@example.com" });
+    await world(); as({ ...OTHER, authUserId: "00000000-0000-4000-8000-f20d9b639839", email: "stranger@example.com" });
     const res = await listPrompts(r());
     expect(res.status).toBe(403);
     expect(await res.json()).toMatchObject({ reason: "not_invited" });

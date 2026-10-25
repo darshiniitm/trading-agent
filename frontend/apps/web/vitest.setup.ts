@@ -15,4 +15,4 @@ afterAll(async () => {
 import { setIdentityResolver } from "@/server/auth/requireUser";
 export const TEST_OWNER_EMAIL = "owner@example.com";
 process.env.OWNER_EMAIL = TEST_OWNER_EMAIL;
-setIdentityResolver(async () => ({ authUserId: "test-owner-uuid", email: TEST_OWNER_EMAIL, emailVerified: true, displayName: "Owner", provider: "email" }));
+setIdentityResolver(async () => ({ authUserId: "00000000-0000-4000-8000-1fd6d1071c77", email: TEST_OWNER_EMAIL, emailVerified: true, displayName: "Owner", provider: "email" }));

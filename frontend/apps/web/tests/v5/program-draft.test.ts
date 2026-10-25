@@ -52,7 +52,7 @@ describe("compileProgramDraft", () => {
     const id = await fresh();
     await compileProgramDraft(raw, id, { useModel: false });
     const before = (await getDraft(raw, id))!.program;
-    expect(async () => await editChip(raw, id, "conditions.C3.params.length", 1)).toThrow(/between 2 and 100/);
+    await expect(editChip(raw, id, "conditions.C3.params.length", 1)).rejects.toThrow(/between 2 and 100/);
     expect((await getDraft(raw, id))!.program).toEqual(before);
   });
 
@@ -75,7 +75,7 @@ describe("compileProgramDraft", () => {
     const id = await fresh();
     await compileProgramDraft(raw, id, { useModel: false });
     const fetchFn = vi.fn().mockResolvedValue({ ok: true, status: 200, text: async () => JSON.stringify({ funnel: [], sets: {} }) });
-    await expect(await screenProgramDraft(raw, id, "2026-08-03", fetchFn as any)).resolves.toEqual({ funnel: [], sets: {} });
+    await expect(screenProgramDraft(raw, id, "2026-08-03", fetchFn as any)).resolves.toEqual({ funnel: [], sets: {} });
     const sent = JSON.parse(fetchFn.mock.calls[0][1].body);
     expect(fetchFn.mock.calls[0][0]).toMatch(/\/screen\/v5$/);
     expect(sent.as_of).toBe("2026-08-03");

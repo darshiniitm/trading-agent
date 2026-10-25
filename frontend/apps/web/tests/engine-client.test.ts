@@ -56,3 +56,36 @@ describe("screen", () => {
     });
   });
 });
+
+describe("engine bearer token (deployed engine, docs/netlify-production-plan.md §5.2)", () => {
+  const ok = () => fakeFetch(200, JSON.stringify({ indicators: [] }));
+  const headerOf = (fetchFn: ReturnType<typeof ok>, name: string) => new Headers(fetchFn.mock.calls[0][1].headers).get(name);
+
+  it("sends Authorization: Bearer <ENGINE_TOKEN> on every call when the token is set", async () => {
+    vi.stubEnv("ENGINE_TOKEN", "s3cret");
+    try {
+      const fetchFn = ok();
+      await getConditionsV5(fetchFn as any);
+      expect(headerOf(fetchFn, "authorization")).toBe("Bearer s3cret");
+    } finally { vi.unstubAllEnvs(); }
+  });
+
+  it("sends no Authorization header when no token is configured (local engine)", async () => {
+    vi.stubEnv("ENGINE_TOKEN", "");
+    try {
+      const fetchFn = ok();
+      await getConditionsV5(fetchFn as any);
+      expect(headerOf(fetchFn, "authorization")).toBeNull();
+    } finally { vi.unstubAllEnvs(); }
+  });
+
+  it("keeps the caller's own headers next to the token", async () => {
+    vi.stubEnv("ENGINE_TOKEN", "s3cret");
+    try {
+      const fetchFn = fakeFetch(200, JSON.stringify({ candidates: [], applied_steps: [], funnel: [], sector_view: [] }));
+      await screen(program(), "2026-10-02", fetchFn as any);
+      expect(headerOf(fetchFn, "content-type")).toBe("application/json");
+      expect(headerOf(fetchFn, "authorization")).toBe("Bearer s3cret");
+    } finally { vi.unstubAllEnvs(); }
+  });
+});

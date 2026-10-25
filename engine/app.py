@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import hmac
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 import pandas as pd
-from fastapi import Body, FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 
 from engine.arms import is_active, register_arm, retire_arm
 from engine.env import load_environment
@@ -84,6 +87,17 @@ def create_app(offline: bool = False, history_fn=None, fundamentals_fn=None,
     # TELEMETRY_DB_URL / SUPABASE_DB_URL is set. Joins the TS app's trace via `traceparent` and binds its run via `x-run-id`.
     telemetry.init("prompt-screener-engine")
     telemetry.install_fastapi(app)
+
+    # Bearer-token gate for a deployed engine (docs/netlify-production-plan.md §5.2). Off when ENGINE_TOKEN is unset, so the
+    # local engine on 127.0.0.1 behaves exactly as before. /health stays open for the host's own probes; it holds no data.
+    @app.middleware("http")
+    async def require_engine_token(request: Request, call_next):
+        token = os.environ.get("ENGINE_TOKEN", "")
+        if token and request.url.path != "/health":
+            supplied = request.headers.get("authorization", "")
+            if not (supplied.startswith("Bearer ") and hmac.compare_digest(supplied[7:].encode(), token.encode())):
+                return JSONResponse({"detail": "engine token required"}, status_code=401)
+        return await call_next(request)
 
     def require_ready() -> None:
         """Requests that need market data get a clear 503 while it loads (with what it is doing), never a 500."""

@@ -1,0 +1,27 @@
+# Screening engine as its own always-on service (docs/netlify-production-plan.md §5).
+# The image is stateless: the market-data caches and forward records live on a mounted volume (ENGINE_DATA_DIR).
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+COPY requirements.txt ./
+RUN pip install -r requirements.txt
+
+COPY engine ./engine
+COPY src ./src
+COPY config ./config
+COPY db ./db
+# engine/env.py loads the live environment through scripts/common.py (bootstrap)
+COPY scripts ./scripts
+COPY docker/engine-entrypoint.sh /usr/local/bin/engine-entrypoint
+RUN chmod +x /usr/local/bin/engine-entrypoint
+
+# The volume mount point; the entrypoint links data_cache/, data_cache_literal/ and results/ into it.
+ENV ENGINE_DATA_DIR=/data
+VOLUME ["/data"]
+
+# ENGINE_TOKEN (required in production) is supplied by the host's secret store, never baked into the image.
+EXPOSE 8080
+ENTRYPOINT ["engine-entrypoint"]
+CMD ["sh", "-c", "exec uvicorn --factory engine.app:create_app --host 0.0.0.0 --port ${PORT:-8080}"]

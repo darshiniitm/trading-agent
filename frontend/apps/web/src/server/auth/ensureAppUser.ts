@@ -34,6 +34,8 @@ export async function ensureAppUser(raw: Db, identity: AuthIdentity, ctx: { ip?:
 
   const byEmail = await raw.get("SELECT * FROM users WHERE lower(email) = ?", [identity.email]);
   if (byEmail) {
+    // already linked to this very identity: a concurrent request linked it a moment ago
+    if (byEmail.auth_user_id && byEmail.auth_user_id === identity.authUserId) return toAppUser(byEmail);
     if (byEmail.auth_user_id) return deny("email_conflict");   // that email already belongs to a different identity
     if (byEmail.status !== "active") return deny("disabled");
     await raw.run("UPDATE users SET auth_user_id = ?, last_login_at = ? WHERE user_id = ?", [identity.authUserId, now, byEmail.user_id]);
@@ -44,10 +46,18 @@ export async function ensureAppUser(raw: Db, identity: AuthIdentity, ctx: { ip?:
   const invited = await raw.get("SELECT 1 FROM signup_allowlist WHERE email = ?", [identity.email]);
   if (!invited) return deny("not_invited");
   const name = identity.displayName ?? identity.email.split("@")[0];
+  // A page load fires several API calls at once, each running this before the first has committed: the loser of the
+  // race inserts nothing and picks up the winner's row.
   const created = await raw.get<{ user_id: number }>(
-    "INSERT INTO users (display_name, email, auth_user_id, role, status, created_at, last_login_at) VALUES (?, ?, ?, 'member', 'active', ?, ?) RETURNING user_id",
+    "INSERT INTO users (display_name, email, auth_user_id, role, status, created_at, last_login_at) VALUES (?, ?, ?, 'member', 'active', ?, ?) ON CONFLICT DO NOTHING RETURNING user_id",
     [name, identity.email, identity.authUserId, now, now]);
-  const userId = created!.user_id;
+  if (!created) {
+    const winner = await raw.get("SELECT * FROM users WHERE auth_user_id = ?", [identity.authUserId]);
+    if (!winner) return deny("email_conflict");   // the email is taken by a different identity
+    if (winner.status !== "active") return deny("disabled");
+    return toAppUser(winner);
+  }
+  const userId = created.user_id;
   await recordAuthEvent(raw, { userId, email: identity.email, event: "signup", provider: identity.provider, ...ctx });
   return { userId, role: "member", email: identity.email, displayName: name };
 }

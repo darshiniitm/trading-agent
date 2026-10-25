@@ -39,7 +39,7 @@ describe("withJob", () => {
     const raw = await createTestDb();
     const promptId = await setupTestPrompt(raw);
     const failing = vi.fn().mockRejectedValueOnce(new Error("engine down")).mockResolvedValueOnce(7);
-    await expect(await withJob(raw, { type: "validate_prior", promptId, asOf: "2026-10-02" }, failing)).rejects.toThrow("engine down");
+    await expect(withJob(raw, { type: "validate_prior", promptId, asOf: "2026-10-02" }, failing)).rejects.toThrow("engine down");
     const row = await prep(raw, "SELECT status, attempts, error FROM jobs WHERE type = 'validate_prior' AND prompt_id = ? AND as_of = '2026-10-02'").get(promptId) as any;
     expect(row.status).toBe("failed");
     expect(row.attempts).toBe(1);

@@ -28,7 +28,7 @@ describe("Phase 4 sharing", () => {
     const { watchlistId } = await followPrompt(raw, { promptId: 15, userId: followerId });
     await setVisibility(raw, { promptId: 15, userId: ownerId, visibility: "private" });
     expect((await prep(raw, "SELECT archived_at FROM watchlists WHERE watchlist_id = ?").get(watchlistId) as any).archived_at).not.toBeNull();
-    expect(async () => await followPrompt(raw, { promptId: 15, userId: followerId })).toThrow(/private/);
+    await expect(followPrompt(raw, { promptId: 15, userId: followerId })).rejects.toThrow(/private/);
   });
 
   it("reuses an archived watchlist and seeds it from the latest run", async () => {
@@ -67,11 +67,11 @@ describe("listExplore condition labels (G8)", () => {
 describe("listExplore vs-control and own watchlist", () => {
   it("is null without a graded run, and carries the owner's own watchlist id", async () => {
     const raw = await createTestDb(); const { ownerId } = await seedPrompt(raw, "shared");
-    await prep(raw, "INSERT INTO watchlists (watchlist_id, user_id, prompt_id, name, created_at) VALUES (9, ?, 15, 'w', 'x')").run(ownerId);
+    await prep(raw, "INSERT INTO watchlists (watchlist_id, user_id, prompt_id, name, created_at) VALUES (9, ?, 15, 'w', now())").run(ownerId);
     const row = (await listExplore(raw, { userId: ownerId }))[0];
     expect(row.vsControl).toBeNull();
     expect(row.watchlistId).toBe(9);
-    await prep(raw, "INSERT INTO validations (run_id, horizon_w, n, ew_return, control_ew_return, hit_rate, computed_at) VALUES (1, 1, 3, 2.5, 1.0, 0.5, 'x')").run();
+    await prep(raw, "INSERT INTO validations (run_id, horizon_w, n, ew_return, control_ew_return, hit_rate, computed_at) VALUES (1, 1, 3, 2.5, 1.0, 0.5, now())").run();
     expect((await listExplore(raw, { userId: ownerId }))[0].vsControl).toBeCloseTo(1.5);
   });
 });

@@ -1,0 +1,17 @@
+.git
+.venv
+.venv-laya
+.superpowers
+.claude
+data_cache
+data_cache_literal
+results
+frontend
+docs
+tests
+_to_delete
+Claude outputs
+**/__pycache__
+**/.pytest_cache
+.env
+.env.*

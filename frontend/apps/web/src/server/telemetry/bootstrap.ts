@@ -19,9 +19,11 @@ import { installLlmTelemetry } from "./llmSink";
 import { createStoreFromEnv } from "./pgStore";
 import { installRuntime, runtime } from "./runtime";
 import { noopStore } from "./store";
-import { endpointFor, headersFrom, otlpConfigured } from "./otlp";
+import { endpointFor, headersFrom, otlpConfigured, serviceInstanceId } from "./otlp";
 
-export type Telemetry = { enabled: boolean; shutdown: () => Promise<void> };
+// flush(): export everything buffered right now and keep running. A serverless function is frozen once it has responded, so
+// batched spans / metrics / run rows would otherwise sit unsent until (maybe) the next request.
+export type Telemetry = { enabled: boolean; shutdown: () => Promise<void>; flush: () => Promise<void> };
 const KEY = Symbol.for("trading.telemetry.bootstrap");
 const holder = globalThis as unknown as Record<symbol, Telemetry | undefined>;
 export const resetBootstrapForTests = () => { holder[KEY] = undefined; };
@@ -32,10 +34,11 @@ export function initTelemetry(env: NodeJS.ProcessEnv = process.env): Telemetry {
 
   const wantOtlp = otlpConfigured(env);
   const wantDb = Boolean(env.TELEMETRY_DB_URL || env.SUPABASE_DB_URL);
-  if (env.TELEMETRY_DISABLED === "1" || (!wantOtlp && !wantDb)) return { enabled: false, shutdown: async () => {} };
+  if (env.TELEMETRY_DISABLED === "1" || (!wantOtlp && !wantDb)) return { enabled: false, shutdown: async () => {}, flush: async () => {} };
 
   const service = env.OTEL_SERVICE_NAME || "prompt-screener-web";
-  const resource = resourceFromAttributes({ "service.name": service, "deployment.environment": env.NODE_ENV ?? "development" });
+  const instance = serviceInstanceId(env);
+  const resource = resourceFromAttributes({ "service.name": service, "deployment.environment": env.NODE_ENV ?? "development", ...(instance ? { "service.instance.id": instance } : {}) });
 
   // Context propagation follows awaits (AsyncLocalStorage) and traceparent is W3C. Harmless if the host already registered them.
   context.setGlobalContextManager(new AsyncLocalStorageContextManager().enable());
@@ -60,11 +63,15 @@ export function initTelemetry(env: NodeJS.ProcessEnv = process.env): Telemetry {
     await Promise.allSettled([tracerProvider?.shutdown(), meterProvider?.shutdown(), loggerProvider?.shutdown(), store.close()]);
   })());
 
+  const flush = async () => {
+    await Promise.allSettled([tracerProvider?.forceFlush(), meterProvider?.forceFlush(), loggerProvider?.forceFlush(), store.flush()]);
+  };
+
   // flush on exit; for signals, flush then re-raise so the default termination still happens
   process.once("beforeExit", () => { void shutdown(); });
   for (const sig of ["SIGTERM", "SIGINT"] as const) {
     process.once(sig, () => { void shutdown().finally(() => process.kill(process.pid, sig)); });
   }
 
-  return (holder[KEY] = { enabled: true, shutdown });
+  return (holder[KEY] = { enabled: true, shutdown, flush });
 }

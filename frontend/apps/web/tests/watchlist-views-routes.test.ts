@@ -25,7 +25,7 @@ import { GET as getBench, PUT as putBench } from "@/../app/api/me/benchmarks/rou
 import { GET as getHistoryRoute } from "@/../app/api/series/history/route";
 import { prep } from "./helpers/prep";
 
-const OWNER = { authUserId: "test-owner-uuid", email: "owner@example.com", emailVerified: true, displayName: "Owner", provider: "email" };
+const OWNER = { authUserId: "00000000-0000-4000-8000-1fd6d1071c77", email: "owner@example.com", emailVerified: true, displayName: "Owner", provider: "email" };
 const as = (who: typeof OWNER | null) => setIdentityResolver(async () => who);
 const ctx = (id: number | string) => ({ params: { watchlistId: String(id) } });
 const req = (url = "http://localhost/x", method = "GET", body?: unknown) => new Request(url, { method, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -72,10 +72,10 @@ describe("GET /api/watchlists/:id/views", () => {
   });
 
   it("hides another user's private watchlist (404, never 403)", async () => {
-    await prep(raw, "INSERT INTO signup_allowlist (email, created_at) VALUES ('other@example.com', 'x')").run();
-    as({ authUserId: "u-other", email: "other@example.com", emailVerified: true, displayName: "O", provider: "google" });
+    await prep(raw, "INSERT INTO signup_allowlist (email, created_at) VALUES ('other@example.com', now())").run();
+    as({ authUserId: "00000000-0000-4000-8000-8e1868009208", email: "other@example.com", emailVerified: true, displayName: "O", provider: "google" });
     // watchlist 1 belongs to the owner; prompt 12 is shared in the demo seed, so use the private prompt 9's watchlist
-    await prep(raw, "INSERT INTO watchlists (watchlist_id, user_id, prompt_id, name, created_at) VALUES (50, 1, 9, 'W', 'x')").run();
+    await prep(raw, "INSERT INTO watchlists (watchlist_id, user_id, prompt_id, name, created_at) VALUES (50, 1, 9, 'W', now())").run();
     expect((await getViews(req(), ctx(50))).status).toBe(404);
   });
 });

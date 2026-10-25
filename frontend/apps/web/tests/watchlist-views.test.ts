@@ -56,9 +56,9 @@ describe("benchmarks", () => {
   it("accepts a new index ticker, rejects stocks, junk and oversized lists", async () => {
     const raw = await demo();
     expect(await setUserBenchmarks(raw, 1, ["^NSEI", "^CNXAUTO"])).toContain("^CNXAUTO");
-    expect(async () => await setUserBenchmarks(raw, 1, ["AAA.NS"])).toThrow(ViewDataError);
-    expect(async () => await setUserBenchmarks(raw, 1, ["^bad ticker!"])).toThrow(ViewDataError);
-    expect(async () => await setUserBenchmarks(raw, 1, Array.from({ length: 13 }, (_, i) => `^X${i}`))).toThrow(ViewDataError);
+    await expect(setUserBenchmarks(raw, 1, ["AAA.NS"])).rejects.toThrow(ViewDataError);
+    await expect(setUserBenchmarks(raw, 1, ["^bad ticker!"])).rejects.toThrow(ViewDataError);
+    await expect(setUserBenchmarks(raw, 1, Array.from({ length: 13 }, (_, i) => `^X${i}`))).rejects.toThrow(ViewDataError);
   });
 
   it("adds the Nifty sector index of every sector that has an open pick, once", async () => {
@@ -84,9 +84,9 @@ describe("view prefs", () => {
 
   it("rejects unknown views, currencies and timeframes", async () => {
     const raw = await demo();
-    expect(async () => await setViewPrefs(raw, 1, 1, { view: "nope" as any })).toThrow(ViewDataError);
-    expect(async () => await setViewPrefs(raw, 1, 1, { currency: "EUR" as any })).toThrow(ViewDataError);
-    expect(async () => await setViewPrefs(raw, 1, 1, { techTimeframe: "1M" as any })).toThrow(ViewDataError);
+    await expect(setViewPrefs(raw, 1, 1, { view: "nope" as any })).rejects.toThrow(ViewDataError);
+    await expect(setViewPrefs(raw, 1, 1, { currency: "EUR" as any })).rejects.toThrow(ViewDataError);
+    await expect(setViewPrefs(raw, 1, 1, { techTimeframe: "1M" as any })).rejects.toThrow(ViewDataError);
   });
 });
 
@@ -147,9 +147,9 @@ describe("buildWatchlistViews", () => {
   it("orders sections Benchmarks -> Arm picks -> Watching/shadow -> Dropped and pins benchmarks without status", async () => {
     const raw = await demo();
     await prep(raw, "INSERT OR IGNORE INTO symbols (symbol, name) VALUES ('DDD.NS', 'Ddd')").run();
-    await prep(raw, "INSERT INTO watchlist_entries (watchlist_id, symbol, first_run_id, last_run_id, membership, status, created_at, updated_at) VALUES (1, 'CCC.NS', 10, 10, 'full_match', 'dropped_from_screen', 'x', 'x')").run();
+    await prep(raw, "INSERT INTO watchlist_entries (watchlist_id, symbol, first_run_id, last_run_id, membership, status, created_at, updated_at) VALUES (1, 'CCC.NS', 10, 10, 'full_match', 'dropped_from_screen', now(), now())").run();
     await prep(raw, "DELETE FROM watchlist_entries WHERE entry_id = 3").run();
-    await prep(raw, "INSERT INTO watchlist_entries (entry_id, watchlist_id, symbol, first_run_id, last_run_id, membership, status, created_at, updated_at) VALUES (3, 1, 'DDD.NS', 11, 11, 'near_miss', 'watching', 'x', 'x')").run();
+    await prep(raw, "INSERT INTO watchlist_entries (entry_id, watchlist_id, symbol, first_run_id, last_run_id, membership, status, created_at, updated_at) VALUES (3, 1, 'DDD.NS', 11, 11, 'near_miss', 'watching', now(), now())").run();
     await computeMetrics(raw, ["AAA.NS", "BBB.NS", "DDD.NS", "^NSEI"], { fetchFn: engine(), today: "2026-10-15" });
     const v = await buildWatchlistViews(raw, 1, 1, { tf: "1D", quotes, fx: null });
     expect(v.sections.map((s: any) => s.id)).toEqual(["benchmarks", "picks", "watching", "dropped"]);

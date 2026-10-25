@@ -24,3 +24,12 @@ export function headersFrom(env: NodeJS.ProcessEnv): Record<string, string> {
   }
   return out;
 }
+
+const instanceSuffix = Math.random().toString(36).slice(2, 8);   // one per process: a Netlify cold start is a new process
+
+/** `service.instance.id` for serverless, so Grafana can tell instances (cold starts) apart; undefined elsewhere. */
+export function serviceInstanceId(env: NodeJS.ProcessEnv): string | undefined {
+  if (env.AWS_LAMBDA_LOG_STREAM_NAME) return env.AWS_LAMBDA_LOG_STREAM_NAME;
+  if (env.NETLIFY) return `${env.DEPLOY_ID ?? "netlify"}-${instanceSuffix}`;
+  return undefined;
+}

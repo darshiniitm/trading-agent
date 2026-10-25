@@ -38,8 +38,8 @@ describe("draft-level data resolution calls", () => {
     await uploadForDraft(raw, draftId, "u.csv", "symbol\nAAA\n", f as any);
     expect(sent(f).url).toMatch(/\/data\/upload$/);
     expect(sent(f).body).toEqual({ user_id: userId, prompt_id: draftId, name: "u.csv", text: "symbol\nAAA\n" });
-    await expect(await uploadForDraft(raw, draftId, "u.csv", "x".repeat(2_000_001), f as any)).rejects.toThrow(/too large/);
-    await expect(await uploadForDraft(raw, 9999, "u.csv", "symbol\nA\n", f as any)).rejects.toThrow(/draft/);
+    await expect(uploadForDraft(raw, draftId, "u.csv", "x".repeat(2_000_001), f as any)).rejects.toThrow(/too large/);
+    await expect(uploadForDraft(raw, 9999, "u.csv", "symbol\nA\n", f as any)).rejects.toThrow(/draft/);
   });
 });
 

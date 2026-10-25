@@ -48,6 +48,22 @@ describe("initTelemetry", () => {
     expect(c.hits.every((h) => h.bytes > 0)).toBe(true);
   });
 
+  it("flush() sends what is buffered now and leaves telemetry running (a serverless function is frozen after its response)", async () => {
+    const c = await collector();
+    const t = initTelemetry({ OTEL_EXPORTER_OTLP_ENDPOINT: c.url } as any);
+    const f = task("demo", async () => 1);
+    await withRunCtx(newRunCtx({ runId: "22222222-2222-2222-2222-222222222222", traceId: "b".repeat(32) }), () => f());
+    expect(c.hits.some((h) => h.path === "/v1/traces")).toBe(false);   // still sitting in the batch processor
+    await t.flush();
+    expect(c.hits.some((h) => h.path === "/v1/traces" && h.bytes > 0)).toBe(true);
+    await f();                                                            // still usable after a flush
+    await t.shutdown();
+  });
+
+  it("flush() with nothing configured is a harmless no-op", async () => {
+    await expect(initTelemetry({} as NodeJS.ProcessEnv).flush()).resolves.toBeUndefined();
+  });
+
   it("database only (no collector): run rows are still written, nothing is exported", () => {
     const t = initTelemetry({ SUPABASE_DB_URL: "postgresql://u:p@127.0.0.1:1/db" } as any);
     expect(t.enabled).toBe(true);

@@ -10,8 +10,8 @@ import { GET, POST, DELETE, PATCH } from "@/../app/api/admin/allowlist/route";
 import { PATCH as profile } from "@/../app/api/auth/profile/route";
 import { prep } from "./helpers/prep";
 
-const OWNER = { authUserId: "test-owner-uuid", email: "owner@example.com", emailVerified: true, displayName: "Owner", provider: "email" };
-const MEMBER = { authUserId: "u-m", email: "m@example.com", emailVerified: true, displayName: "M", provider: "google" };
+const OWNER = { authUserId: "00000000-0000-4000-8000-1fd6d1071c77", email: "owner@example.com", emailVerified: true, displayName: "Owner", provider: "email" };
+const MEMBER = { authUserId: "00000000-0000-4000-8000-641bc7576c7d", email: "m@example.com", emailVerified: true, displayName: "M", provider: "google" };
 const req = (method: string, body?: unknown) => new Request("http://x", { method, body: body === undefined ? undefined : JSON.stringify(body) });
 
 beforeEach(async () => { raw = await createTestDb(); await ensureOwnerUser(raw); resetRateLimits(); setIdentityResolver(async () => OWNER); });

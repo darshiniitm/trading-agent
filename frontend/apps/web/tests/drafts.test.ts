@@ -33,14 +33,14 @@ describe("updateDraft", () => {
   it("rejects a prompt text over 2000 characters with a plain message", async () => {
     const { raw, userId } = await setup();
     const { draftId } = await createDraft(raw, { userId });
-    expect(async () => await updateDraft(raw, draftId, { promptText: "x".repeat(2001) })).toThrow(/2000 characters/);
+    await expect(updateDraft(raw, draftId, { promptText: "x".repeat(2001) })).rejects.toThrow(/2000 characters/);
   });
 
   it("refuses to write the server-owned program columns through the generic update", async () => {
     const { raw, userId } = await setup();
     const { draftId } = await createDraft(raw, { userId });
-    expect(async () => await updateDraft(raw, draftId, { programJson: "{}" } as any)).toThrow(/cannot update: programJson/);
-    expect(async () => await updateDraft(raw, 9999, { title: "x" })).toThrow(/not found/);
+    await expect(updateDraft(raw, draftId, { programJson: "{}" } as any)).rejects.toThrow(/cannot update: programJson/);
+    await expect(updateDraft(raw, 9999, { title: "x" })).rejects.toThrow(/not found/);
   });
 });
 

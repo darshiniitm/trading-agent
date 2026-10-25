@@ -87,7 +87,7 @@ describe("screen + confirm", () => {
     const raw = await createTestDb();
     const draftId = await readyDraft(raw);
     const bad = vi.fn().mockResolvedValue({ ok: false, status: 422, text: async () => JSON.stringify({ error: "bad program" }) });
-    await expect(await confirmDraft(raw, draftId, "2026-10-02", bad as any)).rejects.toThrow(/status 422/);
+    await expect(confirmDraft(raw, draftId, "2026-10-02", bad as any)).rejects.toThrow(/status 422/);
     expect(t.store.runs.get(deriveRunIds(draftId).traceId)).toMatchObject({ status: "error", outcome: "failed" });
     expect(t.store.tools.find((x) => x.tool_name === "engine.screen")).toMatchObject({ status: "error" });
   });

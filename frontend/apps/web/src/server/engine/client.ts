@@ -50,8 +50,17 @@ function withTraceHeaders(init: Parameters<FetchFn>[1]): Parameters<FetchFn>[1] 
   return { ...init, headers };
 }
 
+/** A deployed engine requires `Authorization: Bearer $ENGINE_TOKEN`; the local one is open, so with no token nothing is added. */
+export function withEngineToken(init: Parameters<FetchFn>[1], env: NodeJS.ProcessEnv = process.env): Parameters<FetchFn>[1] {
+  const token = env.ENGINE_TOKEN;
+  if (!token) return init;
+  const headers = new Headers((init as { headers?: HeadersInit } | undefined)?.headers);
+  headers.set("authorization", `Bearer ${token}`);
+  return { ...init, headers };
+}
+
 async function callImpl(path: string, init: Parameters<FetchFn>[1], fetchFn: FetchFn) {
-  const res = await fetchFn(`${ENGINE_BASE_URL}${path}`, init);
+  const res = await fetchFn(`${ENGINE_BASE_URL}${path}`, withEngineToken(init));
   // A Response body can only be consumed once, so read it as text exactly
   // once and try to parse that — never call both res.json() and res.text()
   // on the same response (the second read throws "Body has already been

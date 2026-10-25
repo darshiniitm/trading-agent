@@ -10,7 +10,7 @@ vi.mock("@/server/db/client", () => ({ db: () => raw }));
 import { DELETE } from "@/../app/api/drafts/route";
 import { prep } from "./helpers/prep";
 
-const OWNER = { authUserId: "test-owner-uuid", email: "owner@example.com", emailVerified: true, displayName: "Owner", provider: "email" };
+const OWNER = { authUserId: "00000000-0000-4000-8000-1fd6d1071c77", email: "owner@example.com", emailVerified: true, displayName: "Owner", provider: "email" };
 const now = "2026-10-13T00:00:00Z";
 const del = (body: unknown) => DELETE(new Request("http://x", { method: "DELETE", body: JSON.stringify(body) }));
 const ids = async () => (await prep(raw, "SELECT draft_id FROM prompt_drafts ORDER BY draft_id").all() as any[]).map((r) => r.draft_id);
@@ -30,13 +30,13 @@ describe("deleteDrafts", () => {
   it("deletes only the selected unconfirmed drafts, with their compilations", async () => {
     const owner = await world();
     expect(await deleteDrafts(raw, owner, [1, 4, 5, 999])).toBe(1);   // 4 is another user's, 5 is confirmed, 999 doesn't exist
-    expect(ids()).toEqual([2, 3, 4, 5]);
+    expect(await ids()).toEqual([2, 3, 4, 5]);
     expect((await prep(raw, "SELECT COUNT(*) AS n FROM compilations").get() as any).n).toBe(0);
   });
   it("delete-all removes every unconfirmed draft of the caller and nothing else", async () => {
     const owner = await world();
     expect(await deleteDrafts(raw, owner)).toBe(3);
-    expect(ids()).toEqual([4, 5]);
+    expect(await ids()).toEqual([4, 5]);
     expect(await prep(raw, "SELECT COUNT(*) AS n FROM prompts").get()).toMatchObject({ n: 1 });
   });
 });
@@ -48,7 +48,7 @@ describe("DELETE /api/drafts", () => {
     expect((await del({ ids: ["x"] })).status).toBe(400);
     expect((await del({})).status).toBe(400);
     expect(await (await del({ all: true })).json()).toEqual({ deleted: 2 });
-    expect(ids()).toEqual([4, 5]);
+    expect(await ids()).toEqual([4, 5]);
     setIdentityResolver(async () => null);
     expect((await del({ all: true })).status).toBe(401);
   });

@@ -66,6 +66,32 @@ describe("EngineSupervisor", () => {
     expect((await sup.status())).toMatchObject({ state: "warming", phase: "shares", managed: false });
   });
 
+  it("never spawns on Netlify, even if ENGINE_MANAGED was forgotten (functions cannot run a child process)", async () => {
+    const { sup, spawn } = rig({ NETLIFY: "true" });
+    await sup.ensureEngine();
+    sup.beat();
+    expect(spawn).not.toHaveBeenCalled();
+    expect(sup.managed).toBe(false);
+    expect(await sup.status()).toMatchObject({ state: "stopped", managed: false });
+  });
+
+  it("starts no idle timer for an engine it does not own", () => {
+    const set = vi.spyOn(globalThis, "setInterval");
+    try {
+      new EngineSupervisor({ env: { ENGINE_MANAGED: "0" } as unknown as NodeJS.ProcessEnv, fetch: vi.fn() as any });
+      new EngineSupervisor({ env: { NETLIFY: "true" } as unknown as NodeJS.ProcessEnv, fetch: vi.fn() as any });
+      expect(set).not.toHaveBeenCalled();
+    } finally { set.mockRestore(); }
+  });
+
+  it("sends the engine token on the warm-up retry it makes itself", async () => {
+    const { sup, state, fetchFn } = rig({ ENGINE_MANAGED: "0", ENGINE_TOKEN: "s3cret" });
+    state.healthy = true;
+    await sup.retry();
+    const retryCall = fetchFn.mock.calls.find(([url]) => String(url).endsWith("/warmup/retry"))!;
+    expect(new Headers((retryCall[1] as any).headers).get("authorization")).toBe("Bearer s3cret");
+  });
+
   it("stops the engine after the idle window with no tab, and the next tab brings it back", async () => {
     const { sup, spawn, children, state } = rig();
     await sup.ensureEngine();

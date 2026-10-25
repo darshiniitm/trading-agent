@@ -1,5 +1,6 @@
 import type { Db } from "../db/pg";
 import { ensureOwnerSeeded } from "../db/seed";
+import { flushTelemetryBounded } from "../telemetry/flush";
 import { supabaseIdentity, type IdentityResolver } from "./identity";
 import { ensureAppUser, type AppUser } from "./ensureAppUser";
 import { AccountDeniedError, AuthRequiredError, OwnerOnlyError } from "./errors";
@@ -40,5 +41,6 @@ export async function withUser(raw: Db, req: Request, fn: (user: AppUser) => Pro
   let user: AppUser;
   try { user = opts.owner ? await requireOwner(raw, req) : await requireUser(raw, req); }
   catch (e) { const r = authErrorResponse(e); if (r) return r; throw e; }
-  return fn(user);
+  try { return await fn(user); }
+  finally { await flushTelemetryBounded(); }   // serverless: send buffered telemetry before the function is frozen
 }

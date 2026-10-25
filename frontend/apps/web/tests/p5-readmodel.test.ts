@@ -13,14 +13,14 @@ async function seed() {
   const raw = await createTestDb();
   const owner = await ensureOwnerUser(raw);
   const spec = JSON.stringify({ spec_version: 4, structure: "literal", timeframe: "1W", selection_point: null, conditions: [], stop: null, risk_cap_pct: null, near_miss: null });
-  await prep(raw, "INSERT INTO prompt_drafts (draft_id, user_id, prompt_text, status, created_at, updated_at) VALUES (1, ?, 'src', 'confirmed', 'x', 'x')").run(owner);
+  await prep(raw, "INSERT INTO prompt_drafts (draft_id, user_id, prompt_text, status, created_at, updated_at) VALUES (1, ?, 'src', 'confirmed', now(), now())").run(owner);
   await prep(raw, "INSERT INTO prompts (prompt_id, owner_user_id, draft_id, title, prompt_text, structure, spec_json, spec_hash, status, version, hypothesis, kill_criterion, confirmed_at) VALUES (1, ?, 1, 'T', 'my prompt', 'literal', ?, 'h', 'confirmed', 2, 'h', 'k', '2026-09-26')").run(owner, spec);
   await prep(raw, "INSERT INTO prompt_conditions (prompt_id, cond_no, role, kind, name, params_json, op, value_json, value_origin) VALUES (1, 1, 'filter', 'indicator', 'rsi', '{\"length\":21}', 'between', '[50,65]', 'prompt')").run();
   await prep(raw, "INSERT INTO prompt_conditions (prompt_id, cond_no, role, kind, name, params_json, op, value_json, value_origin) VALUES (1, 2, 'event', 'indicator', 'vstop', '{\"length\":10,\"mult\":2,\"source\":\"close\"}', 'flips_long', NULL, 'prompt')").run();
   await prep(raw, "INSERT INTO symbols (symbol, name, sector) VALUES ('ABC.NS', 'Abc Ltd', 'Tech')").run();
   await prep(raw, "INSERT INTO runs (run_id, prompt_id, as_of, kind, status) VALUES (10, 1, '2026-10-02', 'scheduled', 'done')").run();
-  await prep(raw, "INSERT INTO watchlists (watchlist_id, user_id, prompt_id, name, created_at) VALUES (5, ?, 1, 'w', 'x')").run(owner);
-  await prep(raw, "INSERT INTO watchlist_entries (entry_id, watchlist_id, symbol, first_run_id, last_run_id, membership, status, created_at, updated_at) VALUES (7, 5, 'ABC.NS', 10, 10, 'full_match', 'pending_selection', 'x', 'x')").run();
+  await prep(raw, "INSERT INTO watchlists (watchlist_id, user_id, prompt_id, name, created_at) VALUES (5, ?, 1, 'w', now())").run(owner);
+  await prep(raw, "INSERT INTO watchlist_entries (entry_id, watchlist_id, symbol, first_run_id, last_run_id, membership, status, created_at, updated_at) VALUES (7, 5, 'ABC.NS', 10, 10, 'full_match', 'pending_selection', now(), now())").run();
   return raw;
 }
 
@@ -36,7 +36,7 @@ describe("watchlist view (G4/G5/G7)", () => {
   it("carries header meta, row name/sector/added date, labels and validation captions", async () => {
     const raw = await seed();
     const v = (await getWatchlistView(raw, 5))!;
-    expect(v).toMatchObject({ promptText: "my prompt", isOwner: true, version: 2, parentPromptId: null, confirmedAt: "2026-09-26", followers: 0 });
+    expect(v).toMatchObject({ promptText: "my prompt", isOwner: true, version: 2, parentPromptId: null, confirmedAt: "2026-09-26T00:00:00.000Z", followers: 0 });
     expect(v.conditions[0].label).toBe("RSI(21) · between 50–65");
     expect(v.entries[0]).toMatchObject({ name: "Abc Ltd", sector: "Tech", addedAsOf: "2026-10-02", entryDate: null });
     expect(v.validation.gradedAsOf).toBe("2026-10-02");

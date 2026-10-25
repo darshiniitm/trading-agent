@@ -41,13 +41,13 @@ describe("createEditDraft", () => {
   it("refuses to edit an already-superseded prompt", async () => {
     const raw = await createTestDb();
     const { ownerId } = await seedConfirmedPrompt(raw, "superseded");
-    expect(async () => await createEditDraft(raw, { promptId: 1, userId: ownerId })).toThrow(/already superseded/);
+    await expect(createEditDraft(raw, { promptId: 1, userId: ownerId })).rejects.toThrow(/already superseded/);
   });
 
   it("refuses to edit an already-retired prompt", async () => {
     const raw = await createTestDb();
     const { ownerId } = await seedConfirmedPrompt(raw, "retired");
-    expect(async () => await createEditDraft(raw, { promptId: 1, userId: ownerId })).toThrow(/already retired/);
+    await expect(createEditDraft(raw, { promptId: 1, userId: ownerId })).rejects.toThrow(/already retired/);
   });
 });
 
@@ -68,7 +68,7 @@ describe("retirePrompt", () => {
     await seedConfirmedPrompt(raw, "superseded");
     await prep(raw, "UPDATE prompts SET closed_at = '2026-10-01T00:00:00.000Z' WHERE prompt_id = 1").run();
     const fetchFn = vi.fn();
-    await expect(await retirePrompt(raw, 1, fetchFn as any)).rejects.toThrow(/already superseded/);
+    await expect(retirePrompt(raw, 1, fetchFn as any)).rejects.toThrow(/already superseded/);
     expect(await prep(raw, "SELECT status, closed_at FROM prompts WHERE prompt_id = 1").get()).toEqual({ status: "superseded", closed_at: "2026-10-01T00:00:00.000Z" });
     expect(fetchFn).not.toHaveBeenCalled();
   });
@@ -92,6 +92,6 @@ describe("retirePrompt", () => {
   it("refuses to retire a prompt that is already retired", async () => {
     const raw = await createTestDb();
     await seedConfirmedPrompt(raw, "retired");
-    await expect(await retirePrompt(raw, 1, vi.fn() as any)).rejects.toThrow(/already retired/);
+    await expect(retirePrompt(raw, 1, vi.fn() as any)).rejects.toThrow(/already retired/);
   });
 });

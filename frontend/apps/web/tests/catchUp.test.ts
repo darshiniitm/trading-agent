@@ -148,7 +148,7 @@ describe("runCatchUp", () => {
     await seedPromptWithOneRun(raw, "2026-10-02");
     const failingFetch = fetchFailingSelectFor("2026-10-16");
 
-    await expect(await runCatchUp(raw, { promptId: 1 }, failingFetch as any)).rejects.toThrow("select engine down");
+    await expect(runCatchUp(raw, { promptId: 1 }, failingFetch as any)).rejects.toThrow("select engine down");
 
     // runWeeklyScreen committed its runs row for 2026-10-09 (done) and for
     // 2026-10-16 (screen step succeeded before select failed) — the job
@@ -234,7 +234,7 @@ describe("runCatchUp", () => {
     expect((await runCatchUp(raw, { promptId: 1 }, fetchFn as any)).weeksRun).toEqual(["2026-10-09"]);
     expect(await validationsFor("2026-10-02")).toEqual([{ horizon_w: 1, n: 1, ew_return: 1 }]);
     expect(await validationsFor("2026-10-09")).toEqual([]);
-    expect(validateJob("2026-10-02")).toBe("queued"); // horizons 2/3 still pending -> retryable
+    expect(await validateJob("2026-10-02")).toBe("queued"); // horizons 2/3 still pending -> retryable
 
     // Week 3: 10-02 gains horizon 2, 10-09 gains horizon 1.
     lastBar = "2026-10-16";
@@ -250,7 +250,7 @@ describe("runCatchUp", () => {
       { horizon_w: 2, n: 1, ew_return: 2 },
       { horizon_w: 3, n: 1, ew_return: 3 },
     ]);
-    expect(validateJob("2026-10-02")).toBe("done");
+    expect(await validateJob("2026-10-02")).toBe("done");
 
     // A second catch-up with no new bar: still-pending runs are retried, but
     // the done 10-02 job is skipped — no /validate call for it at all.
@@ -259,7 +259,7 @@ describe("runCatchUp", () => {
     const validatedAsOfs = validateCallAsOfs(fetchFn);
     expect(validatedAsOfs).not.toContain("2026-10-02");
     expect(validatedAsOfs).toEqual(["2026-10-09", "2026-10-16"]);
-    expect(validateJob("2026-10-02")).toBe("done");
+    expect(await validateJob("2026-10-02")).toBe("done");
   });
 
   it("retries a failed validate_prior job on the next catch-up", async () => {
