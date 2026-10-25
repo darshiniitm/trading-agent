@@ -1,4 +1,5 @@
 "use client";
+import { fetchFollowingJob } from "@/lib/followJob";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -27,7 +28,7 @@ import styles from "@/components/watchlist/watchlist.module.css";
 type Tab = "all" | "full_match" | "near_miss" | "rejected_risk_cap";
 
 async function getJson(url: string, init?: RequestInit) {
-  const res = await fetch(url, init);
+  const res = await fetchFollowingJob(url, init);   // a long dry run may be handed to a background function
   const body = await res.json();
   if (!res.ok) throw new Error(describeApiError(body, "request failed"));
   return body;

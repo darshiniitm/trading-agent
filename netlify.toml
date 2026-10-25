@@ -5,7 +5,7 @@
 # Site settings in the Netlify UI: Base directory `frontend`, Package directory `apps/web`.
 [build]
   base    = "frontend"
-  command = "npm ci && npm run build -w apps/web"
+  command = "npm ci && npm run build:functions -w apps/web && npm run build -w apps/web"
   publish = "apps/web/.next"
 
 [build.environment]
@@ -15,6 +15,9 @@
 # Netlify-authored functions only (netlify/functions); the Next.js routes are bundled by the Next adapter, which reads
 # serverComponentsExternalPackages in next.config.mjs. `pg` stays external so one copy of the driver is shared.
 [functions]
+  # the background function (draft-job-background, 15 min) is bundled by `npm run build:functions` into apps/web/netlify/functions.
+  # If Netlify resolves this relative to the repository root instead of the base directory, use frontend/apps/web/netlify/functions.
+  directory = "apps/web/netlify/functions"
   node_bundler = "esbuild"
   external_node_modules = ["pg"]
 

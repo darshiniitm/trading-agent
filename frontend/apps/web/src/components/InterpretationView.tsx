@@ -1,4 +1,5 @@
 "use client";
+import { fetchFollowingJob } from "@/lib/followJob";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { describeApiError } from "@/lib/apiError";
 import { isWarmingBody } from "@/lib/engineStatus";
@@ -94,7 +95,7 @@ export function InterpretationView({ draftId, promptText, hasProgram = false, on
   async function post(url: string, body?: unknown): Promise<any | null> {
     setBusy(true); setError(null);
     try {
-      const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+      const res = await fetchFollowingJob(url, { method: "POST", headers: { "content-type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
       const json = await res.json();
       if (res.status === 503 && isWarmingBody(json)) return WARMING;   // the engine is (still) loading: not an error, the caller queues
       if (!res.ok) { setError(describeApiError(json, "something went wrong")); return null; }
@@ -154,7 +155,7 @@ export function InterpretationView({ draftId, promptText, hasProgram = false, on
   async function loadTable(as_of: string, mine: number) {
     setTableState("loading");
     try {
-      const res = await fetch(`/api/drafts/${draftId}/program/screen`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ as_of, table: true }) });
+      const res = await fetchFollowingJob(`/api/drafts/${draftId}/program/screen`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ as_of, table: true }) });
       const json = await res.json();
       if (mine !== runId.current) return;
       if (!res.ok || !json.table) { setTableState("failed"); return; }
