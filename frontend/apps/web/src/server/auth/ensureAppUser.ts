@@ -43,8 +43,11 @@ export async function ensureAppUser(raw: Db, identity: AuthIdentity, ctx: { ip?:
     return toAppUser(byEmail);
   }
 
-  const invited = await raw.get("SELECT 1 FROM signup_allowlist WHERE email = ?", [identity.email]);
-  if (!invited) return deny("not_invited");
+  // OPEN_SIGNUP=1 lets any verified email create an account (default is invite-only via signup_allowlist).
+  if (process.env.OPEN_SIGNUP !== "1") {
+    const invited = await raw.get("SELECT 1 FROM signup_allowlist WHERE email = ?", [identity.email]);
+    if (!invited) return deny("not_invited");
+  }
   const name = identity.displayName ?? identity.email.split("@")[0];
   // A page load fires several API calls at once, each running this before the first has committed: the loser of the
   // race inserts nothing and picks up the winner's row.

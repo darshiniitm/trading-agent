@@ -52,6 +52,15 @@ describe("requireUser", () => {
 });
 
 describe("ensureAppUser", () => {
+  it("OPEN_SIGNUP=1 admits a verified, uninvited email; an unverified one is still refused", async () => {
+    vi.stubEnv("OPEN_SIGNUP", "1");
+    try {
+      const raw = await createTestDb(); await ensureOwnerUser(raw);
+      await expect(ensureAppUser(raw, id({ email: "new@example.com" }))).resolves.toMatchObject({ role: "member", email: "new@example.com" });
+      await expect(ensureAppUser(raw, id({ authUserId: "00000000-0000-4000-8000-000000000002", email: "u@example.com", emailVerified: false }))).rejects.toMatchObject({ reason: "not_invited" });
+    } finally { vi.unstubAllEnvs(); }
+  });
+
   it("is idempotent for an existing auth_user_id and updates last_login_at", async () => {
     const raw = await createTestDb(); await ensureOwnerUser(raw); await invite(raw, "a@example.com");
     const first = await ensureAppUser(raw, id()); const second = await ensureAppUser(raw, id());
