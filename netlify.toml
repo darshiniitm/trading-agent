@@ -8,6 +8,10 @@
   command = "npm ci && npm run build:functions -w apps/web && npm run build -w apps/web"
   publish = "apps/web/.next"
 
+[[plugins]]
+  # Explicit Next.js runtime: auto-detection looks in frontend/, but the Next app is in frontend/apps/web.
+  package = "@netlify/plugin-nextjs"
+
 [build.environment]
   NODE_VERSION = "20"
   NEXT_TELEMETRY_DISABLED = "1"
