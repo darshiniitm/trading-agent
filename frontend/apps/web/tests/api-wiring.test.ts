@@ -5,11 +5,11 @@ vi.mock("@/server/auth/requireUser", async () => (await import("./helpers/authMo
 vi.mock("@/server/auth/ownership", async () => (await import("./helpers/authMock")).ownershipMockModule());
 vi.mock("@/server/db/client", () => ({ db: () => mockDb }));
 vi.mock("@/server/drafts", () => ({
-  createDraft: vi.fn(() => ({ draftId: 7 })),
-  getDraft: vi.fn((raw: unknown, id: number) =>
+  createDraft: vi.fn(async () => ({ draftId: 7 })),
+  getDraft: vi.fn(async (raw: unknown, id: number) =>
     id === 7 ? { draftId: 7, status: "open", promptText: "", spec: null } : null
   ),
-  updateDraft: vi.fn((raw: unknown, id: number, patch: unknown) => ({ draftId: id, ...patch })),
+  updateDraft: vi.fn(async (raw: unknown, id: number, patch: unknown) => ({ draftId: id, ...(patch as object) })),
 }));
 
 import { POST as createDraftRoute } from "@/../app/api/drafts/route";

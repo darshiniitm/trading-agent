@@ -14,16 +14,16 @@ const MCAP_ONLY = program({
 });
 
 async function confirmedWatchlist(fetchFn: any) {
-  const raw = createTestDb();
-  const draftId = readyDraft(raw, { prog: MCAP_ONLY, title: "My brief", hypothesis: "h", killCriterion: "k" });
+  const raw = await createTestDb();
+  const draftId = await readyDraft(raw, { prog: MCAP_ONLY, title: "My brief", hypothesis: "h", killCriterion: "k" });
   const { watchlistId } = await confirmDraft(raw, draftId, "2026-10-02", fetchFn);
   return { raw, watchlistId };
 }
 
 describe("getWatchlistView", () => {
-  it("returns null for an unknown watchlist", () => {
-    const raw = createTestDb();
-    expect(getWatchlistView(raw, 999)).toBeNull();
+  it("returns null for an unknown watchlist", async () => {
+    const raw = await createTestDb();
+    expect(await getWatchlistView(raw, 999)).toBeNull();
   });
 
   it("assembles header, conditions, and entries across membership types", async () => {
@@ -40,7 +40,7 @@ describe("getWatchlistView", () => {
     });
     const { raw, watchlistId } = await confirmedWatchlist(fetchFn);
 
-    const view = getWatchlistView(raw, watchlistId)!;
+    const view = (await getWatchlistView(raw, watchlistId))!;
     expect(view.title).toBe("My brief");
     expect(view.hasRiskCap).toBe(false);
     expect(view.conditions).toHaveLength(1);
@@ -57,7 +57,7 @@ describe("getWatchlistView", () => {
   it("handles a watchlist whose latest run had zero candidates", async () => {
     const fetchFn = vi.fn().mockResolvedValue({ ok: true, text: async () => JSON.stringify({ candidates: [], applied_steps: [], funnel: [], sector_view: [] }) });
     const { raw, watchlistId } = await confirmedWatchlist(fetchFn);
-    const view = getWatchlistView(raw, watchlistId)!;
+    const view = (await getWatchlistView(raw, watchlistId))!;
     expect(view.entries).toEqual([]);
   });
 
@@ -70,7 +70,7 @@ describe("getWatchlistView", () => {
       ok: true, text: async () => JSON.stringify({ candidates, applied_steps: [], funnel: [], sector_view: [] }),
     });
     const { raw, watchlistId } = await confirmedWatchlist(fetchFn);
-    const view = getWatchlistView(raw, watchlistId)!;
+    const view = (await getWatchlistView(raw, watchlistId))!;
     expect(view.entries).toHaveLength(CANDIDATE_COUNT);
     expect(view.entries.every((e) => e.condValues.C1 !== undefined)).toBe(true);
   });

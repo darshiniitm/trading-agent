@@ -1,4 +1,4 @@
-import type Database from "better-sqlite3";
+import type { Db } from "@/server/db/pg";
 import type { ScreenProgram } from "spec";
 import { createDraft, saveProgramState, updateDraft } from "@/server/drafts";
 import { ensureOwnerUser } from "@/server/db/seed";
@@ -25,10 +25,10 @@ export function program(overrides: Partial<ScreenProgram> = {}): ScreenProgram {
 }
 
 // A draft that is ready to confirm (program answered, hypothesis and kill criterion present).
-export function readyDraft(raw: Database.Database, { prog = program(), ...patch }: { prog?: ScreenProgram; [k: string]: unknown } = {}) {
-  const userId = ensureOwnerUser(raw);
-  const { draftId } = createDraft(raw, { userId });
-  updateDraft(raw, draftId, { title: "Original brief", promptText: "All stocks between 10K-50K cr", hypothesis: "mid-caps in an uptrend outperform", killCriterion: "negative expectancy after 13 weeks", ...(patch as object) });
-  saveProgramState(raw, draftId, { program: prog, clauses: [], normalised: "" });
+export async function readyDraft(raw: Db, { prog = program(), ...patch }: { prog?: ScreenProgram; [k: string]: unknown } = {}) {
+  const userId = await ensureOwnerUser(raw);
+  const { draftId } = await createDraft(raw, { userId });
+  await updateDraft(raw, draftId, { title: "Original brief", promptText: "All stocks between 10K-50K cr", hypothesis: "mid-caps in an uptrend outperform", killCriterion: "negative expectancy after 13 weeks", ...(patch as object) });
+  await saveProgramState(raw, draftId, { program: prog, clauses: [], normalised: "" });
   return draftId;
 }

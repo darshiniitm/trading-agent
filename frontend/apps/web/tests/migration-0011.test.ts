@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { PGlite } from "@electric-sql/pglite";
 import { citext } from "@electric-sql/pglite/contrib/citext";
 import { createTestDb } from "@/server/db/test-db";
+import type { Db } from "@/server/db/pg";
 import { ensureOwnerUser } from "@/server/db/seed";
 import { createDraft } from "@/server/drafts";
 
@@ -53,7 +54,7 @@ describe("db/migrations/0011_screener_app_full.sql", () => {
 });
 
 describe("constraints carried over from the SQLite schema", () => {
-  async function seedPrompt(db: Awaited<ReturnType<typeof createTestDb>>) {
+  async function seedPrompt(db: Awaited<Db>) {
     await db.run("INSERT INTO users (user_id, display_name, role, status, created_at) VALUES (1,'o','owner','active', now())");
     await db.run("INSERT INTO prompt_drafts (draft_id,user_id,prompt_text,status,created_at,updated_at) VALUES (1,1,'x','confirmed', now(), now())");
     await db.run("INSERT INTO prompts (prompt_id,owner_user_id,draft_id,title,prompt_text,structure,spec_json,spec_hash,status,version,hypothesis,kill_criterion,confirmed_at) VALUES (1,1,1,'t','x','literal','{}','h','confirmed',1,'h','k', now())");

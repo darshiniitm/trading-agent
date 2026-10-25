@@ -7,25 +7,25 @@ import { getValidationCaptions } from "@/server/validations";
 import { getWatchlistView } from "@/server/watchlists";
 import { storedConditionLabel, ruleLine } from "@/lib/conditionLabel";
 
-beforeEach(() => _resetClosesCacheForTests());
+beforeEach(async () => _resetClosesCacheForTests());
 
-function seed() {
-  const raw = createTestDb();
-  const owner = ensureOwnerUser(raw);
+async function seed() {
+  const raw = await createTestDb();
+  const owner = await ensureOwnerUser(raw);
   const spec = JSON.stringify({ spec_version: 4, structure: "literal", timeframe: "1W", selection_point: null, conditions: [], stop: null, risk_cap_pct: null, near_miss: null });
-  raw.prepare("INSERT INTO prompt_drafts (draft_id, user_id, prompt_text, status, created_at, updated_at) VALUES (1, ?, 'src', 'confirmed', 'x', 'x')").run(owner);
-  raw.prepare("INSERT INTO prompts (prompt_id, owner_user_id, draft_id, title, prompt_text, structure, spec_json, spec_hash, status, version, hypothesis, kill_criterion, confirmed_at) VALUES (1, ?, 1, 'T', 'my prompt', 'literal', ?, 'h', 'confirmed', 2, 'h', 'k', '2026-09-26')").run(owner, spec);
-  raw.prepare("INSERT INTO prompt_conditions (prompt_id, cond_no, role, kind, name, params_json, op, value_json, value_origin) VALUES (1, 1, 'filter', 'indicator', 'rsi', '{\"length\":21}', 'between', '[50,65]', 'prompt')").run();
-  raw.prepare("INSERT INTO prompt_conditions (prompt_id, cond_no, role, kind, name, params_json, op, value_json, value_origin) VALUES (1, 2, 'event', 'indicator', 'vstop', '{\"length\":10,\"mult\":2,\"source\":\"close\"}', 'flips_long', NULL, 'prompt')").run();
-  raw.prepare("INSERT INTO symbols (symbol, name, sector) VALUES ('ABC.NS', 'Abc Ltd', 'Tech')").run();
-  raw.prepare("INSERT INTO runs (run_id, prompt_id, as_of, kind, status) VALUES (10, 1, '2026-10-02', 'scheduled', 'done')").run();
-  raw.prepare("INSERT INTO watchlists (watchlist_id, user_id, prompt_id, name, created_at) VALUES (5, ?, 1, 'w', 'x')").run(owner);
-  raw.prepare("INSERT INTO watchlist_entries (entry_id, watchlist_id, symbol, first_run_id, last_run_id, membership, status, created_at, updated_at) VALUES (7, 5, 'ABC.NS', 10, 10, 'full_match', 'pending_selection', 'x', 'x')").run();
+  await prep(raw, "INSERT INTO prompt_drafts (draft_id, user_id, prompt_text, status, created_at, updated_at) VALUES (1, ?, 'src', 'confirmed', 'x', 'x')").run(owner);
+  await prep(raw, "INSERT INTO prompts (prompt_id, owner_user_id, draft_id, title, prompt_text, structure, spec_json, spec_hash, status, version, hypothesis, kill_criterion, confirmed_at) VALUES (1, ?, 1, 'T', 'my prompt', 'literal', ?, 'h', 'confirmed', 2, 'h', 'k', '2026-09-26')").run(owner, spec);
+  await prep(raw, "INSERT INTO prompt_conditions (prompt_id, cond_no, role, kind, name, params_json, op, value_json, value_origin) VALUES (1, 1, 'filter', 'indicator', 'rsi', '{\"length\":21}', 'between', '[50,65]', 'prompt')").run();
+  await prep(raw, "INSERT INTO prompt_conditions (prompt_id, cond_no, role, kind, name, params_json, op, value_json, value_origin) VALUES (1, 2, 'event', 'indicator', 'vstop', '{\"length\":10,\"mult\":2,\"source\":\"close\"}', 'flips_long', NULL, 'prompt')").run();
+  await prep(raw, "INSERT INTO symbols (symbol, name, sector) VALUES ('ABC.NS', 'Abc Ltd', 'Tech')").run();
+  await prep(raw, "INSERT INTO runs (run_id, prompt_id, as_of, kind, status) VALUES (10, 1, '2026-10-02', 'scheduled', 'done')").run();
+  await prep(raw, "INSERT INTO watchlists (watchlist_id, user_id, prompt_id, name, created_at) VALUES (5, ?, 1, 'w', 'x')").run(owner);
+  await prep(raw, "INSERT INTO watchlist_entries (entry_id, watchlist_id, symbol, first_run_id, last_run_id, membership, status, created_at, updated_at) VALUES (7, 5, 'ABC.NS', 10, 10, 'full_match', 'pending_selection', 'x', 'x')").run();
   return raw;
 }
 
 describe("conditionLabel", () => {
-  it("words a stored condition row the same way ruleLine words a slot", () => {
+  it("words a stored condition row the same way ruleLine words a slot", async () => {
     expect(storedConditionLabel({ name: "rsi", params: { length: 14 }, op: "between", value: [50, 65] })).toBe("RSI(14) · between 50–65");
     expect(storedConditionLabel({ name: "mcap_cr", params: {}, op: "<", value: 10000 })).toBe("Market cap (cr) · < 10000");
     expect(typeof ruleLine).toBe("function");
@@ -33,28 +33,28 @@ describe("conditionLabel", () => {
 });
 
 describe("watchlist view (G4/G5/G7)", () => {
-  it("carries header meta, row name/sector/added date, labels and validation captions", () => {
-    const raw = seed();
-    const v = getWatchlistView(raw, 5)!;
+  it("carries header meta, row name/sector/added date, labels and validation captions", async () => {
+    const raw = await seed();
+    const v = (await getWatchlistView(raw, 5))!;
     expect(v).toMatchObject({ promptText: "my prompt", isOwner: true, version: 2, parentPromptId: null, confirmedAt: "2026-09-26", followers: 0 });
     expect(v.conditions[0].label).toBe("RSI(21) · between 50–65");
     expect(v.entries[0]).toMatchObject({ name: "Abc Ltd", sector: "Tech", addedAsOf: "2026-10-02", entryDate: null });
     expect(v.validation.gradedAsOf).toBe("2026-10-02");
     expect(v.validation.dueDates).toEqual({ "1": "2026-10-09", "2": "2026-10-16", "3": "2026-10-23" });
-    expect(getWatchlistView(raw, 5, 999)!.isOwner).toBe(false);
+    expect((await getWatchlistView(raw, 5, 999))!.isOwner).toBe(false);
     expect(v.whatRuns.some((w) => w.label === "Risk cap: not in prompt" && !w.on)).toBe(true);
   });
 
-  it("captions are empty when the prompt has no run", () => {
-    const raw = createTestDb();
-    expect(getValidationCaptions(raw, 99)).toEqual({ gradedAsOf: null, dueDates: {}, controls: {} });
+  it("captions are empty when the prompt has no run", async () => {
+    const raw = await createTestDb();
+    expect(await getValidationCaptions(raw, 99)).toEqual({ gradedAsOf: null, dueDates: {}, controls: {} });
   });
 });
 
 describe("entry series (G3)", () => {
   it("passes the prompt's own indicator params through unchanged", async () => {
-    const raw = seed();
-    expect(seriesParamsFor(raw, 1)).toEqual({ rsiLength: 21, vstopLength: 10, vstopMult: 2, vstopSource: "close" });
+    const raw = await seed();
+    expect(await seriesParamsFor(raw, 1)).toEqual({ rsiLength: 21, vstopLength: 10, vstopMult: 2, vstopSource: "close" });
     const fetchFn = vi.fn().mockResolvedValue({ ok: true, text: async () => JSON.stringify({ symbol: "ABC.NS", bars: [] }) });
     await getEntrySeries(raw, 5, 7, fetchFn as any);
     const url = String(fetchFn.mock.calls[0][0]);
@@ -64,7 +64,7 @@ describe("entry series (G3)", () => {
     expect(url).toContain("rsi_length=21");
   });
   it("returns null for an entry that isn't on that watchlist", async () => {
-    expect(await getEntrySeries(seed(), 6, 7)).toBeNull();
+    expect(await getEntrySeries(await seed(), 6, 7)).toBeNull();
   });
 });
 
@@ -89,16 +89,17 @@ describe("recent closes (G2)", () => {
 });
 
 import { setEntryNote, removeEntry } from "@/server/entryActions";
+import { prep } from "./helpers/prep";
 describe("entry actions", () => {
-  it("saves a note and removes only for the watchlist's own user", () => {
-    const raw = seed();
+  it("saves a note and removes only for the watchlist's own user", async () => {
+    const raw = await seed();
     const owner = 1;
-    expect(setEntryNote(raw, { watchlistId: 5, entryId: 7, userId: 99, note: "x" })).toBe(false);
-    expect(setEntryNote(raw, { watchlistId: 5, entryId: 7, userId: owner, note: "watch the gap" })).toBe(true);
-    expect((raw.prepare("SELECT user_note FROM watchlist_entries WHERE entry_id = 7").get() as any).user_note).toBe("watch the gap");
-    expect(removeEntry(raw, { watchlistId: 5, entryId: 7, userId: 99 })).toBe(false);
-    expect(removeEntry(raw, { watchlistId: 5, entryId: 7, userId: owner })).toBe(true);
-    expect((raw.prepare("SELECT status FROM watchlist_entries WHERE entry_id = 7").get() as any).status).toBe("removed_by_user");
-    expect((raw.prepare("SELECT to_value FROM entry_events WHERE entry_id = 7").get() as any).to_value).toBe("removed_by_user");
+    expect(await setEntryNote(raw, { watchlistId: 5, entryId: 7, userId: 99, note: "x" })).toBe(false);
+    expect(await setEntryNote(raw, { watchlistId: 5, entryId: 7, userId: owner, note: "watch the gap" })).toBe(true);
+    expect((await prep(raw, "SELECT user_note FROM watchlist_entries WHERE entry_id = 7").get() as any).user_note).toBe("watch the gap");
+    expect(await removeEntry(raw, { watchlistId: 5, entryId: 7, userId: 99 })).toBe(false);
+    expect(await removeEntry(raw, { watchlistId: 5, entryId: 7, userId: owner })).toBe(true);
+    expect((await prep(raw, "SELECT status FROM watchlist_entries WHERE entry_id = 7").get() as any).status).toBe("removed_by_user");
+    expect((await prep(raw, "SELECT to_value FROM entry_events WHERE entry_id = 7").get() as any).to_value).toBe("removed_by_user");
   });
 });

@@ -5,7 +5,7 @@ import { setIdentityResolver } from "@/server/auth/requireUser";
 import { _resetQuoteCacheForTests } from "@/server/quotes";
 import { resetRateLimits } from "@/server/rateLimit";
 
-let raw = createTestDb();
+let raw = await createTestDb();
 vi.mock("@/server/db/client", () => ({ db: () => raw }));
 
 const METRIC = { as_of: "2026-10-14", timeframe: "1D", rsi14: 60, tech_rating: 0.35, ma_rating: 0.6, os_rating: 0.1, beta_benchmark: "^NSEI", votes: {} };
@@ -23,14 +23,15 @@ import { GET as getViews, POST as refreshViews } from "@/../app/api/watchlists/[
 import { PATCH as patchPrefs } from "@/../app/api/watchlists/[watchlistId]/view-prefs/route";
 import { GET as getBench, PUT as putBench } from "@/../app/api/me/benchmarks/route";
 import { GET as getHistoryRoute } from "@/../app/api/series/history/route";
+import { prep } from "./helpers/prep";
 
 const OWNER = { authUserId: "test-owner-uuid", email: "owner@example.com", emailVerified: true, displayName: "Owner", provider: "email" };
 const as = (who: typeof OWNER | null) => setIdentityResolver(async () => who);
 const ctx = (id: number | string) => ({ params: { watchlistId: String(id) } });
 const req = (url = "http://localhost/x", method = "GET", body?: unknown) => new Request(url, { method, body: body === undefined ? undefined : JSON.stringify(body) });
 
-beforeEach(() => { raw = createTestDb(); seedUiDemo(raw); _resetQuoteCacheForTests(); resetRateLimits(); as(OWNER); });
-afterEach(() => as(OWNER));
+beforeEach(async () => { raw = await createTestDb(); await seedUiDemo(raw); _resetQuoteCacheForTests(); resetRateLimits(); as(OWNER); });
+afterEach(async () => as(OWNER));
 
 describe("GET /api/watchlists/:id/views", () => {
   it("returns every view group, sections, as-of dates, fx (INR->USD divides) and prefs in one call", async () => {
@@ -71,10 +72,10 @@ describe("GET /api/watchlists/:id/views", () => {
   });
 
   it("hides another user's private watchlist (404, never 403)", async () => {
-    raw.prepare("INSERT INTO signup_allowlist (email, created_at) VALUES ('other@example.com', 'x')").run();
+    await prep(raw, "INSERT INTO signup_allowlist (email, created_at) VALUES ('other@example.com', 'x')").run();
     as({ authUserId: "u-other", email: "other@example.com", emailVerified: true, displayName: "O", provider: "google" });
     // watchlist 1 belongs to the owner; prompt 12 is shared in the demo seed, so use the private prompt 9's watchlist
-    raw.prepare("INSERT INTO watchlists (watchlist_id, user_id, prompt_id, name, created_at) VALUES (50, 1, 9, 'W', 'x')").run();
+    await prep(raw, "INSERT INTO watchlists (watchlist_id, user_id, prompt_id, name, created_at) VALUES (50, 1, 9, 'W', 'x')").run();
     expect((await getViews(req(), ctx(50))).status).toBe(404);
   });
 });

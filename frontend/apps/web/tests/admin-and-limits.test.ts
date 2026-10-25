@@ -4,17 +4,18 @@ import { ensureOwnerUser } from "@/server/db/seed";
 import { setIdentityResolver } from "@/server/auth/requireUser";
 import { rateLimited, resetRateLimits, LIMITS } from "@/server/rateLimit";
 
-let raw = createTestDb();
+let raw = await createTestDb();
 vi.mock("@/server/db/client", () => ({ db: () => raw }));
 import { GET, POST, DELETE, PATCH } from "@/../app/api/admin/allowlist/route";
 import { PATCH as profile } from "@/../app/api/auth/profile/route";
+import { prep } from "./helpers/prep";
 
 const OWNER = { authUserId: "test-owner-uuid", email: "owner@example.com", emailVerified: true, displayName: "Owner", provider: "email" };
 const MEMBER = { authUserId: "u-m", email: "m@example.com", emailVerified: true, displayName: "M", provider: "google" };
 const req = (method: string, body?: unknown) => new Request("http://x", { method, body: body === undefined ? undefined : JSON.stringify(body) });
 
-beforeEach(() => { raw = createTestDb(); ensureOwnerUser(raw); resetRateLimits(); setIdentityResolver(async () => OWNER); });
-afterEach(() => setIdentityResolver(async () => OWNER));
+beforeEach(async () => { raw = await createTestDb(); await ensureOwnerUser(raw); resetRateLimits(); setIdentityResolver(async () => OWNER); });
+afterEach(async () => setIdentityResolver(async () => OWNER));
 
 describe("allowlist admin (owner only)", () => {
   it("owner invites, lists and removes; the invitee can then sign up as a member", async () => {
@@ -23,7 +24,7 @@ describe("allowlist admin (owner only)", () => {
     expect(list.allowlist.map((a: any) => a.email)).toContain("m@example.com");
     setIdentityResolver(async () => MEMBER);
     expect((await profile(req("PATCH", { displayName: "Mia" }))).status).toBe(200);
-    expect(raw.prepare("SELECT display_name FROM users WHERE email = 'm@example.com'").get()).toMatchObject({ display_name: "Mia" });
+    expect(await prep(raw, "SELECT display_name FROM users WHERE email = 'm@example.com'").get()).toMatchObject({ display_name: "Mia" });
     setIdentityResolver(async () => OWNER);
     expect((await DELETE(req("DELETE", { email: "m@example.com" }))).status).toBe(200);
   });
@@ -40,7 +41,7 @@ describe("allowlist admin (owner only)", () => {
   it("disabling a member locks them out", async () => {
     await POST(req("POST", { email: "m@example.com" }));
     setIdentityResolver(async () => MEMBER); await profile(req("PATCH", { displayName: "M" }));
-    const id = (raw.prepare("SELECT user_id FROM users WHERE email = 'm@example.com'").get() as any).user_id;
+    const id = (await prep(raw, "SELECT user_id FROM users WHERE email = 'm@example.com'").get() as any).user_id;
     setIdentityResolver(async () => OWNER);
     expect((await PATCH(req("PATCH", { userId: id, status: "disabled" }))).status).toBe(200);
     setIdentityResolver(async () => MEMBER);
@@ -49,7 +50,7 @@ describe("allowlist admin (owner only)", () => {
 });
 
 describe("rate limiter", () => {
-  it("blocks past the limit per user and bucket, then recovers after the window", () => {
+  it("blocks past the limit per user and bucket, then recovers after the window", async () => {
     const t0 = 1_000_000;
     for (let i = 0; i < LIMITS.model.max; i++) expect(rateLimited(1, "model", t0)).toBeNull();
     const blocked = rateLimited(1, "model", t0 + 1);

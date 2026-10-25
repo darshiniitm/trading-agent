@@ -14,22 +14,22 @@ import { readyDraft } from "../helpers/program";
 import { SAMPLE } from "../v5/samples";
 import { setupTelemetry, teardownTelemetry } from "./helpers";
 
-afterEach(() => { teardownTelemetry(); setLlmTelemetry(null); });
+afterEach(async () => { teardownTelemetry(); setLlmTelemetry(null); });
 
 const candidates = [{ ticker: "FULL1", membership: "full_match", values: { C1: 25000, C2: { vstop_line: 90, uptrend: true } }, failed_ids: [], ep: 101.5, sl: 95.0, r: 0.064 }];
 const engineFetch = () => vi.fn().mockResolvedValue({ ok: true, text: async () => JSON.stringify({ candidates, applied_steps: [{ step: "x", applied: true, reason: null }], funnel: [], sector_view: [], entered: [], not_confirmed: [], no_point_data: [], watching: [] }) });
 
-function draftWith(text: string) {
-  const raw = createTestDb();
-  const { draftId } = createDraft(raw, { userId: ensureOwnerUser(raw) });
-  updateDraft(raw, draftId, { promptText: text });
+async function draftWith(text: string) {
+  const raw = await createTestDb();
+  const { draftId } = await createDraft(raw, { userId: await ensureOwnerUser(raw) });
+  await updateDraft(raw, draftId, { promptText: text });
   return { raw, draftId };
 }
 
 describe("compile", () => {
   it("rules-only prompt: interpreter task, conditions.resolve and the draft write are traced; no agent rows", async () => {
     const t = setupTelemetry();
-    const { raw, draftId } = draftWith(SAMPLE);
+    const { raw, draftId } = await draftWith(SAMPLE);
     await compileProgramDraft(raw, draftId);
     const ids = deriveRunIds(draftId);
     expect(t.store.tasks.map((x) => x.task_name)).toEqual(["interpret"]);
@@ -43,7 +43,7 @@ describe("compile", () => {
   it("a prompt the rules cannot read: model agents appear as agent rows with a prompt-hash version, and llm.chat rows hang under them", async () => {
     const t = setupTelemetry(); installLlmTelemetry();
     const text = GOLDEN_INTERPRETER.find((c) => c.needsModel)!.text;
-    const { raw, draftId } = draftWith(text);
+    const { raw, draftId } = await draftWith(text);
     const callModel = vi.fn(async () => '{"conditions": []}');
     await compileProgramDraft(raw, draftId, { callModel });
     expect(callModel).toHaveBeenCalled();
@@ -51,7 +51,7 @@ describe("compile", () => {
     for (const a of t.store.agents) expect(a.agent_version).toMatch(/^[0-9a-f]{12}$/);
     expect(t.store.agents.map((a) => a.agent_name).every((n) => ["clause_fallback", "model_reader", "reader", "model_critic"].includes(n))).toBe(true);
     // the agent's version is stable across runs (same static prompt)
-    const again = draftWith(text);
+    const again = await draftWith(text);
     const before = t.store.agents[0].agent_version;
     await compileProgramDraft(again.raw, again.draftId, { callModel });
     expect(t.store.agents.find((a) => a.run_id === deriveRunIds(again.draftId).runId)!.agent_version).toBe(before);
@@ -61,8 +61,8 @@ describe("compile", () => {
 describe("screen + confirm", () => {
   it("engine calls are tool spans named by endpoint and carry traceparent + run id; confirm closes the run with the prompt id", async () => {
     const t = setupTelemetry();
-    const raw = createTestDb();
-    const draftId = readyDraft(raw);
+    const raw = await createTestDb();
+    const draftId = await readyDraft(raw);
     const fetchFn = engineFetch();
     await screenProgramDraft(raw, draftId, "2026-10-02", fetchFn as any);
     const [, init] = fetchFn.mock.calls[0];
@@ -84,17 +84,17 @@ describe("screen + confirm", () => {
 
   it("a failed engine screen at confirm fails the run (error) and still propagates the original error", async () => {
     const t = setupTelemetry();
-    const raw = createTestDb();
-    const draftId = readyDraft(raw);
+    const raw = await createTestDb();
+    const draftId = await readyDraft(raw);
     const bad = vi.fn().mockResolvedValue({ ok: false, status: 422, text: async () => JSON.stringify({ error: "bad program" }) });
-    await expect(confirmDraft(raw, draftId, "2026-10-02", bad as any)).rejects.toThrow(/status 422/);
+    await expect(await confirmDraft(raw, draftId, "2026-10-02", bad as any)).rejects.toThrow(/status 422/);
     expect(t.store.runs.get(deriveRunIds(draftId).traceId)).toMatchObject({ status: "error", outcome: "failed" });
     expect(t.store.tools.find((x) => x.tool_name === "engine.screen")).toMatchObject({ status: "error" });
   });
 
   it("without telemetry installed the same path behaves as before (no throw, no extra headers)", async () => {
-    const raw = createTestDb();
-    const draftId = readyDraft(raw);
+    const raw = await createTestDb();
+    const draftId = await readyDraft(raw);
     const fetchFn = engineFetch();
     await screenProgramDraft(raw, draftId, "2026-10-02", fetchFn as any);
     expect(new Headers(fetchFn.mock.calls[0][1].headers).get("traceparent")).toBeNull();

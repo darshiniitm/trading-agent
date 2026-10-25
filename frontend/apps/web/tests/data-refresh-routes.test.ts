@@ -3,7 +3,7 @@ import { createTestDb } from "@/server/db/test-db";
 import { setIdentityResolver } from "@/server/auth/requireUser";
 import { ensureOwnerUser } from "@/server/db/seed";
 
-let raw = createTestDb();
+let raw = await createTestDb();
 vi.mock("@/server/db/client", () => ({ db: () => raw }));
 const status = (o: any = {}) => ({ state: "idle", done: 0, total: 0, started_at: null, finished_at: null, error: null, last_refreshed: { fetched_at: "2026-10-15T06:09:00+00:00", latest_bar_date: "2026-10-12" }, ...o });
 const beat = vi.fn();
@@ -18,14 +18,15 @@ vi.mock("@/server/engine/client", async (orig) => ({
 import { GET as getRefresh, POST as postRefresh } from "@/../app/api/data/refresh/route";
 import { GET as getHealth } from "@/../app/api/data/health/route";
 import { POST as postPrefetch } from "@/../app/api/data/prefetch/route";
+import { prep } from "./helpers/prep";
 
 const OWNER = { authUserId: "test-owner-uuid", email: "owner@example.com", emailVerified: true, displayName: "Owner", provider: "email" };
 const OTHER = { authUserId: "u-other", email: "other@example.com", emailVerified: true, displayName: "Other", provider: "google" };
 const as = (who: typeof OWNER | null) => setIdentityResolver(async () => who);
 const r = (method = "GET") => new Request("http://localhost/x", { method });
 
-beforeEach(() => { raw = createTestDb(); ensureOwnerUser(raw); raw.prepare("INSERT INTO signup_allowlist (email, created_at) VALUES ('other@example.com', 'x')").run(); beat.mockClear(); as(OWNER); });
-afterEach(() => as(OWNER));
+beforeEach(async () => { raw = await createTestDb(); await ensureOwnerUser(raw); await prep(raw, "INSERT INTO signup_allowlist (email, created_at) VALUES ('other@example.com', 'x')").run(); beat.mockClear(); as(OWNER); });
+afterEach(async () => as(OWNER));
 
 describe("/api/data/refresh", () => {
   it("any signed-in user sees when the data was last refreshed", async () => {

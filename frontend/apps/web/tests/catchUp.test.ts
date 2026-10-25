@@ -4,6 +4,8 @@ import { ensureOwnerUser } from "@/server/db/seed";
 import { runCatchUp } from "@/server/catchUp";
 import { runWeeklyScreen } from "@/server/weeklyScreen";
 import { runSelectEntry } from "@/server/selectEntry";
+import { prep } from "./helpers/prep";
+import type { Db } from "@/server/db/pg";
 
 const SPEC = {
   spec_version: 4, structure: "literal" as const, timeframe: "1W" as const,
@@ -11,16 +13,16 @@ const SPEC = {
   conditions: [], stop: null, risk_cap_pct: null, near_miss: null,
 };
 
-function seedPromptWithOneRun(raw: ReturnType<typeof createTestDb>, lastAsOf: string) {
-  const ownerId = ensureOwnerUser(raw);
+async function seedPromptWithOneRun(raw: Db, lastAsOf: string) {
+  const ownerId = await ensureOwnerUser(raw);
   const now = new Date().toISOString();
-  raw.prepare(`INSERT INTO prompt_drafts (draft_id, user_id, prompt_text, status, created_at, updated_at) VALUES (1, ?, 'x', 'confirmed', ?, ?)`).run(ownerId, now, now);
-  raw.prepare(
+  await prep(raw, `INSERT INTO prompt_drafts (draft_id, user_id, prompt_text, status, created_at, updated_at) VALUES (1, ?, 'x', 'confirmed', ?, ?)`).run(ownerId, now, now);
+  await prep(raw, 
     `INSERT INTO prompts (prompt_id, owner_user_id, draft_id, title, prompt_text, structure, spec_json, spec_hash, status, version, hypothesis, kill_criterion, confirmed_at)
      VALUES (1, ?, 1, 'Prompt 1', 'x', 'literal', ?, 'h', 'confirmed', 1, 'hyp', 'kill', ?)`
   ).run(ownerId, JSON.stringify(SPEC), now);
-  raw.prepare(`INSERT INTO watchlists (watchlist_id, user_id, prompt_id, name, created_at) VALUES (1, ?, 1, 'wl', ?)`).run(ownerId, now);
-  raw.prepare(`INSERT INTO runs (prompt_id, as_of, kind, status, finished_at) VALUES (1, ?, 'scheduled', 'done', ?)`).run(lastAsOf, now);
+  await prep(raw, `INSERT INTO watchlists (watchlist_id, user_id, prompt_id, name, created_at) VALUES (1, ?, 1, 'wl', ?)`).run(ownerId, now);
+  await prep(raw, `INSERT INTO runs (prompt_id, as_of, kind, status, finished_at) VALUES (1, ?, 'scheduled', 'done', ?)`).run(lastAsOf, now);
 }
 
 // The as_of of every /validate call a fake fetch received, in call order.
@@ -71,58 +73,56 @@ function fetchFailingSelectFor(asOfToFail: string) {
 
 describe("runCatchUp", () => {
   it("runs one weekly cycle per missed Friday between the last run and the engine's last_bar_date", async () => {
-    const raw = createTestDb();
-    seedPromptWithOneRun(raw, "2026-10-02");
+    const raw = await createTestDb();
+    await seedPromptWithOneRun(raw, "2026-10-02");
     const fetchFn = fakeFetch();
 
     const { weeksRun } = await runCatchUp(raw, { promptId: 1 }, fetchFn as any);
     expect(weeksRun).toEqual(["2026-10-09", "2026-10-16"]);
 
-    const runs = raw.prepare("SELECT as_of FROM runs WHERE prompt_id = 1 ORDER BY as_of").all() as any[];
+    const runs = await prep(raw, "SELECT as_of FROM runs WHERE prompt_id = 1 ORDER BY as_of").all() as any[];
     expect(runs.map((r) => r.as_of)).toEqual(["2026-10-02", "2026-10-09", "2026-10-16"]);
   });
 
   it("is a no-op on a second call once every missed week is already caught up", async () => {
-    const raw = createTestDb();
-    seedPromptWithOneRun(raw, "2026-10-02");
+    const raw = await createTestDb();
+    await seedPromptWithOneRun(raw, "2026-10-02");
     const fetchFn = fakeFetch();
     await runCatchUp(raw, { promptId: 1 }, fetchFn as any);
 
     const { weeksRun } = await runCatchUp(raw, { promptId: 1 }, fetchFn as any);
     expect(weeksRun).toEqual([]);
-    const runCount = raw.prepare("SELECT COUNT(*) AS n FROM runs WHERE prompt_id = 1").get() as any;
+    const runCount = await prep(raw, "SELECT COUNT(*) AS n FROM runs WHERE prompt_id = 1").get() as any;
     expect(runCount.n).toBe(3);
   });
 
   it("returns no weeks when already caught up to last_bar_date", async () => {
-    const raw = createTestDb();
-    seedPromptWithOneRun(raw, "2026-10-16");
+    const raw = await createTestDb();
+    await seedPromptWithOneRun(raw, "2026-10-16");
     const fetchFn = fakeFetch();
     const { weeksRun } = await runCatchUp(raw, { promptId: 1 }, fetchFn as any);
     expect(weeksRun).toEqual([]);
   });
 
   it("still completes and advances past a week whose runValidatePrior throws", async () => {
-    const raw = createTestDb();
-    seedPromptWithOneRun(raw, "2026-10-02");
+    const raw = await createTestDb();
+    await seedPromptWithOneRun(raw, "2026-10-02");
     const fetchFn = fetchWithValidateFailure();
 
     const { weeksRun } = await runCatchUp(raw, { promptId: 1 }, fetchFn as any);
     expect(weeksRun).toEqual(["2026-10-09", "2026-10-16"]);
 
-    const jobs = raw
-      .prepare("SELECT as_of, status FROM jobs WHERE type = 'catch_up' AND prompt_id = 1 ORDER BY as_of")
+    const jobs = await prep(raw, "SELECT as_of, status FROM jobs WHERE type = 'catch_up' AND prompt_id = 1 ORDER BY as_of")
       .all() as { as_of: string; status: string }[];
     expect(jobs.map((j) => j.status)).toEqual(["done", "done"]);
 
-    const runs = raw.prepare("SELECT as_of FROM runs WHERE prompt_id = 1 ORDER BY as_of").all() as any[];
+    const runs = await prep(raw, "SELECT as_of FROM runs WHERE prompt_id = 1 ORDER BY as_of").all() as any[];
     expect(runs.map((r) => r.as_of)).toEqual(["2026-10-02", "2026-10-09", "2026-10-16"]);
 
     // The grading failure is no longer swallowed silently: each prior run's
     // validate_prior attempt is its own job, recorded 'failed' with the error
     // (so it is retried on a later catch-up), and reported back to the caller.
-    const validateJobs = raw
-      .prepare("SELECT as_of, status, error FROM jobs WHERE type = 'validate_prior' AND prompt_id = 1 ORDER BY as_of")
+    const validateJobs = await prep(raw, "SELECT as_of, status, error FROM jobs WHERE type = 'validate_prior' AND prompt_id = 1 ORDER BY as_of")
       .all() as { as_of: string; status: string; error: string }[];
     expect(validateJobs.map((j) => [j.as_of, j.status])).toEqual([
       ["2026-10-02", "failed"],
@@ -132,8 +132,8 @@ describe("runCatchUp", () => {
   });
 
   it("never grades the week's own brand-new run, only earlier runs", async () => {
-    const raw = createTestDb();
-    seedPromptWithOneRun(raw, "2026-10-02");
+    const raw = await createTestDb();
+    await seedPromptWithOneRun(raw, "2026-10-02");
     const fetchFn = fakeFetch();
     await runCatchUp(raw, { promptId: 1 }, fetchFn as any);
 
@@ -144,20 +144,19 @@ describe("runCatchUp", () => {
   });
 
   it("propagates a runSelectEntry failure, then retries that exact week on the next call by reusing its runs row", async () => {
-    const raw = createTestDb();
-    seedPromptWithOneRun(raw, "2026-10-02");
+    const raw = await createTestDb();
+    await seedPromptWithOneRun(raw, "2026-10-02");
     const failingFetch = fetchFailingSelectFor("2026-10-16");
 
-    await expect(runCatchUp(raw, { promptId: 1 }, failingFetch as any)).rejects.toThrow("select engine down");
+    await expect(await runCatchUp(raw, { promptId: 1 }, failingFetch as any)).rejects.toThrow("select engine down");
 
     // runWeeklyScreen committed its runs row for 2026-10-09 (done) and for
     // 2026-10-16 (screen step succeeded before select failed) — the job
     // for 2026-10-16 is 'failed', not 'done'.
-    const runsAfterFailure = raw.prepare("SELECT as_of FROM runs WHERE prompt_id = 1 ORDER BY as_of").all() as any[];
+    const runsAfterFailure = await prep(raw, "SELECT as_of FROM runs WHERE prompt_id = 1 ORDER BY as_of").all() as any[];
     expect(runsAfterFailure.map((r) => r.as_of)).toEqual(["2026-10-02", "2026-10-09", "2026-10-16"]);
 
-    const jobsAfterFailure = raw
-      .prepare("SELECT as_of, status FROM jobs WHERE type = 'catch_up' AND prompt_id = 1 ORDER BY as_of")
+    const jobsAfterFailure = await prep(raw, "SELECT as_of, status FROM jobs WHERE type = 'catch_up' AND prompt_id = 1 ORDER BY as_of")
       .all() as { as_of: string; status: string }[];
     expect(jobsAfterFailure).toEqual([
       { as_of: "2026-10-09", status: "done" },
@@ -170,11 +169,10 @@ describe("runCatchUp", () => {
 
     // No duplicate runs row was inserted for 2026-10-16 on retry (which
     // would otherwise violate ux_runs_graded's UNIQUE(prompt_id, as_of)).
-    const runsAfterRetry = raw.prepare("SELECT as_of FROM runs WHERE prompt_id = 1 ORDER BY as_of").all() as any[];
+    const runsAfterRetry = await prep(raw, "SELECT as_of FROM runs WHERE prompt_id = 1 ORDER BY as_of").all() as any[];
     expect(runsAfterRetry.map((r) => r.as_of)).toEqual(["2026-10-02", "2026-10-09", "2026-10-16"]);
 
-    const jobsAfterRetry = raw
-      .prepare("SELECT as_of, status FROM jobs WHERE type = 'catch_up' AND prompt_id = 1 ORDER BY as_of")
+    const jobsAfterRetry = await prep(raw, "SELECT as_of, status FROM jobs WHERE type = 'catch_up' AND prompt_id = 1 ORDER BY as_of")
       .all() as { as_of: string; status: string }[];
     expect(jobsAfterRetry.map((j) => j.status)).toEqual(["done", "done"]);
   });
@@ -184,15 +182,15 @@ describe("runCatchUp", () => {
   // like the real grade_horizons — so a run's horizon 1 can only be written
   // on a LATER week's catch-up, and horizons 2/3 later still.
   it("grades each run's horizons as they mature over later weeks, and never re-grades a done validate_prior job", async () => {
-    const raw = createTestDb();
-    const ownerId = ensureOwnerUser(raw);
+    const raw = await createTestDb();
+    const ownerId = await ensureOwnerUser(raw);
     const now = new Date().toISOString();
-    raw.prepare(`INSERT INTO prompt_drafts (draft_id, user_id, prompt_text, status, created_at, updated_at) VALUES (1, ?, 'x', 'confirmed', ?, ?)`).run(ownerId, now, now);
-    raw.prepare(
+    await prep(raw, `INSERT INTO prompt_drafts (draft_id, user_id, prompt_text, status, created_at, updated_at) VALUES (1, ?, 'x', 'confirmed', ?, ?)`).run(ownerId, now, now);
+    await prep(raw, 
       `INSERT INTO prompts (prompt_id, owner_user_id, draft_id, title, prompt_text, structure, spec_json, spec_hash, status, version, hypothesis, kill_criterion, confirmed_at)
        VALUES (1, ?, 1, 'Prompt 1', 'x', 'literal', ?, 'h', 'confirmed', 1, 'hyp', 'kill', ?)`
     ).run(ownerId, JSON.stringify(SPEC), now);
-    raw.prepare(`INSERT INTO watchlists (watchlist_id, user_id, prompt_id, name, created_at) VALUES (1, ?, 1, 'wl', ?)`).run(ownerId, now);
+    await prep(raw, `INSERT INTO watchlists (watchlist_id, user_id, prompt_id, name, created_at) VALUES (1, ?, 1, 'wl', ?)`).run(ownerId, now);
 
     let lastBar = "2026-10-02";
     const tickerFor = (asOf: string) => `T${asOf.replace(/-/g, "")}`; // a fresh full_match each week
@@ -220,34 +218,34 @@ describe("runCatchUp", () => {
       }
       throw new Error(`unexpected url ${url}`);
     });
-    const validationsFor = (asOf: string) =>
-      raw.prepare("SELECT v.horizon_w, v.n, v.ew_return FROM validations v JOIN runs r ON r.run_id = v.run_id WHERE r.as_of = ? ORDER BY v.horizon_w").all(asOf);
-    const validateJob = (asOf: string) =>
-      (raw.prepare("SELECT status FROM jobs WHERE type = 'validate_prior' AND prompt_id = 1 AND as_of = ?").get(asOf) as { status: string } | undefined)?.status;
+    const validationsFor = async (asOf: string) =>
+      await prep(raw, "SELECT v.horizon_w, v.n, v.ew_return FROM validations v JOIN runs r ON r.run_id = v.run_id WHERE r.as_of = ? ORDER BY v.horizon_w").all(asOf);
+    const validateJob = async (asOf: string) =>
+      (await prep(raw, "SELECT status FROM jobs WHERE type = 'validate_prior' AND prompt_id = 1 AND as_of = ?").get(asOf) as { status: string } | undefined)?.status;
 
     // Week 1 (the confirm-time run): screened and entered, nothing gradable yet.
     const { runId: firstRunId } = await runWeeklyScreen(raw, { promptId: 1, asOf: "2026-10-02", kind: "catch_up" }, fetchFn as any);
     await runSelectEntry(raw, { promptId: 1, runId: firstRunId }, fetchFn as any);
     await runCatchUp(raw, { promptId: 1 }, fetchFn as any);
-    expect(validationsFor("2026-10-02")).toEqual([]);
+    expect(await validationsFor("2026-10-02")).toEqual([]);
 
     // Week 2: run 10-02's horizon 1 has matured — and only horizon 1, from the trade view only.
     lastBar = "2026-10-09";
     expect((await runCatchUp(raw, { promptId: 1 }, fetchFn as any)).weeksRun).toEqual(["2026-10-09"]);
-    expect(validationsFor("2026-10-02")).toEqual([{ horizon_w: 1, n: 1, ew_return: 1 }]);
-    expect(validationsFor("2026-10-09")).toEqual([]);
+    expect(await validationsFor("2026-10-02")).toEqual([{ horizon_w: 1, n: 1, ew_return: 1 }]);
+    expect(await validationsFor("2026-10-09")).toEqual([]);
     expect(validateJob("2026-10-02")).toBe("queued"); // horizons 2/3 still pending -> retryable
 
     // Week 3: 10-02 gains horizon 2, 10-09 gains horizon 1.
     lastBar = "2026-10-16";
     await runCatchUp(raw, { promptId: 1 }, fetchFn as any);
-    expect(validationsFor("2026-10-02").map((v: any) => v.horizon_w)).toEqual([1, 2]);
-    expect(validationsFor("2026-10-09")).toEqual([{ horizon_w: 1, n: 1, ew_return: 1 }]);
+    expect((await validationsFor("2026-10-02")).map((v: any) => v.horizon_w)).toEqual([1, 2]);
+    expect(await validationsFor("2026-10-09")).toEqual([{ horizon_w: 1, n: 1, ew_return: 1 }]);
 
     // Week 4: 10-02 is fully graded -> its job is done.
     lastBar = "2026-10-23";
     await runCatchUp(raw, { promptId: 1 }, fetchFn as any);
-    expect(validationsFor("2026-10-02")).toEqual([
+    expect(await validationsFor("2026-10-02")).toEqual([
       { horizon_w: 1, n: 1, ew_return: 1 },
       { horizon_w: 2, n: 1, ew_return: 2 },
       { horizon_w: 3, n: 1, ew_return: 3 },
@@ -265,23 +263,23 @@ describe("runCatchUp", () => {
   });
 
   it("retries a failed validate_prior job on the next catch-up", async () => {
-    const raw = createTestDb();
-    seedPromptWithOneRun(raw, "2026-10-02");
+    const raw = await createTestDb();
+    await seedPromptWithOneRun(raw, "2026-10-02");
     await runCatchUp(raw, { promptId: 1 }, fetchWithValidateFailure() as any);
-    expect(raw.prepare("SELECT status FROM jobs WHERE type = 'validate_prior' AND as_of = '2026-10-02'").get()).toEqual({ status: "failed" });
+    expect(await prep(raw, "SELECT status FROM jobs WHERE type = 'validate_prior' AND as_of = '2026-10-02'").get()).toEqual({ status: "failed" });
 
     const okFetch = fakeFetch();
     const { gradingFailures } = await runCatchUp(raw, { promptId: 1 }, okFetch as any);
     expect(gradingFailures).toEqual([]);
     // Attempted (and failed) during both week 10-09's and week 10-16's
     // catch-up, then succeeded on this retry.
-    expect(raw.prepare("SELECT status, attempts FROM jobs WHERE type = 'validate_prior' AND as_of = '2026-10-02'").get()).toEqual({ status: "done", attempts: 3 });
+    expect(await prep(raw, "SELECT status, attempts FROM jobs WHERE type = 'validate_prior' AND as_of = '2026-10-02'").get()).toEqual({ status: "done", attempts: 3 });
   });
 
   // --- Final-review I2: arm registration is retried on every catch-up.
   it("re-registers the prompt's arm with its program on every catch-up", async () => {
-    const raw = createTestDb();
-    seedPromptWithOneRun(raw, "2026-10-16");
+    const raw = await createTestDb();
+    await seedPromptWithOneRun(raw, "2026-10-16");
     const fetchFn = fakeFetch();
     const { armRegistrationError } = await runCatchUp(raw, { promptId: 1 }, fetchFn as any);
     expect(armRegistrationError).toBeNull();
@@ -295,8 +293,8 @@ describe("runCatchUp", () => {
   });
 
   it("still screens, selects and grades the week when arm registration fails, and reports the failure", async () => {
-    const raw = createTestDb();
-    seedPromptWithOneRun(raw, "2026-10-02");
+    const raw = await createTestDb();
+    await seedPromptWithOneRun(raw, "2026-10-02");
     const ok = fakeFetch();
     const fetchFn = vi.fn().mockImplementation(async (url: string, init?: unknown) => {
       if (url.endsWith("/arms/register")) throw new Error("register engine down");
@@ -305,13 +303,13 @@ describe("runCatchUp", () => {
     const { weeksRun, armRegistrationError } = await runCatchUp(raw, { promptId: 1 }, fetchFn as any);
     expect(armRegistrationError).toBe("register engine down");
     expect(weeksRun).toEqual(["2026-10-09", "2026-10-16"]);
-    expect(raw.prepare("SELECT COUNT(*) AS n FROM jobs WHERE type = 'validate_prior'").get()).toEqual({ n: 2 });
+    expect(await prep(raw, "SELECT COUNT(*) AS n FROM jobs WHERE type = 'validate_prior'").get()).toEqual({ n: 2 });
   });
 
   it("never re-registers (re-activates) the arm of a retired prompt", async () => {
-    const raw = createTestDb();
-    seedPromptWithOneRun(raw, "2026-10-16");
-    raw.prepare("UPDATE prompts SET status = 'retired', closed_at = '2026-10-17' WHERE prompt_id = 1").run();
+    const raw = await createTestDb();
+    await seedPromptWithOneRun(raw, "2026-10-16");
+    await prep(raw, "UPDATE prompts SET status = 'retired', closed_at = '2026-10-17' WHERE prompt_id = 1").run();
     const fetchFn = fakeFetch();
     await runCatchUp(raw, { promptId: 1 }, fetchFn as any);
     expect(fetchFn.mock.calls.some(([url]: any[]) => String(url).endsWith("/arms/register"))).toBe(false);
