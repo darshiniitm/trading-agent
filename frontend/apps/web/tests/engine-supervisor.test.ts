@@ -88,8 +88,8 @@ describe("EngineSupervisor", () => {
     const { sup, state, fetchFn } = rig({ ENGINE_MANAGED: "0", ENGINE_TOKEN: "s3cret" });
     state.healthy = true;
     await sup.retry();
-    const retryCall = fetchFn.mock.calls.find(([url]) => String(url).endsWith("/warmup/retry"))!;
-    expect(new Headers((retryCall[1] as any).headers).get("authorization")).toBe("Bearer s3cret");
+    const retryCall = (fetchFn.mock.calls as any[][]).find(([url]) => String(url).endsWith("/warmup/retry"))!;
+    expect(new Headers(retryCall[1].headers).get("authorization")).toBe("Bearer s3cret");
   });
 
   it("stops the engine after the idle window with no tab, and the next tab brings it back", async () => {

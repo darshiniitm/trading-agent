@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start -H localhost",
     "test": "vitest run",
-    "jobs:catch-up": "tsx scripts/run-weekly-jobs.ts"
+    "jobs:catch-up": "tsx scripts/run-weekly-jobs.ts",
+    "db:move-sqlite": "tsx scripts/migrate-sqlite-to-pg.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.32.1",
@@ -26,8 +27,6 @@
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.45.4",
     "@tanstack/react-query": "5.56.2",
-    "better-sqlite3": "13.0.3",
-    "drizzle-orm": "0.33.0",
     "next": "14.2.35",
     "pg": "^8.23.1",
     "react": "18.3.1",
@@ -35,6 +34,9 @@
     "spec": "*",
     "zod": "3.23.8",
     "zod-to-json-schema": "^3.23.5"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "13.0.3"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
