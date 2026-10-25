@@ -6,10 +6,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   const raw = db();
-  return withUser(raw, req, (user) => {
+  return withUser(raw, req, async (user) => {
     const url = new URL(req.url);
     const sortParam = url.searchParams.get("sort");
     const sort = sortParam === "followers" || sortParam === "graded_weeks" ? sortParam : undefined;
-    return Response.json(listExplore(raw, { userId: user.userId, structure: url.searchParams.get("structure") || undefined, usesCondition: url.searchParams.get("uses_condition") || undefined, sort }));
+    return Response.json(await listExplore(raw, { userId: user.userId, structure: url.searchParams.get("structure") || undefined, usesCondition: url.searchParams.get("uses_condition") || undefined, sort }));
   });
 }

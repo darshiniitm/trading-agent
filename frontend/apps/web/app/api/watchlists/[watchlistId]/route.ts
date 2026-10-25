@@ -5,9 +5,9 @@ import { canReadWatchlist } from "@/server/auth/ownership";
 
 export async function GET(req: Request, { params }: { params: { watchlistId: string } }) {
   const raw = db();
-  return withUser(raw, req, (user) => {
+  return withUser(raw, req, async (user) => {
     const id = Number(params.watchlistId);
-    const view = canReadWatchlist(raw, user.userId, id) ? getWatchlistView(raw, id, user.userId) : null;
+    const view = (await canReadWatchlist(raw, user.userId, id)) ? await getWatchlistView(raw, id, user.userId) : null;
     if (!view) return Response.json({ error: "watchlist not found" }, { status: 404 });
     return Response.json(view);
   });

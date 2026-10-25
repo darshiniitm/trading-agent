@@ -1,9 +1,14 @@
 import "@testing-library/jest-dom/vitest";
-import { afterEach } from "vitest";
+import { afterAll, afterEach } from "vitest";
 import { cleanup } from "@testing-library/react";
 
 afterEach(() => {
   cleanup();
+});
+
+afterAll(async () => {
+  const { closeTestDb } = await import("@/server/db/test-db");
+  await closeTestDb();
 });
 
 // Routes authenticate through requireUser(); tests sign in as the seeded Owner (ensureOwnerUser claims OWNER_EMAIL).

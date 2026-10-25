@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 import { PGlite } from "@electric-sql/pglite";
 import { citext } from "@electric-sql/pglite/contrib/citext";
 import { createTestDb } from "@/server/db/test-db";
+import { ensureOwnerUser } from "@/server/db/seed";
+import { createDraft } from "@/server/drafts";
 
 const DIR = path.join(process.cwd(), "..", "..", "..", "db", "migrations");
 const file = (n: string) => fs.readFileSync(path.join(DIR, fs.readdirSync(DIR).find((f) => f.startsWith(n))!), "utf-8");
@@ -47,5 +49,52 @@ describe("db/migrations/0011_screener_app_full.sql", () => {
     for (const f of files.filter((f) => f < "0011")) await pg.exec(fs.readFileSync(path.join(DIR, f), "utf-8"));
     await pg.exec("INSERT INTO screener_app.users (display_name) VALUES ('x'); INSERT INTO screener_app.user_prompts (user_id, raw_text) VALUES (1, 'old')");
     await expect(pg.exec(file("0011"))).rejects.toThrow(/user_prompts has rows/);
+  });
+});
+
+describe("constraints carried over from the SQLite schema", () => {
+  async function seedPrompt(db: Awaited<ReturnType<typeof createTestDb>>) {
+    await db.run("INSERT INTO users (user_id, display_name, role, status, created_at) VALUES (1,'o','owner','active', now())");
+    await db.run("INSERT INTO prompt_drafts (draft_id,user_id,prompt_text,status,created_at,updated_at) VALUES (1,1,'x','confirmed', now(), now())");
+    await db.run("INSERT INTO prompts (prompt_id,owner_user_id,draft_id,title,prompt_text,structure,spec_json,spec_hash,status,version,hypothesis,kill_criterion,confirmed_at) VALUES (1,1,1,'t','x','literal','{}','h','confirmed',1,'h','k', now())");
+  }
+
+  it("rejects a jobs row with a status outside the enum", async () => {
+    const db = await createTestDb();
+    await expect(db.run("INSERT INTO jobs (type, status, created_at) VALUES ('select_entry', 'bogus', now())")).rejects.toThrow(/check constraint/i);
+  });
+
+  it("enforces UNIQUE(type, prompt_id, as_of) on jobs", async () => {
+    const db = await createTestDb();
+    await seedPrompt(db);
+    await db.run("INSERT INTO jobs (type, prompt_id, as_of, status, created_at) VALUES ('select_entry', 1, '2026-10-02', 'done', now())");
+    await expect(db.run("INSERT INTO jobs (type, prompt_id, as_of, status, created_at) VALUES ('select_entry', 1, '2026-10-02', 'queued', now())")).rejects.toThrow(/unique|duplicate/i);
+  });
+
+  it("rejects invalid JSON in compilations.raw_json", async () => {
+    const db = await createTestDb();
+    const userId = await ensureOwnerUser(db);
+    const { draftId } = await createDraft(db, { userId });
+    await expect(db.run("INSERT INTO compilations (draft_id, model, raw_json, created_at) VALUES (?, 'm', 'not json', now())", [draftId])).rejects.toThrow(/json/i);
+  });
+
+  it("keeps runs.status separate from coverage_status and bounds scored", async () => {
+    const db = await createTestDb();
+    await seedPrompt(db);
+    const ins = (day: number, cs: string | null, scored: number | null) =>
+      db.run("INSERT INTO runs (prompt_id, as_of, kind, status, coverage_status, scored) VALUES (1, ?, 'dry_run', 'done', ?, ?)", [`2026-10-0${day}`, cs, scored]);
+    await expect(ins(1, "complete", 1)).resolves.toBe(1);
+    await expect(ins(2, "partial", 0)).resolves.toBe(1);
+    await expect(ins(3, "low_coverage", 0)).resolves.toBe(1);
+    await expect(ins(4, "bogus", 0)).rejects.toThrow();
+    await expect(ins(5, "complete", 2)).rejects.toThrow();
+  });
+
+  it("the owner seed creates user 1 once and is idempotent", async () => {
+    const db = await createTestDb();
+    expect(await ensureOwnerUser(db)).toBe(1);
+    expect(await ensureOwnerUser(db)).toBe(1);
+    expect((await db.get<{ n: number }>("SELECT COUNT(*) AS n FROM users"))!.n).toBe(1);
+    expect((await db.get<{ display_name: string; role: string }>("SELECT display_name, role FROM users WHERE user_id = 1"))).toEqual({ display_name: "Owner", role: "owner" });
   });
 });

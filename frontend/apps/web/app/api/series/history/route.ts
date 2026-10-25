@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     const limited = rateLimited(user.userId, "data");
     if (limited) return limited;
     const symbol = new URL(req.url).searchParams.get("symbol") ?? "";
-    const known = raw.prepare("SELECT kind FROM symbols WHERE symbol = ?").get(symbol) as { kind: string } | undefined;
+    const known = await raw.get<{ kind: string }>("SELECT kind FROM symbols WHERE symbol = ?", [symbol]);
     if (!known || known.kind !== "index") return Response.json({ error: "benchmark not found" }, { status: 404 });
     try {
       return Response.json(await getHistory(symbol));

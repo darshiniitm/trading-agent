@@ -1,4 +1,4 @@
-import { db } from "@/server/db/client";
+import { closeDb, db } from "@/server/db/client";
 import { runCatchUp } from "@/server/catchUp";
 import { computeAllWatchlistMetrics } from "@/server/viewData";
 import { initTelemetry } from "@/server/telemetry/bootstrap";
@@ -7,7 +7,7 @@ import { inJobRun } from "@/server/telemetry/run";
 async function main() {
   const telemetry = initTelemetry();   // no-op unless OTEL_EXPORTER_OTLP_ENDPOINT / TELEMETRY_DB_URL / SUPABASE_DB_URL is set
   const raw = db();
-  const prompts = raw.prepare("SELECT prompt_id, title FROM prompts WHERE status = 'confirmed'").all() as { prompt_id: number; title: string }[];
+  const prompts = await raw.all<{ prompt_id: number; title: string }>("SELECT prompt_id, title FROM prompts WHERE status = 'confirmed' ORDER BY prompt_id");
 
   for (const prompt of prompts) {
     try {
@@ -38,6 +38,7 @@ async function main() {
   }
 
   await telemetry.shutdown();   // flush spans / metrics / run rows before this short-lived process exits
+  await closeDb();               // the pool would otherwise keep the process alive
 }
 
-main();
+main().catch((e) => { console.error(e); process.exit(1); });

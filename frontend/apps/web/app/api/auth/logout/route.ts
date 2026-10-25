@@ -8,8 +8,8 @@ export async function POST(req: Request) {
   if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
     const identity = await supabaseIdentity(req);
     if (identity) {
-      const row = db().prepare("SELECT user_id FROM users WHERE auth_user_id = ?").get(identity.authUserId) as { user_id: number } | undefined;
-      recordAuthEvent(db(), { userId: row?.user_id ?? null, email: identity.email, event: "logout", provider: identity.provider });
+      const row = await db().get<{ user_id: number }>("SELECT user_id FROM users WHERE auth_user_id = ?", [identity.authUserId]);
+      await recordAuthEvent(db(), { userId: row?.user_id ?? null, email: identity.email, event: "logout", provider: identity.provider });
     }
     await createSupabaseServer().auth.signOut();
   }

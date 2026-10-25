@@ -9,6 +9,9 @@ export default defineConfig({
     // Node by default: PGlite (the test Postgres) needs a real fetch/Response, which jsdom replaces.
     environment: "node",
     environmentMatchGlobs: [["tests/components/**", "jsdom"], ["tests/**/*.test.tsx", "jsdom"]],
+    testTimeout: 30_000,   // the first PGlite database in a worker builds its migration template
+    hookTimeout: 60_000,
+    globalSetup: ["./vitest.global-setup.ts"],
     setupFiles: ["./vitest.setup.ts"],
     include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
   },

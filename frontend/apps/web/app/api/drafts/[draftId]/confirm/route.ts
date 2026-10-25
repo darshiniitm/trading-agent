@@ -8,7 +8,7 @@ export async function POST(req: Request, { params }: { params: { draftId: string
   const raw = db();
   return withUser(raw, req, async (user) => {
     const id = Number(params.draftId);
-    if (!ownsDraft(raw, user.userId, id)) return Response.json({ error: "draft not found" }, { status: 404 });
+    if (!(await ownsDraft(raw, user.userId, id))) return Response.json({ error: "draft not found" }, { status: 404 });
     const { as_of } = await req.json();
     try {
       const { promptId, watchlistId, selectionWarning } = await confirmDraft(raw, id, as_of);

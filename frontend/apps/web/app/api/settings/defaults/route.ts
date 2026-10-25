@@ -15,7 +15,7 @@ const Body = z.object({
 
 export async function GET(req: Request) {
   const raw = db();
-  return withUser(raw, req, (user) => Response.json(getUserDefaults(raw, user.userId)));
+  return withUser(raw, req, async (user) => Response.json(await getUserDefaults(raw, user.userId)));
 }
 
 export async function PUT(req: Request) {
@@ -23,7 +23,7 @@ export async function PUT(req: Request) {
   return withUser(raw, req, async (user) => {
     const body = Body.safeParse(await req.json().catch(() => null));
     if (!body.success) return Response.json({ error: "body must be any of {price_source, timeframe, entry_recheck, horizons_weeks}" }, { status: 400 });
-    try { return Response.json(setUserDefaults(raw, user.userId, body.data)); }
+    try { return Response.json(await setUserDefaults(raw, user.userId, body.data)); }
     catch (err) { return Response.json({ error: (err as Error).message }, { status: 400 }); }
   });
 }

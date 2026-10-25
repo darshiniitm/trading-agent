@@ -7,7 +7,7 @@ export async function POST(req: Request, { params }: { params: { promptId: strin
   const raw = db();
   return withUser(raw, req, async (user) => {
     const promptId = Number(params.promptId);
-    if (!ownsPrompt(raw, user.userId, promptId)) return Response.json({ error: `prompt ${promptId} not found` }, { status: 404 });
+    if (!(await ownsPrompt(raw, user.userId, promptId))) return Response.json({ error: `prompt ${promptId} not found` }, { status: 404 });
     try {
       const { warning } = await retirePrompt(raw, promptId);
       return Response.json({ prompt_id: promptId, status: "retired", warning });

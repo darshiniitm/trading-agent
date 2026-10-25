@@ -1,4 +1,4 @@
-import type Database from "better-sqlite3";
+import type { Db } from "@/server/db/pg";
 import type { ClauseView, ScreenProgram } from "spec";
 import { programConfirmProblems } from "@/server/compiler/v5/answer";
 import { applyLiquidity, applyMinPrice, addonState, type LiquidityChoice } from "@/server/compiler/v5/liquidity";
@@ -48,7 +48,7 @@ export function viewOf(draft: DraftRow, defaults: UserDefaults): ProgramView {
   };
 }
 
-const defaultsOf = (raw: Database.Database, userId: number) => getUserDefaults(raw, userId);
+const defaultsOf = (raw: Db, userId: number) => getUserDefaults(raw, userId);
 
 // Compile the draft's prompt text to a v5 program. Recognisers do the parsing; the model (if given)
 // only sees lines no recogniser claimed, one schema-constrained call per line. Every slot the prompt left
@@ -64,18 +64,19 @@ const AGENT_PROMPTS = {
 };
 const tracedInterpret = task("interpret", interpret, { spanName: "interpreter.parse" });
 const tracedSave = tool("warehouse.write", saveProgramState, { argsOf: (_raw, draftId) => ({ table: "prompt_drafts", draft_id: draftId }), captureInput: false, captureOutput: false });
-const lookupOf = (raw: Database.Database, draftId: number) => () => { const d = getDraft(raw, draftId); return { userId: d?.userId, createdAt: d?.createdAt }; };
+// inPromptRun opens its span synchronously, so the draft is read first and handed over.
+const lookupOf = async (raw: Db, draftId: number) => { const d = await getDraft(raw, draftId); return () => ({ userId: d?.userId, createdAt: d?.createdAt }); };
 
-export function compileProgramDraft(raw: Database.Database, draftId: number, opts: { callModel?: CallModelFn; useModel?: boolean } = {}): Promise<ProgramView> {
-  return inPromptRun({ draftId, stage: "compile", lookup: lookupOf(raw, draftId) }, () => compileProgramDraftInner(raw, draftId, opts));
+export async function compileProgramDraft(raw: Db, draftId: number, opts: { callModel?: CallModelFn; useModel?: boolean } = {}): Promise<ProgramView> {
+  return inPromptRun({ draftId, stage: "compile", lookup: await lookupOf(raw, draftId) }, () => compileProgramDraftInner(raw, draftId, opts));
 }
 
-async function compileProgramDraftInner(raw: Database.Database, draftId: number, { callModel, useModel = true }: { callModel?: CallModelFn; useModel?: boolean } = {}): Promise<ProgramView> {
-  const draft = getDraft(raw, draftId);
+async function compileProgramDraftInner(raw: Db, draftId: number, { callModel, useModel = true }: { callModel?: CallModelFn; useModel?: boolean } = {}): Promise<ProgramView> {
+  const draft = await getDraft(raw, draftId);
   if (!draft) throw new Error(`draft ${draftId} not found`);
   if (!draft.promptText.trim()) throw new Error("draft has no prompt text yet");
-  const defaults = defaultsOf(raw, draft.userId);
-  const examples: Example[] = useModel ? similarExamples(raw, draft.promptText, 4) : [];
+  const defaults = await defaultsOf(raw, draft.userId);
+  const examples: Example[] = useModel ? await similarExamples(raw, draft.promptText, 4) : [];
   const r = await tracedInterpret(draft.promptText, {
     defaults,
     fallback: useModel ? agent("clause_fallback", makeClauseFallback(callModel), { versionOf: AGENT_PROMPTS.clause_fallback() }) : undefined,
@@ -84,60 +85,60 @@ async function compileProgramDraftInner(raw: Database.Database, draftId: number,
     critic: useModel ? agent("model_critic", makeModelCritic(callModel), { versionOf: AGENT_PROMPTS.model_critic() }) : undefined,
     examples,
   });
-  const view = viewOf(tracedSave(raw, draftId, { program: r.program, clauses: r.draft.clauses, normalised: r.draft.normalised }), defaults);
+  const view = viewOf(await tracedSave(raw, draftId, { program: r.program, clauses: r.draft.clauses, normalised: r.draft.normalised }), defaults);
   // the model critic's issues are not stored with the draft; they ride along on this response
   return { ...view, issues: r.issues, reader: r.reader, ...(r.draft.modelError ? { modelError: r.draft.modelError } : {}) };
 }
 
-function load(raw: Database.Database, draftId: number) {
-  const draft = getDraft(raw, draftId);
+async function load(raw: Db, draftId: number) {
+  const draft = await getDraft(raw, draftId);
   if (!draft?.program) throw new Error(`draft ${draftId} has no compiled program yet`);
-  return { draft, defaults: defaultsOf(raw, draft.userId) };
+  return { draft, defaults: await defaultsOf(raw, draft.userId) };
 }
 
 // Editing a chip replaces one assumed value; the rest of the program is untouched and the screen can re-run.
-export function editChip(raw: Database.Database, draftId: number, path: string, value: unknown): ProgramView {
-  const { draft, defaults } = load(raw, draftId);
+export async function editChip(raw: Db, draftId: number, path: string, value: unknown): Promise<ProgramView> {
+  const { draft, defaults } = await load(raw, draftId);
   const before = (resolveProgram(draft.program!, defaults).assumptions ?? []).find((a) => a.path === path);
   const program = applyChipEdit(resolveProgram(draft.program!, defaults), path, value, defaults);
-  recordEdit(raw, { userId: draft.userId, draftId, phrase: before?.label ?? path, from: before?.value, to: value, path });
-  return viewOf(saveProgramState(raw, draftId, { program, clauses: draft.programClauses }), defaults);
+  await recordEdit(raw, { userId: draft.userId, draftId, phrase: before?.label ?? path, from: before?.value, to: value, path });
+  return viewOf(await saveProgramState(raw, draftId, { program, clauses: draft.programClauses }), defaults);
 }
 
 export type AddonChoice = { liquidity: LiquidityChoice } | { min_price: { mode: "none" } | { mode: "floor"; price: number } };
 // Optional add-ons are off until switched on; switching one on adds an ordinary condition to the base set.
-export function setAddon(raw: Database.Database, draftId: number, choice: AddonChoice): ProgramView {
-  const { draft, defaults } = load(raw, draftId);
+export async function setAddon(raw: Db, draftId: number, choice: AddonChoice): Promise<ProgramView> {
+  const { draft, defaults } = await load(raw, draftId);
   const base = resolveProgram(draft.program!, defaults);
   const program = "liquidity" in choice ? applyLiquidity(base, choice.liquidity) : applyMinPrice(base, choice.min_price);
-  return viewOf(saveProgramState(raw, draftId, { program, clauses: draft.programClauses }), defaults);
+  return viewOf(await saveProgramState(raw, draftId, { program, clauses: draft.programClauses }), defaults);
 }
 
 // Editing a line rewrites that line in the (normalised) prompt text and recompiles. Earlier chip edits are
 // dropped — they were edits to the old wording.
-export async function editProgramClause(raw: Database.Database, draftId: number, clauseId: string, text: string, opts: { callModel?: CallModelFn; useModel?: boolean } = {}): Promise<ProgramView> {
-  const draft = getDraft(raw, draftId);
+export async function editProgramClause(raw: Db, draftId: number, clauseId: string, text: string, opts: { callModel?: CallModelFn; useModel?: boolean } = {}): Promise<ProgramView> {
+  const draft = await getDraft(raw, draftId);
   const clause = draft?.programClauses?.find((c) => c.id === clauseId);
   if (!draft || !clause || draft.programNormalised == null) throw new Error("clause not found");
   const norm = draft.programNormalised;
   const edited = norm.slice(0, clause.span[0]) + text.replace(/\n/g, " ").trim() + norm.slice(clause.span[1]);
-  updateDraft(raw, draftId, { promptText: edited });
+  await updateDraft(raw, draftId, { promptText: edited });
   const view = await compileProgramDraft(raw, draftId, opts);
   // the old wording, rewritten by the user into something that now compiles, may become an alias proposal
   const now = view.clauses.find((c) => c.id === clauseId);
   if (clause.status === "not_understood" && now && now.status !== "not_understood") {
-    learnFromClauseEdit(raw, { userId: draft.userId, draftId, oldText: clause.text, newText: now.text, program: view.program });
+    await learnFromClauseEdit(raw, { userId: draft.userId, draftId, oldText: clause.text, newText: now.text, program: view.program });
   }
   return view;
 }
 
 const tracedScreen = task("screen", screenProgram);
-export function screenProgramDraft(raw: Database.Database, draftId: number, asOf: string, fetchFn?: typeof fetch, table = false) {
-  return inPromptRun({ draftId, stage: "screen", lookup: lookupOf(raw, draftId) }, () => screenProgramDraftInner(raw, draftId, asOf, fetchFn, table));
+export async function screenProgramDraft(raw: Db, draftId: number, asOf: string, fetchFn?: typeof fetch, table = false) {
+  return inPromptRun({ draftId, stage: "screen", lookup: await lookupOf(raw, draftId) }, () => screenProgramDraftInner(raw, draftId, asOf, fetchFn, table));
 }
 
-async function screenProgramDraftInner(raw: Database.Database, draftId: number, asOf: string, fetchFn?: typeof fetch, table = false) {
-  const { draft, defaults } = load(raw, draftId);
+async function screenProgramDraftInner(raw: Db, draftId: number, asOf: string, fetchFn?: typeof fetch, table = false) {
+  const { draft, defaults } = await load(raw, draftId);
   const program = resolveProgram(draft.program!, defaults);
   const problems = programConfirmProblems(program);
   if (problems.length) throw new Error(`cannot run: ${problems.join("; ")}`);
@@ -146,16 +147,16 @@ async function screenProgramDraftInner(raw: Database.Database, draftId: number, 
 }
 
 // Non-blocking data check for the interpretation chips (spec §6.2): what each condition and the universe would run on.
-export async function feasibilityProgramDraft(raw: Database.Database, draftId: number, asOf: string, fetchFn?: typeof fetch) {
-  const { draft, defaults } = load(raw, draftId);
+export async function feasibilityProgramDraft(raw: Db, draftId: number, asOf: string, fetchFn?: typeof fetch) {
+  const { draft, defaults } = await load(raw, draftId);
   const program = resolveProgram(draft.program!, defaults);
   return feasibility(program, asOf, { userId: draft.userId, promptId: draftId }, fetchFn) as Promise<{ feasibility: import("@/server/engine/client").Feasibility }>;
 }
 
 export const MAX_UPLOAD_CHARS = 2_000_000;
 // The optional escape hatch next to an approx/unavailable chip: a universe CSV (a `symbol` column) used as tier 0 for this draft.
-export async function uploadForDraft(raw: Database.Database, draftId: number, name: string, text: string, fetchFn?: typeof fetch) {
-  const draft = getDraft(raw, draftId);
+export async function uploadForDraft(raw: Db, draftId: number, name: string, text: string, fetchFn?: typeof fetch) {
+  const draft = await getDraft(raw, draftId);
   if (!draft) throw new Error(`draft ${draftId} not found`);
   if (text.length > MAX_UPLOAD_CHARS) throw new Error("file too large (max 2 MB)");
   return uploadUniverse(draft.userId, draftId, name, text, fetchFn);
