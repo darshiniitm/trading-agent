@@ -1,0 +1,17 @@
+# Weekly web-app jobs (catch-up + grade for every confirmed prompt, then watchlist view metrics) — docs/netlify-production-plan.md §8.
+# Runs next to the engine (same private network, no 15-minute function ceiling). One-shot: it exits when the jobs are done.
+# Needs APP_DB_URL, ENGINE_BASE_URL, ENGINE_TOKEN (+ OTEL_* / TELEMETRY_DB_URL for traces). Build from the repo root:
+#   docker build -f Dockerfile.jobs -t prompt-screener-jobs .
+FROM node:20-slim
+
+WORKDIR /app/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+COPY frontend/apps/web/package.json apps/web/package.json
+COPY frontend/packages packages
+# tsx is a dev dependency; better-sqlite3 (optional, data-move only) is skipped so no native build is needed
+RUN npm ci --omit=optional
+
+COPY frontend/apps/web apps/web
+WORKDIR /app/frontend/apps/web
+ENV NODE_ENV=production
+CMD ["npx", "tsx", "scripts/run-weekly-jobs.ts"]

@@ -72,6 +72,7 @@ re-deriving them from code each time.
 - `docs/evidence-ledger.md` — which studies have read returns in which window.
 - `docs/literal-spec-plan.md` — the Literal series: Dharmin's five-step brief taken literally, the gap-by-gap comparison against Control's interpretation, and decisions 1–9 (universe, RSI band, entry, flip direction, etc.). Registered in the v0.7 plan doc §3.11.
 - `docs/forward_test_findings.md` — append-only findings log. Never edit a past entry retroactively.
+- `docs/netlify-production-plan.md` (v1.0) / `docs/runbook-production.md` — production deployment of the **prompt-screener web app** (`frontend/`, `engine/`): Netlify web app, Supabase Postgres app DB (`screener_app`, migration `db/migrations/0011`), engine as its own container (`Dockerfile.engine`), weekly jobs (`Dockerfile.jobs`). Implemented in code 26 Oct 2026; the runbook lists what has not been exercised against real infrastructure. The app DB is Postgres, not SQLite: web tests run on PGlite against the real `db/migrations`.
 - `docs/dashboards/test-vs-control-ledger.html` — a **hand-maintained** static dashboard, meant to be rebuilt after every grade run. No generator script exists yet (see the `rebuild-test-control-dashboard` skill).
 
 ## Skills available

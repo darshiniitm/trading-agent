@@ -1,3 +1,5 @@
+> **Superseded (25 Oct 2026) for the host and database:** production is Netlify + a separate engine container + Supabase Postgres — see [`netlify-production-plan.md`](netlify-production-plan.md) and [`runbook-production.md`](runbook-production.md). The LLM/observability parts still apply.
+
 # Local + Production versions — implementation plan
 
 > **Superseded in part (15 Oct 2026):** §3–§6 (Hugging Face provider) are replaced by `docs/production-llm-plan.md` (Gemma 4 on the Gemini API, 26B primary → 31B on rate limit). §7–§11 still apply.
