@@ -22,7 +22,7 @@ from engine.v5.legacy import ValidationSpecError, screen_legacy, select_legacy, 
 from engine.v5.registry import conditions_payload
 from engine.v5.run import run_program
 from engine.warmup import STATE as WARM
-from engine import watchdog
+from engine import apikeys, watchdog
 from src import telemetry
 
 _CTX: dict[int, DataContext] = {}
@@ -74,7 +74,7 @@ def _warm_literal() -> None:
 
 
 def create_app(offline: bool = False, history_fn=None, fundamentals_fn=None,
-               refresh_cache_dir=None, refresh_weeks: int | None = None, refresh_runner=None) -> FastAPI:
+               refresh_cache_dir=None, refresh_weeks: int | None = None, refresh_runner=None, key_store=None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         watchdog.start_from_env()           # exit if the app that started us dies (ENGINE_PARENT_PID)
@@ -90,13 +90,33 @@ def create_app(offline: bool = False, history_fn=None, fundamentals_fn=None,
 
     # Bearer-token gate for a deployed engine (docs/netlify-production-plan.md §5.2). Off when ENGINE_TOKEN is unset, so the
     # local engine on 127.0.0.1 behaves exactly as before. /health stays open for the host's own probes; it holds no data.
+    # Per-user plugin keys (engine/apikeys.py) are accepted beside the shared token when API_PEPPER is set. Each key is
+    # rate-limited and every request is size-capped (uploads get their own, larger cap).
+    key_auth = apikeys.from_env(key_store)
+    limiter = apikeys.RateLimiter(int(os.environ.get("API_RATE_LIMIT_PER_MIN", "120")))
+    max_body = int(os.environ.get("API_MAX_BODY_BYTES", str(1 * 1024 * 1024)))
+    max_upload = int(os.environ.get("API_MAX_UPLOAD_BYTES", str(25 * 1024 * 1024)))
+
     @app.middleware("http")
     async def require_engine_token(request: Request, call_next):
         token = os.environ.get("ENGINE_TOKEN", "")
-        if token and request.url.path != "/health":
+        if (token or key_auth) and request.url.path != "/health":
             supplied = request.headers.get("authorization", "")
-            if not (supplied.startswith("Bearer ") and hmac.compare_digest(supplied[7:].encode(), token.encode())):
-                return JSONResponse({"detail": "engine token required"}, status_code=401)
+            bearer = supplied[7:] if supplied.startswith("Bearer ") else ""
+            shared_ok = bool(token and bearer) and hmac.compare_digest(bearer.encode(), token.encode())
+            if not shared_ok:
+                key_id = key_auth.authenticate(bearer) if (key_auth and bearer) else None
+                if key_id is None:
+                    return JSONResponse({"detail": "engine token required"}, status_code=401)
+                if not limiter.allow(key_id):
+                    return JSONResponse({"detail": "rate limit exceeded"}, status_code=429, headers={"Retry-After": "60"})
+                cap = max_upload if request.url.path == "/data/upload" else max_body
+                try:
+                    length = int(request.headers.get("content-length") or 0)
+                except ValueError:
+                    length = 0
+                if length > cap:
+                    return JSONResponse({"detail": "request too large"}, status_code=413)
         return await call_next(request)
 
     def require_ready() -> None:

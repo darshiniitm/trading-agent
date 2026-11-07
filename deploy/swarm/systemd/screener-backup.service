@@ -1,0 +1,6 @@
+[Unit]
+Description=Weekly Supabase pg_dump to GCS
+[Service]
+Type=oneshot
+EnvironmentFile=/srv/screener/stack.env
+ExecStart=/srv/screener/repo/deploy/swarm/backup-pgdump.sh

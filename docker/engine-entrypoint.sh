@@ -3,6 +3,10 @@
 # so nothing stateful lives in the image and the engine code keeps resolving paths exactly as it does locally.
 set -eu
 
+# Swarm/Docker secrets arrive as files under /run/secrets; expose them as env vars (never overrides an env var already set).
+# shellcheck source=/dev/null
+[ -f /usr/local/bin/secrets-env ] && . /usr/local/bin/secrets-env
+
 DATA_DIR="${ENGINE_DATA_DIR:-/data}"
 
 if [ ! -d "$DATA_DIR" ]; then

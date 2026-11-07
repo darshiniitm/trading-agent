@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
@@ -9,6 +10,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def engine_git_sha() -> str:
+    # Container images carry no git or .git; the build bakes the sha into ENGINE_GIT_SHA instead.
+    baked = os.environ.get("ENGINE_GIT_SHA", "").strip()
+    if baked and baked != "unknown":
+        return baked
     try:
         out = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],

@@ -1,0 +1,71 @@
+# Engine Production Plan, Phase 4: test, build by git SHA, Trivy scan (CRITICAL fails), push to GHCR, record digests.
+# Third-party actions are pinned to commit SHAs. TODO(owner): replace each PIN_ME with the commit SHA of the release in the
+# trailing comment (look it up on the action's GitHub releases page); the workflow refuses to run with an unresolved pin.
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@PIN_ME  # v4
+      - uses: actions/setup-python@PIN_ME  # v5
+        with: { python-version: "3.11", cache: pip }
+      - run: pip install -r requirements.txt pytest
+      - run: python -m pytest tests/engine tests/test_deploy_scripts.py tests/test_secrets_env_shim.py -q
+      - uses: actions/setup-node@PIN_ME  # v4
+        with: { node-version: "22", cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci --omit=optional && npm test
+        working-directory: frontend
+
+  image:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - { name: engine, file: Dockerfile.engine }
+          - { name: jobs, file: Dockerfile.jobs }
+    steps:
+      - uses: actions/checkout@PIN_ME  # v4
+      - uses: docker/setup-buildx-action@PIN_ME  # v3
+      - uses: docker/login-action@PIN_ME  # v3
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
+      - name: Build (loaded locally for the scan)
+        uses: docker/build-push-action@PIN_ME  # v6
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          load: true
+          tags: scan/${{ matrix.name }}:${{ github.sha }}
+          build-args: GIT_SHA=${{ github.sha }}
+      - name: Trivy scan (CRITICAL fails the build)
+        uses: aquasecurity/trivy-action@PIN_ME  # v0.28
+        with:
+          image-ref: scan/${{ matrix.name }}:${{ github.sha }}
+          severity: CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+      - name: Push to GHCR
+        id: push
+        uses: docker/build-push-action@PIN_ME  # v6
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          push: true
+          tags: ghcr.io/${{ github.repository }}/${{ matrix.name }}:${{ github.sha }}
+          build-args: GIT_SHA=${{ github.sha }}
+      - name: Record digest
+        run: |
+          echo "### ${{ matrix.name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "ghcr.io/${{ github.repository }}/${{ matrix.name }}@${{ steps.push.outputs.digest }}" | tee -a "$GITHUB_STEP_SUMMARY"

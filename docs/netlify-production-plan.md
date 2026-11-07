@@ -137,6 +137,8 @@ Goal: the web app reads and writes `screener_app.*` in Supabase through `pg`, wi
 ## 5. Phase 2 — Engine as its own always-on service (~1.5–2 days)
 
 ### 5.1 Host (decision D1)
+> **Decided 31 Oct 2026:** single Linux VM in Mumbai running **Docker Swarm** (free Docker Engine). Full plan: [`engine-swarm-deploy-plan.md`](engine-swarm-deploy-plan.md). The options below are kept for reference; `fly.engine.toml` is an unused alternative.
+
 The engine needs: Python 3.11, **≥ 2 GB RAM** (pandas panels for ~220 MB of parquet; measure the real RSS in Phase 0), a **persistent volume** (~1 GB to start), always-on (no scale-to-zero, because warm-up is slow), and outbound HTTPS to Yahoo. Recommended order:
 1. **Fly.io, Mumbai (`bom`)**: 1 machine, attached volume, `auto_stop_machines = off`. Close to Indian users and Yahoo NSE data.
 2. Google Cloud Run `asia-south1` with `min-instances=1` + a Filestore/GCS-FUSE mount (more moving parts for the volume).
@@ -235,6 +237,8 @@ Worst-case interpreter path today: up to ~3 model calls × (8 s timeout + 1 retr
 ---
 
 ## 8. Phase 5 — Weekly jobs (~½ day)
+> **Decided 31 Oct 2026:** runs on the engine VM as a Swarm `jobs` service (replicas 0) started by a systemd timer, per [`engine-swarm-deploy-plan.md`](engine-swarm-deploy-plan.md) §4.7.
+
 
 `scripts/run-weekly-jobs.ts` (catch-up + grade for every confirmed prompt, then watchlist view metrics) must keep the **pre-open recording rule**: a job that misses its window logs and does nothing rather than recording late.
 
@@ -257,11 +261,11 @@ The Python `scripts/weekly_selection_run.sh` (forward test, Literal/T1 arms) is 
 ---
 
 ## 10. Decisions needed from Dharmin
-1. **D1 Engine host:** Fly.io Mumbai with a volume (recommended) / Cloud Run asia-south1 / Render-Railway.
+1. **D1 Engine host:** ~~Fly.io Mumbai with a volume (recommended) / Cloud Run asia-south1 / Render-Railway.~~ **Decided 31 Oct 2026: Docker Swarm on one Mumbai VM** — see `engine-swarm-deploy-plan.md`.
 2. **D2 Supabase:** separate production project (recommended; local + Deploy Previews keep the current one as staging) or share the current project.
 3. **D3 Long requests:** decide after the Phase 0 timing run. Keep sync with a 50 s deadline, or move compile/screen to background functions + polling.
 4. **D4 Table names:** rename the Postgres `screener_app.user_prompts`/`watchlist_items` to the code's `prompts`/`watchlist_entries` (recommended), or change the code to the Postgres names.
-5. **D5 Weekly jobs:** run on the engine host cron (recommended) or on Netlify scheduled + background functions; and whether the Python forward-test run also moves to production.
+5. **D5 Weekly jobs:** run on the engine host cron (recommended) or on Netlify scheduled + background functions; and whether the Python forward-test run also moves to production. **31 Oct 2026: web-app weekly job → engine-VM systemd timer + Swarm jobs service (per the Swarm plan). Proposed, to confirm: the Python forward test stays on the Mac.**
 6. **D6 Netlify plan:** Free vs Pro. Pro adds function-region choice and more build minutes/bandwidth. Memory above 1 GB isn't needed for the web functions.
 7. **D7 Who uses it at launch:** only you/team, or outside users. This drives rate limits per user, the data-licensing item and the SEBI review.
 

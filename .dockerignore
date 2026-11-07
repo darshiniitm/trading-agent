@@ -6,7 +6,11 @@
 data_cache
 data_cache_literal
 results
-frontend
+# frontend/ is needed by Dockerfile.jobs; only its heavy build output is excluded
+frontend/**/node_modules
+frontend/**/.next
+frontend/**/*.tsbuildinfo
+frontend/apps/web/data
 docs
 tests
 _to_delete

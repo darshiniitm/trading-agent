@@ -1,0 +1,6 @@
+[Unit]
+Description=Disk-usage metric every 15 minutes
+[Timer]
+OnCalendar=*:0/15
+[Install]
+WantedBy=timers.target

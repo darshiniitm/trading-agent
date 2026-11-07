@@ -14,8 +14,18 @@ COPY config ./config
 COPY db ./db
 # engine/env.py loads the live environment through scripts/common.py (bootstrap)
 COPY scripts ./scripts
+COPY docker/secrets-env.sh /usr/local/bin/secrets-env
 COPY docker/engine-entrypoint.sh /usr/local/bin/engine-entrypoint
 RUN chmod +x /usr/local/bin/engine-entrypoint
+
+# /health has no git inside the image: the build bakes the commit in (docker build --build-arg GIT_SHA=…)
+ARG GIT_SHA=unknown
+ENV ENGINE_GIT_SHA=$GIT_SHA
+
+# Run unprivileged. The entrypoint re-links /app/{data_cache,…} into the volume, so /app must be writable by this user;
+# the host chowns the bind-mounted data dir to 10001 (deploy/swarm/bootstrap-host.sh).
+RUN useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin engine && chown engine:engine /app
+USER engine
 
 # The volume mount point; the entrypoint links data_cache/, data_cache_literal/ and results/ into it.
 ENV ENGINE_DATA_DIR=/data

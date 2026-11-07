@@ -1,3 +1,4 @@
+# Alternative, not the chosen host (see docs/engine-swarm-deploy-plan.md).
 # Fly.io config for the screening engine (docs/netlify-production-plan.md §5.1, decision D1).
 # Not deployed yet; this is the recommended shape. Create the app and volume first:
 #   fly apps create <app-name>            # then set `app` below

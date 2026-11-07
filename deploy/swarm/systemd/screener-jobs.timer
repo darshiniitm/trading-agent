@@ -1,0 +1,11 @@
+[Unit]
+Description=Weekly prompt-screener jobs timer
+
+[Timer]
+# Decision D-S3: the latest time that still honours the pre-open recording rule for Monday entries. Placeholder: Monday 08:30 IST.
+OnCalendar=Mon *-*-* 08:30:00 Asia/Kolkata
+# A missed run is NOT caught up late: that would break the pre-open recording rule.
+Persistent=false
+
+[Install]
+WantedBy=timers.target
