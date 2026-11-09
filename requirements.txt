@@ -1,4 +1,4 @@
-pandas>=2.0
+pandas>=3.0   # copy-on-write: engine/v5/data.py caches panels without copying them
 numpy>=1.26
 scipy>=1.11
 statsmodels>=0.14

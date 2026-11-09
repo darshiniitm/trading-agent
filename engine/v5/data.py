@@ -35,6 +35,12 @@ def resample_monthly(daily: pd.DataFrame) -> pd.DataFrame:
     return m.reset_index()
 
 
+def _normalized(df: pd.DataFrame) -> bool:
+    """datetime64 dates, ascending, on a 0..n-1 index: what _full() would otherwise rebuild."""
+    return (pd.api.types.is_datetime64_any_dtype(df["date"]) and df["date"].is_monotonic_increasing
+            and isinstance(df.index, pd.RangeIndex) and df.index.start == 0 and df.index.step == 1)
+
+
 @dataclass
 class DataContext:
     universe_df: pd.DataFrame
@@ -65,13 +71,15 @@ class DataContext:
             daily = (self.daily_panels or {}).get(ticker)
             if daily is not None and not daily.empty:
                 if tf == "1D":
-                    out = daily.copy().assign(date=lambda x: pd.to_datetime(x["date"])).sort_values("date")
+                    out = daily
                 elif tf == "1W":
                     out = resample_weekly(daily)
                 elif tf == "1M":
                     out = resample_monthly(daily)
-        if out is not None:
+        if out is not None and not _normalized(out):
             out = out.assign(date=pd.to_datetime(out["date"])).sort_values("date").reset_index(drop=True)
+        # A panel that is already normalized is cached as-is, not copied: copy-on-write (pandas >= 3) keeps any caller's
+        # later edit of it, or of a slice from bars(), out of this cache. ~140 MB less over ~2,300 stocks.
         self._cache[key] = out
         return out
 

@@ -5,6 +5,7 @@ import subprocess
 from pathlib import Path
 
 from engine.env import load_environment, last_bar_date
+from engine.memory import usage_mb
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -42,4 +43,5 @@ def health_payload(offline: bool = False) -> dict:
         "last_bar_date": bar_date,
         "data_snapshot_hash": None,
         "warm": warm,
+        "memory": usage_mb(),
     }

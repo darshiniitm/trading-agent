@@ -1193,3 +1193,51 @@ no trades). Diagnostic pack (`tests.track_forward summary`) now has 3 graded wee
 far short of the 13-week first-look threshold, so no series (Control, shadow, near-miss, T1, T2,
 T3) is statistically readable yet. One week is not evidence; logging and moving on per the
 harness guardrail.
+
+---
+
+## 2026-11-09 — engine memory: fits the 2 GB VM; adapter fetch batched; daily cache floored at 2022-01-01
+
+**Why.** The prompt-screener engine (Swarm, `deploy/swarm/stack.yml`, 1600M cap on a 2 vCPU / 2 GB GCP
+VM) was OOM-killed mid warm-up (exit 137). Reproduced locally with `scripts/measure_engine_memory.py`
+(no network: Yahoo/NSE/Google stubbed, `--mode cold` feeds Yahoo-shaped frames built from the cached
+bars) inside `docker run --memory=1600m --cpus=2` of the engine image:
+
+| | old code (HEAD 63c6b90) | new code |
+|---|---|---|
+| warm start (caches fresh) — peak RSS | 764 MB | 499 MB |
+| cold start (every price cache stale) — peak RSS | **killed at 1600M (exit 137)** | 592 MB |
+| warm-up time, cold | — | ~40 s (fake Yahoo; real network adds the fetch time) |
+
+**Causes found.** (1) `src/data/adapter.py` `weekly_ohlcv()`/`daily_ohlcv()` downloaded all ~2,300
+tickers in one `yf.download` call (one huge wide frame). (2) `engine/resolution/resolver.py` capped every
+provider call at `providers.timeout_s` (15 s) with 2 retries; a whole-universe Yahoo panel always
+exceeds 15 s, so the resolver abandoned it and started the same full download again beside the
+still-running one (up to three at once); the stale-cache fallback then timed out under that load too.
+(3) `DataContext._full()` copied every daily and weekly panel. (4) the per-symbol daily cache never
+trimmed (files back to 2019-06). (5) a per-row `ticker` string column in every panel.
+
+**Changes.** Batched downloads (`DOWNLOAD_CHUNK = 100`) and a one-pass `groupby` split in the adapter;
+`YahooProvider` tops a cached symbol up from 7 days before its last cached bar
+(`adapter.daily_ohlcv_since`) instead of refetching 5 years; providers that read local disk or time
+out their own requests opt out of the resolver's wall-clock cap (`timeout_s = None`); new
+`ohlcv.retain_since: 2022-01-01` in `config/data_resolution.yaml` (Dharmin's decision, 9 Nov 2026) applied
+on cache load and save; `compact_panel()` (categorical `ticker`, prices stay float64); no-copy
+`DataContext` caching (pandas >= 3 copy-on-write, now pinned in `requirements.txt`); `MALLOC_ARENA_MAX=2`,
+`malloc_trim` after each (re)load (`engine/memory.py`), one full-universe evaluation at a time
+(`ENGINE_MAX_CONCURRENT_SCREENS`), RSS in `/health`; nightly prefetch prunes bhavcopy / equity-master day
+files older than 30 days and display-only watchlist history older than 7 days.
+
+**Output equivalence.** All 20 golden reference programs (`tests/golden/reference_programs.py`) at
+as_of 2026-10-09, 10-16 and 10-23 on the real per-symbol cache: old code vs new code (no floor) —
+**60/60 full results identical**; new code with the 2022-01-01 floor vs without — **60/60 full results
+identical** (every value, not only the tickers). The floor can in principle shift long-recursive
+indicators (VStop trend state, Wilder RSI, EMA seeding) on some stock; none moved on these 60 runs.
+The adapter changes are output-preserving for Control too (same rows per ticker, same order;
+`tests/engine/test_memory_footprint.py` asserts this), but `src/data/adapter.py` is a Control-path
+file: the flag audit's AU03 will report drift until it is committed. Weekly panels
+(`weekly_ohlcv_260w`) and every Control/Literal backtest cache (`daily_ohlcv_since_*`) are untouched. No
+record re-graded.
+
+**Not yet exercised:** a real cold start against Yahoo on the VM (the measurements stub the network).
+After deploy, `GET /health` → `memory.peak_mb` shows the VM's real high-water mark.

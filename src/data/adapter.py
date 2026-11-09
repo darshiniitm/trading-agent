@@ -58,6 +58,44 @@ FULL_LIST_KNOWN_CAVEATS = KNOWN_CAVEATS + [
 ]
 
 
+DOWNLOAD_CHUNK = 100   # tickers per yf.download call: one call for ~2,300 tickers peaked at ~1.8 GB on a 2 GB VM
+
+
+def _download_long(yf, tickers: list[str], chunk: int = DOWNLOAD_CHUNK, **kwargs) -> pd.DataFrame:
+    """yf.download in batches of `chunk` tickers -> one long frame [ticker, date, open, high, low, close, volume].
+    Each ticker's rows are the same as from one bulk call; only one batch's wide frame is alive at a time."""
+    frames = []
+    for i in range(0, len(tickers), chunk):
+        batch = tickers[i:i + chunk]
+        fetched = yf.download(tickers=batch, auto_adjust=False, group_by="ticker", threads=True, progress=False, **kwargs)
+        for t in batch:
+            try:
+                sub = fetched[t]  # yf.download with group_by='ticker' is always MultiIndex, even for 1 ticker
+                sub = sub.dropna(how="all")
+                if sub.empty:
+                    continue
+                sub = sub.reset_index().rename(columns=str.lower)
+                sub["ticker"] = t
+                frames.append(sub[["ticker", "date", "open", "high", "low", "close", "volume"]])
+            except Exception:
+                continue
+        del fetched
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+
+
+def _split_by_ticker(panel: pd.DataFrame | None, tickers: list[str]) -> dict[str, pd.DataFrame]:
+    """{ticker: its rows sorted by date}, in `tickers` order, in one groupby pass (not one full-column scan per ticker)."""
+    if panel is None or panel.empty:
+        return {}
+    groups = dict(tuple(panel.groupby("ticker", sort=False)))
+    out = {}
+    for t in tickers:
+        g = groups.get(t)
+        if g is not None and not g.empty:
+            out[t] = g.sort_values("date").reset_index(drop=True)
+    return out
+
+
 class SourceAdapter:
     """Interface every data source must implement."""
 
@@ -186,39 +224,13 @@ class OpenSourceAdapter(SourceAdapter):
         missing = [t for t in tickers if t not in cached_tickers]
         if missing:
             period = f"{int(history_weeks * 7 / 30) + 2}mo"
-            fetched = yf.download(
-                tickers=missing,
-                period=period,
-                interval="1wk",
-                auto_adjust=False,
-                group_by="ticker",
-                threads=True,
-                progress=False,
-            )
-            frames = []
-            for t in missing:
-                try:
-                    sub = fetched[t]  # yf.download with group_by='ticker' is always MultiIndex, even for 1 ticker
-                    sub = sub.dropna(how="all")
-                    if sub.empty:
-                        continue
-                    sub = sub.reset_index().rename(columns=str.lower)
-                    sub["ticker"] = t
-                    frames.append(sub[["ticker", "date", "open", "high", "low", "close", "volume"]])
-                except Exception:
-                    continue
-            new_panel = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+            new_panel = _download_long(yf, missing, period=period, interval="1wk")
             panel = pd.concat([panel, new_panel], ignore_index=True) if panel is not None else new_panel
             panel = panel.drop_duplicates(subset=["ticker", "date"]).sort_values(["ticker", "date"])
             atomic_write_parquet(panel, cache_path)
             atomic_write_json(meta_path, {"fetched_at": time.time()})
 
-        out = {}
-        for t in tickers:
-            sub = panel[panel["ticker"] == t].sort_values("date").reset_index(drop=True)
-            if not sub.empty:
-                out[t] = sub
-        return out
+        return _split_by_ticker(panel, tickers)
 
     # ---- daily OHLCV (T1 rolling-window shadow arm only; weekly path above is untouched) --
     def daily_ohlcv(self, tickers: list[str], history_days: int) -> dict[str, pd.DataFrame]:
@@ -236,40 +248,20 @@ class OpenSourceAdapter(SourceAdapter):
 
         missing = [t for t in tickers if t not in cached_tickers]
         if missing:
-            period = f"{history_days}d"
-            fetched = yf.download(
-                tickers=missing,
-                period=period,
-                interval="1d",
-                auto_adjust=False,
-                group_by="ticker",
-                threads=True,
-                progress=False,
-            )
-            frames = []
-            for t in missing:
-                try:
-                    sub = fetched[t]  # yf.download with group_by='ticker' is always MultiIndex, even for 1 ticker
-                    sub = sub.dropna(how="all")
-                    if sub.empty:
-                        continue
-                    sub = sub.reset_index().rename(columns=str.lower)
-                    sub["ticker"] = t
-                    frames.append(sub[["ticker", "date", "open", "high", "low", "close", "volume"]])
-                except Exception:
-                    continue
-            new_panel = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+            new_panel = _download_long(yf, missing, period=f"{history_days}d", interval="1d")
             panel = pd.concat([panel, new_panel], ignore_index=True) if panel is not None else new_panel
             panel = panel.drop_duplicates(subset=["ticker", "date"]).sort_values(["ticker", "date"])
             atomic_write_parquet(panel, cache_path)
             atomic_write_json(meta_path, {"fetched_at": time.time()})
 
-        out = {}
-        for t in tickers:
-            sub = panel[panel["ticker"] == t].sort_values("date").reset_index(drop=True)
-            if not sub.empty:
-                out[t] = sub
-        return out
+        return _split_by_ticker(panel, tickers)
+
+    def daily_ohlcv_since(self, tickers: list[str], start) -> dict[str, pd.DataFrame]:
+        """Daily bars from `start` on, straight from Yahoo (no combined-cache read or write). The engine's incremental
+        top-up: a stock whose per-symbol cache is a few days behind needs those days, not five years again."""
+        import yfinance as yf
+
+        return _split_by_ticker(_download_long(yf, list(tickers), start=str(pd.Timestamp(start).date()), interval="1d"), tickers)
 
     def daily_benchmark_series(self, ticker: str, history_days: int) -> pd.DataFrame:
         d = self.daily_ohlcv([ticker], history_days)

@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import hmac
 import os
-from contextlib import asynccontextmanager
+import threading
+from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 
 import pandas as pd
@@ -22,7 +23,7 @@ from engine.v5.legacy import ValidationSpecError, screen_legacy, select_legacy, 
 from engine.v5.registry import conditions_payload
 from engine.v5.run import run_program
 from engine.warmup import STATE as WARM
-from engine import apikeys, watchdog
+from engine import apikeys, memory, watchdog
 from src import telemetry
 
 _CTX: dict[int, DataContext] = {}
@@ -71,6 +72,7 @@ def _warm_literal() -> None:
     # Build the per-stock bar indexes now (the same DataContext requests use), so the first screen is as fast as the rest.
     progress("indexes")
     context_from_env(env).prime(progress=lambda d, t: progress("indexes", d, t))
+    memory.release()   # hand the load's temporaries back to the OS before requests start (2 GB VM)
 
 
 def create_app(offline: bool = False, history_fn=None, fundamentals_fn=None,
@@ -131,6 +133,20 @@ def create_app(offline: bool = False, history_fn=None, fundamentals_fn=None,
             snap = WARM.snapshot()
         raise HTTPException(status_code=503, detail={"engine": snap}, headers={"Retry-After": "3"})
 
+    # Full-universe evaluations run one at a time (ENGINE_MAX_CONCURRENT_SCREENS): each builds per-stock slices and
+    # indicator frames for ~2,300 stocks, and two at once doubled that transient memory on the 2 GB VM.
+    screens = threading.BoundedSemaphore(max(1, int(os.environ.get("ENGINE_MAX_CONCURRENT_SCREENS", "1"))))
+    screen_wait_s = float(os.environ.get("ENGINE_SCREEN_WAIT_S", "300"))
+
+    @contextmanager
+    def heavy():
+        if not screens.acquire(timeout=screen_wait_s):
+            raise HTTPException(status_code=503, detail="engine busy with other screens", headers={"Retry-After": "10"})
+        try:
+            yield
+        finally:
+            screens.release()
+
     def env_for(program: dict):
         require_ready()
         try:
@@ -159,7 +175,8 @@ def create_app(offline: bool = False, history_fn=None, fundamentals_fn=None,
         ctx = env_for(program)
         upload = {"user_id": user_id, "prompt_id": prompt_id} if user_id is not None and prompt_id is not None else None
         try:
-            return {"feasibility": check_program(program, as_of, ctx, upload)}
+            with heavy():
+                return {"feasibility": check_program(program, as_of, ctx, upload)}
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=[{"condition_id": None, "message": str(exc)}])
 
@@ -243,7 +260,8 @@ def create_app(offline: bool = False, history_fn=None, fundamentals_fn=None,
                   user_id: int | None = Body(default=None), prompt_id: int | None = Body(default=None)):
         ctx = with_upload(env_for(program), user_id, prompt_id)
         try:
-            return run_program(program, as_of, ctx, full_table=table)
+            with heavy():
+                return run_program(program, as_of, ctx, full_table=table)
         except ProgramError as exc:
             raise _unprocessable(exc)
 
@@ -253,7 +271,8 @@ def create_app(offline: bool = False, history_fn=None, fundamentals_fn=None,
                user_id: int | None = Body(default=None), prompt_id: int | None = Body(default=None)):
         ctx = with_upload(env_for(program), user_id, prompt_id)
         try:
-            return screen_legacy(program, as_of, ctx)
+            with heavy():
+                return screen_legacy(program, as_of, ctx)
         except ProgramError as exc:
             raise _unprocessable(exc)
 
@@ -263,7 +282,8 @@ def create_app(offline: bool = False, history_fn=None, fundamentals_fn=None,
                user_id: int | None = Body(default=None)):
         ctx = with_upload(env_for(program), user_id, prompt_id)
         try:
-            result = select_legacy(program, as_of, ctx)
+            with heavy():
+                result = select_legacy(program, as_of, ctx)
         except ProgramError as exc:
             raise _unprocessable(exc)
         if run_kind != "dry_run" and prompt_id is not None and is_active(prompt_id):
@@ -291,7 +311,8 @@ def create_app(offline: bool = False, history_fn=None, fundamentals_fn=None,
                  graded_weeks_so_far: int = Body(embed=True)):
         ctx = env_for(program)
         try:
-            return validate_legacy(program, ctx, picks, as_of, graded_weeks_so_far)
+            with heavy():
+                return validate_legacy(program, ctx, picks, as_of, graded_weeks_so_far)
         except (ValidationSpecError, ProgramError) as exc:
             raise HTTPException(status_code=422, detail=str(exc))
 

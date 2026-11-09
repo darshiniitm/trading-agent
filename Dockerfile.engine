@@ -3,6 +3,9 @@
 FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PIP_NO_CACHE_DIR=1
+# glibc gives each thread its own malloc arena (up to 8 x cores) and never shrinks them; two arenas keep the threadpool's
+# pandas work from ratcheting RSS up on the 2 GB VM (engine/memory.py trims the heap after each load).
+ENV MALLOC_ARENA_MAX=2
 
 WORKDIR /app
 COPY requirements.txt ./

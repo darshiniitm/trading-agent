@@ -81,3 +81,10 @@ def test_gap_log_records_each_failure():
     r.register(DataType.UNIVERSE, [Fake("a", exc=ValueError("x")), Fake("b", ok())])
     r.resolve(REQ)
     assert [x["provider"] for x in rows] == ["a"]
+
+
+def test_provider_without_a_wall_clock_cap_is_waited_for_once_not_restarted():
+    slow = Fake("slow", ok(), delay=0.5)
+    slow.timeout_s = None              # e.g. a whole-universe Yahoo panel: it sets its own request timeouts
+    out = res(None, slow, Fake("b", ok())).resolve(REQ)
+    assert slow.calls == 1 and out.source == "slow" and out.chain_trace == ["slow:ok"]

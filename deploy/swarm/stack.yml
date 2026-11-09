@@ -36,6 +36,7 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       ENGINE_GIT_SHA: ${GIT_SHA}
+      ENGINE_MAX_CONCURRENT_SCREENS: "1"   # one full-universe evaluation at a time (engine/app.py heavy())
     secrets:
       - { source: engine_token,    target: ENGINE_TOKEN }
       - { source: supabase_db_url, target: SUPABASE_DB_URL }
@@ -46,11 +47,13 @@ services:
         source: /srv/screener/data
         target: /data
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/health',timeout=5).status==200 else 1)"]
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/health',timeout=12).status==200 else 1)"]
       interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 300s   # warm-up loads ~220 MB of parquet and builds indexes; measure in S3 and adjust
+      timeout: 15s         # a probe that outlives the engine's own 12 s timeout is a hang, not a slow start
+      retries: 20          # ~10 min of consecutive failures. While it warms up, both cores sit at ~230% for minutes and cannot
+                           # answer a probe; a start_period does not help, because one early success ends it. 5 retries killed the
+                           # engine mid-load (exit 137, "unhealthy container") on a 2 vCPU / 2 GB VM.
+      start_period: 2400s
     deploy:
       replicas: 1          # NEVER more than 1: single-flight lock and refresh slot are per process, data_cache/ has one writer
       update_config:
@@ -64,8 +67,8 @@ services:
         delay: 10s
         window: 120s
       resources:
-        limits:       { memory: 3G }
-        reservations: { memory: 1500M }
+        limits:       { memory: 1600M }   # a 2 GB VM (1.9 GiB usable): cap the engine so it cannot starve Docker/Caddy/the OS; swap absorbs the peak
+        reservations: { memory: 600M }    # measured at 1600M/2 CPUs: warm-up peaks ~500 MB from cache, ~600 MB on a full cold fetch (scripts/measure_engine_memory.py)
     logging:
       driver: json-file
       options: { max-size: "20m", max-file: "5" }

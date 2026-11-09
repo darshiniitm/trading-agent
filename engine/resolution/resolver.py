@@ -108,11 +108,15 @@ class DataResolver:
 
     def _call_impl(self, prov: Provider, request: DataRequest, pcfg: dict) -> tuple[ProviderResult | None, str]:
         attempts = 1 + int(pcfg.get("retries", 2))
+        # A provider can opt out of the wall-clock cap (`timeout_s = None`): one that reads local disk, or sets its own
+        # per-request network timeouts, over a whole ~2,300-stock panel. Capping it only abandoned a still-running fetch
+        # and started the same fetch again beside it (a timed-out worker thread is never stopped).
+        timeout = getattr(prov, "timeout_s", pcfg.get("timeout_s", 15))
         err = "error"
         for n in range(attempts):
             fut = telemetry.ctx_submit(self._pool, prov.fetch, request)   # carry the trace into the worker thread
             try:
-                res = fut.result(timeout=pcfg.get("timeout_s", 15))
+                res = fut.result(timeout=timeout)
                 if res is None or res.value is None or (hasattr(res.value, "__len__") and len(res.value) == 0):
                     return None, "empty"
                 return res, "ok"

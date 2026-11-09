@@ -27,6 +27,7 @@ history:
 ohlcv:
   cache_dir: data_cache/ohlcv/daily
   bhavcopy_dir: data_cache/ohlcv/bhavcopy
+  retain_since: 2022-01-01           # oldest daily bar kept per symbol (load + save); bounds RAM/disk on the 2 GB VM. Decided 9 Nov 2026
   mismatch_tolerance: 0.005          # >0.5% close difference between Yahoo and bhavcopy -> prefer bhavcopy
   stale_after_trading_days: 3        # live source's last bar this many trading days behind -> stale
   holidays_file: config/nse_holidays.yaml
@@ -48,4 +49,6 @@ ops:
   meta_db: data_cache/_meta/provenance.sqlite    # gap log + last-successful-fetch log (engine is the single writer)
   equity_master_dir: data_cache/equity_master
   prefetch_bhavcopy_days: 5
+  keep_day_files_days: 30             # prefetch deletes bhavcopy / equity-master day files older than this
+  views_cache_dir: data_cache/views_daily   # display-only watchlist history (engine/metrics_service.py); pruned after 7 days
   feasibility_timeout_s: 3

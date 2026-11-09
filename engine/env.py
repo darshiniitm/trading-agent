@@ -39,6 +39,8 @@ def _load_live(structure: str) -> Environment:
     from scripts.common import bootstrap
     from engine.warmup import progress
     rule_spec, adapter, universe_df, panels, shares = bootstrap(RULE_SPEC_PATHS[structure], progress=progress)
+    from engine.resolution.ohlcv import compact_panel
+    panels = {t: compact_panel(p) for t, p in panels.items()}   # held for the engine's lifetime: ticker -> categorical
     # Daily bars go through the resolver chain (cache -> Yahoo(adapter) -> bhavcopy -> Google -> stale cache). With
     # full data present this returns the adapter's own frames unchanged (tests/engine/resolution regression test).
     from datetime import date

@@ -81,7 +81,7 @@ def run_prefetch(config: dict | None = None, today: date | None = None, force: b
     fetch = fetcher or http_fetcher(cfg["providers"]["niftyindices"].get("user_agent", "Mozilla/5.0"), cfg["providers"]["max_req_per_s"])
     timeout = cfg["providers"]["timeout_s"]
     reg = load_registry()
-    cache = OhlcvCache(cfg["ohlcv"]["cache_dir"])
+    cache = OhlcvCache(cfg["ohlcv"]["cache_dir"], cfg["ohlcv"].get("retain_since"))
 
     def step(name: str, fn: Callable[[], object]):
         try:
@@ -168,7 +168,35 @@ def run_prefetch(config: dict | None = None, today: date | None = None, force: b
         panels = {s: cache.load(s) for s in bhav_syms}                 # jump scan runs on cached history only
         return annotate_corporate_actions({k: v for k, v in panels.items() if v is not None}, {}, build_actions_resolver(), today, cfg, log)
 
+    def prune():
+        return prune_dated_files(cfg, today)
+
     for name, fn in [("equity_master", equity_master), ("index_snapshots", index_snapshots), ("bhavcopy", bhavcopy),
-                     ("yahoo_missing", yahoo_missing), ("sector_map", sector_map), ("corp_actions", corp_actions)]:
+                     ("yahoo_missing", yahoo_missing), ("sector_map", sector_map), ("corp_actions", corp_actions),
+                     ("prune", prune)]:
         step(name, fn)
     return summary
+
+
+def prune_dated_files(cfg: dict, today: date) -> int:
+    """Delete day files nothing reads any more, so the data volume stops growing every trading day: bhavcopy days
+    (only the last ~2 weeks are read) and equity-master snapshots older than ops.keep_day_files_days, and display-only
+    watchlist history (engine/metrics_service.py, 6 h TTL) older than a week. Returns the number of files removed."""
+    keep = int(cfg["ops"].get("keep_day_files_days", 30))
+    cutoff = today - timedelta(days=keep)
+    removed = 0
+    for d in (cfg["ohlcv"]["bhavcopy_dir"], cfg["ops"]["equity_master_dir"]):
+        for f in Path(d).glob("*.*"):
+            try:
+                day = date.fromisoformat(f.stem)
+            except ValueError:
+                continue                       # not a <YYYY-MM-DD>.<ext> day file: leave it alone
+            if day < cutoff:
+                f.unlink(missing_ok=True)
+                removed += 1
+    stale = time.time() - 7 * 86400
+    for f in Path(cfg["ops"].get("views_cache_dir", "data_cache/views_daily")).glob("*.parquet"):
+        if f.stat().st_mtime < stale:
+            f.unlink(missing_ok=True)
+            removed += 1
+    return removed

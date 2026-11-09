@@ -116,8 +116,8 @@ def test_regression_full_data_returns_adapter_frames_unchanged(tmp_path):
     svc, _, _ = service(tmp_path, Adapter(data), nofetch)
     panels, prov = svc.daily_panels(list(data), DAY)
     assert set(panels) == set(data) and all(p.quality == "ok" for p in prov.values())
-    for s in data:
-        pd.testing.assert_frame_equal(panels[s].reset_index(drop=True), data[s].reset_index(drop=True))
+    for s in data:   # same values; `ticker` comes back categorical (engine.resolution.ohlcv.compact_panel), so dtypes differ
+        pd.testing.assert_frame_equal(panels[s].reset_index(drop=True), data[s].reset_index(drop=True), check_dtype=False, check_categorical=False)
     panels2, _ = service(tmp_path, Adapter(boom=True), nofetch)[0].daily_panels(list(data), DAY)   # from the written cache
     for s in data:
-        pd.testing.assert_frame_equal(panels2[s].reset_index(drop=True), data[s].reset_index(drop=True), check_dtype=False)
+        pd.testing.assert_frame_equal(panels2[s].reset_index(drop=True), data[s].reset_index(drop=True), check_dtype=False, check_categorical=False)

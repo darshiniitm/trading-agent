@@ -33,21 +33,42 @@ def required_bars(n: int, buffer_pct: float = 0.20) -> int:
     return int(n * (1 + buffer_pct)) + 1
 
 
-class OhlcvCache:
-    """Per-symbol parquet: <dir>/<SYMBOL>.parquet + <SYMBOL>.meta.json (source, as_of). Writes are atomic."""
+def compact_panel(df: pd.DataFrame) -> pd.DataFrame:
+    """One stock's bars, held as cheaply as the engine can without changing a value: the per-row `ticker` string becomes
+    a one-category categorical (1 byte/row instead of ~20) and `date` a datetime64, sorted. Prices/volume stay float64."""
+    out = df
+    if "ticker" in out.columns and not isinstance(out["ticker"].dtype, pd.CategoricalDtype):
+        out = out.assign(ticker=out["ticker"].astype("category"))
+    if "date" in out.columns and not pd.api.types.is_datetime64_any_dtype(out["date"]):
+        out = out.assign(date=pd.to_datetime(out["date"]))
+    if "date" in out.columns and not out["date"].is_monotonic_increasing:
+        out = out.sort_values("date")
+    return out.reset_index(drop=True)
 
-    def __init__(self, root: str | Path):
+
+class OhlcvCache:
+    """Per-symbol parquet: <dir>/<SYMBOL>.parquet + <SYMBOL>.meta.json (source, as_of). Writes are atomic.
+    `retain_since` (config ohlcv.retain_since) is the oldest bar kept: older rows are dropped on load and on save, so the
+    files and the engine's memory stop growing with every year of history."""
+
+    def __init__(self, root: str | Path, retain_since=None):
         self.dir = Path(root)
+        self.retain_since = pd.Timestamp(retain_since) if retain_since else None
 
     def _p(self, sym: str) -> Path:
         return self.dir / f"{sym}.parquet"
+
+    def _trim(self, df: pd.DataFrame) -> pd.DataFrame:
+        if self.retain_since is None:
+            return df
+        return df[pd.to_datetime(df["date"]) >= self.retain_since]
 
     def load(self, sym: str) -> pd.DataFrame | None:
         p = self._p(sym)
         if not p.exists():
             return None
         try:
-            return pd.read_parquet(p)
+            return compact_panel(self._trim(pd.read_parquet(p)))
         except Exception:
             return None
 
@@ -55,12 +76,14 @@ class OhlcvCache:
         m = self._p(sym).with_suffix(".meta.json")
         return json.loads(m.read_text()) if m.exists() else {}
 
-    def save(self, sym: str, df: pd.DataFrame, source: str) -> None:
+    def save(self, sym: str, df: pd.DataFrame, source: str) -> pd.DataFrame:
+        """Merge `df` into the symbol's file (new rows win on a shared date) and return the merged bars."""
         self.dir.mkdir(parents=True, exist_ok=True)
         old = self.load(sym)
         if old is not None:
             df = pd.concat([old, df], ignore_index=True)
         df = df.assign(date=pd.to_datetime(df["date"])).drop_duplicates(subset=["date"], keep="last").sort_values("date")
+        df = self._trim(df)
         p = self._p(sym)
         tmp = p.with_suffix(".parquet.tmp")
         df[COLS].to_parquet(tmp, index=False)
@@ -68,6 +91,7 @@ class OhlcvCache:
         mt = p.with_suffix(".meta.json.tmp")
         mt.write_text(json.dumps({"source": source, "as_of": str(df["date"].max().date())}))
         mt.replace(p.with_suffix(".meta.json"))
+        return compact_panel(df[COLS])
 
 
 def _slice(df: pd.DataFrame, as_of: date) -> pd.DataFrame:
@@ -77,6 +101,7 @@ def _slice(df: pd.DataFrame, as_of: date) -> pd.DataFrame:
 class CacheProvider:
     """Serves only symbols whose cache is fresh (last bar = latest trading day <= as_of) and long enough."""
     name, data_type, primary = "cache", DataType.OHLCV, True
+    timeout_s = None   # local disk: never abandoned mid-read (resolver._call_impl)
 
     def __init__(self, cache: OhlcvCache, calendar: TradingCalendar):
         self.cache, self.cal = cache, calendar
@@ -100,20 +125,43 @@ class CacheProvider:
 
 
 class YahooProvider:
-    """Wraps the existing adapter.daily_ohlcv (yfinance); incremental fetch/caching lives there + in OhlcvCache."""
+    """Wraps the existing adapter (yfinance). A symbol with a per-symbol cache is topped up from a few days before its
+    last cached bar (adapter.daily_ohlcv_since) and merged into that cache; only symbols with no cache fetch the full
+    window (adapter.daily_ohlcv). Both download in batches (src/data/adapter.py DOWNLOAD_CHUNK)."""
     log_miss = True
     name, data_type, primary = "yahoo", DataType.OHLCV, True
+    timeout_s = None   # yfinance times out its own requests; a 2,300-stock panel takes minutes, not 15 s
+    OVERLAP_DAYS = 7   # re-fetch the last week too: Yahoo revises the latest bars (and splits re-adjust them)
 
     def __init__(self, adapter, history_days: int, cache: OhlcvCache | None = None):
         self.adapter, self.history_days, self.cache = adapter, history_days, cache
 
+    def _tail_starts(self, symbols: list[str]) -> dict[str, list[str]]:
+        """{start date: symbols whose cache can be topped up from there}; symbols without a usable cache are left out."""
+        if self.cache is None or not hasattr(self.adapter, "daily_ohlcv_since"):
+            return {}
+        groups: dict[str, list[str]] = {}
+        for s in symbols:
+            last = self.cache.meta(s).get("as_of") if self.cache._p(s).exists() else None
+            if last:
+                start = str((pd.Timestamp(last) - pd.Timedelta(days=self.OVERLAP_DAYS)).date())
+                groups.setdefault(start, []).append(s)
+        return groups
+
     def fetch(self, req: DataRequest) -> ProviderResult:
-        got = self.adapter.daily_ohlcv(list(req.symbols or []), self.history_days)
+        symbols = list(req.symbols or [])
+        tails = self._tail_starts(symbols)
+        topped = {s for group in tails.values() for s in group}
+        got: dict[str, pd.DataFrame] = {}
+        for start, group in tails.items():
+            for s, df in self.adapter.daily_ohlcv_since(group, start).items():
+                got[s] = self.cache.save(s, df, "yahoo")     # cached history + the new days, as one panel
+        rest = [s for s in symbols if s not in topped]
+        if rest:
+            for s, df in self.adapter.daily_ohlcv(rest, self.history_days).items():
+                got[s] = self.cache.save(s, df, "yahoo") if self.cache is not None else df
         out = {s: _slice(df, _d(req.as_of)) for s, df in got.items()}
         out = {s: df for s, df in out.items() if not df.empty}
-        if self.cache is not None:
-            for s, df in out.items():
-                self.cache.save(s, df, "yahoo")
         if not out:
             raise ProviderError("yahoo returned nothing")
         return ProviderResult(out, _d(req.as_of),
@@ -134,6 +182,7 @@ class BhavcopyProvider:
     """Authoritative EOD, all symbols per day. One download serves every symbol (day files cached on disk)."""
     log_miss = True
     name, data_type, primary = "nse_bhavcopy", DataType.OHLCV, False
+    timeout_s = None   # each day file has its own fetch timeout
 
     def __init__(self, url_template: str, day_dir: str | Path, fetcher: Callable[[str, float], bytes],
                  calendar: TradingCalendar, timeout: float = 15, enabled: bool = True):
@@ -201,6 +250,7 @@ class GoogleProvider:
 
 class StaleCacheProvider:
     name, data_type, primary = "last_cached_bar", DataType.OHLCV, False
+    timeout_s = None   # local disk
 
     def __init__(self, cache: OhlcvCache):
         self.cache = cache
@@ -227,7 +277,7 @@ def build_ohlcv_resolver(adapter, history_days: int, config: dict | None = None,
     cfg = config or load_config()
     ocfg, pcfg = cfg["ohlcv"], cfg["providers"]
     cal = calendar or TradingCalendar.from_file(ocfg.get("holidays_file") and Path(ocfg["holidays_file"]))
-    cache = OhlcvCache(ocfg["cache_dir"])
+    cache = OhlcvCache(ocfg["cache_dir"], ocfg.get("retain_since"))
     fetch = fetcher or http_fetcher(pcfg.get("niftyindices", {}).get("user_agent", "Mozilla/5.0"), pcfg.get("max_req_per_s", 2))
     chain: list = [CacheProvider(cache, cal)]
     if network and adapter is not None:
