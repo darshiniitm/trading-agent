@@ -1,0 +1,131 @@
+{
+ "_comment": "Shared by web/tests/telemetry/redact.test.ts and tests/telemetry/test_redact.py so the two implementations cannot drift.",
+ "strings": [
+  {
+   "name": "bearer header",
+   "in": "connect failed Authorization: Bearer sk-live-abc123XYZ host=ollama.com",
+   "out": "connect failed Authorization: Bearer [redacted] host=ollama.com"
+  },
+  {
+   "name": "sk key",
+   "in": "key is sk-test-SECRET1234567890 ok",
+   "out": "key is [redacted] ok"
+  },
+  {
+   "name": "jwt",
+   "in": "tok eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.abc_DEF-123 end",
+   "out": "tok [redacted] end"
+  },
+  {
+   "name": "email",
+   "in": "mail dharmin.p@example.co.in now",
+   "out": "mail [redacted-email] now"
+  },
+  {
+   "name": "postgres url",
+   "in": "postgresql://postgres:hunter2@db.example.supabase.co:5432/postgres",
+   "out": "postgresql://postgres:[redacted]@db.example.supabase.co:5432/postgres"
+  },
+  {
+   "name": "clean text untouched",
+   "in": "Nifty 100 stocks where SMA 6 crosses SMA 30",
+   "out": "Nifty 100 stocks where SMA 6 crosses SMA 30"
+  },
+  {
+   "name": "multiple",
+   "in": "a@b.io and Bearer abc.def and sk-aaaaaaaaaaaa",
+   "out": "[redacted-email] and Bearer [redacted] and [redacted]"
+  }
+ ],
+ "objects": [
+  {
+   "name": "denylisted keys",
+   "in": {
+    "Authorization": "Bearer x",
+    "api_key": "k",
+    "apiKey": "k",
+    "x-api-key": "k",
+    "password": "p",
+    "token": "t",
+    "secret": "s",
+    "cookie": "c",
+    "prompt": "Nifty 100"
+   },
+   "out": {
+    "Authorization": "[redacted]",
+    "api_key": "[redacted]",
+    "apiKey": "[redacted]",
+    "x-api-key": "[redacted]",
+    "password": "[redacted]",
+    "token": "[redacted]",
+    "secret": "[redacted]",
+    "cookie": "[redacted]",
+    "prompt": "Nifty 100"
+   }
+  },
+  {
+   "name": "nested + arrays + string values",
+   "in": {
+    "a": {
+     "email": "u@x.com",
+     "list": [
+      {
+       "refresh_token": "r"
+      },
+      "Bearer zzz"
+     ]
+    },
+    "n": 3,
+    "ok": true,
+    "nil": null
+   },
+   "out": {
+    "a": {
+     "email": "[redacted-email]",
+     "list": [
+      {
+       "refresh_token": "[redacted]"
+      },
+      "Bearer [redacted]"
+     ]
+    },
+    "n": 3,
+    "ok": true,
+    "nil": null
+   }
+  }
+ ],
+ "hash_user": {
+  "salt": "test-salt",
+  "cases": [
+   {
+    "in": "42",
+    "out": "7dbb05509e88fffe"
+   },
+   {
+    "in": "dharminp755@gmail.com",
+    "out": "2124cead8545c95e"
+   }
+  ]
+ },
+ "truncate": {
+  "max": 10,
+  "cases": [
+   {
+    "in": "short",
+    "text": "short",
+    "truncated": false
+   },
+   {
+    "in": "0123456789",
+    "text": "0123456789",
+    "truncated": false
+   },
+   {
+    "in": "0123456789ABC",
+    "text": "0123456789",
+    "truncated": true
+   }
+  ]
+ }
+}

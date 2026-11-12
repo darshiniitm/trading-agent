@@ -1,0 +1,7 @@
+[Unit]
+Description=Report root-disk usage to Grafana Cloud (OTLP)
+[Service]
+Type=oneshot
+EnvironmentFile=/srv/screener/stack.env
+WorkingDirectory=/srv/screener/repo
+ExecStart=/usr/bin/python3 -m scripts.emit_disk_metric

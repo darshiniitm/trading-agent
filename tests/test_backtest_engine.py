@@ -163,7 +163,8 @@ def test_zero_pick_weeks_are_not_silently_dropped():
         "week_start": list(weeks[:5]),
         "ret_pct_net": [0.02] * 5,
     })
-    w = weekly_portfolio_returns(graded)
+    # D2 fixed 2026-09-16: the fold calendar is passed in (the only way to know weeks 6-10 existed).
+    w = weekly_portfolio_returns(graded, calendar=list(weeks))
     assert len(w) == 10, (
         f"portfolio series has {len(w)} rows for a 10-week span with 5 trading weeks — "
         "flat weeks were dropped, which overstates CAGR and Sharpe"

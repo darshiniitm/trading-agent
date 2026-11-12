@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly prompt-screener jobs (scale the Swarm jobs service 0->1->0)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=deploy
+ExecStart=/srv/screener/repo/deploy/swarm/run-weekly-jobs.sh
+TimeoutStartSec=4000

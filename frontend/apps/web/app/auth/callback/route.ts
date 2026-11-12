@@ -29,7 +29,7 @@ export async function GET(req: Request) {
   if (!data.user) return to("/login?error=callback");
 
   try {
-    ensureAppUser(db(), identityFromSupabaseUser(data.user), { ip: req.headers.get("x-forwarded-for"), userAgent: req.headers.get("user-agent") });
+    await ensureAppUser(db(), identityFromSupabaseUser(data.user), { ip: req.headers.get("x-forwarded-for"), userAgent: req.headers.get("user-agent") });
   } catch (e) {
     if (e instanceof AccountDeniedError) { await supabase.auth.signOut(); return to(`/login?error=${e.reason}`); }
     throw e;

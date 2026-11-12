@@ -1,0 +1,87 @@
+# Literal-Brief Rule Spec — "Literal" series
+# This file IS the Literal strategy: a from-scratch implementation of the original
+# 5-step brief, read as literally as possible. It is NOT a Control variant and never
+# feeds config/rules.yaml or Control's forward-test record. See docs/literal-spec-plan.md
+# for the reuse-vs-modify audit and the decisions this file encodes (decided 26 Sep 2026).
+
+data_source: opensource   # opensource (yfinance + NSE archive CSVs) | paid (not implemented yet)
+
+universe:
+  source: full_nse_equity_list   # brief step 1: "all stocks", not an index-constituent proxy
+  index_lists:                   # used only for sector backfill (full list has no sector field)
+    - midcap150
+    - smallcap250
+    - nifty500
+  history_start: "2024-01-01"    # decided 26 Sep 2026: from 2024 onward, not back to 2019
+  market_cap_cr:
+    min: 10000
+    max: 50000
+  liquidity:
+    metric: median_weekly_turnover_cr
+    lookback_weeks: 8
+    min: 10                       # reported as a column (per the earlier review), not a filter draw down for Literal — see literal-spec-plan.md
+
+signals:
+  - id: vstop_flip
+    indicator: vstop
+    params:
+      length: 10
+      mult: 2.0
+      timeframe: weekly
+      source: close
+    predicate: "flip_up == True"   # brief step 2 direction: report both flip_up/flip_down, trade bullish-only (adopted default)
+
+  - id: rsi_band
+    indicator: rsi
+    params:
+      period: 14
+      method: wilder
+      timeframe: weekly
+      source: close
+    predicate: "value >= 50 and value <= 65"   # decided 26 Sep 2026: keep Control's band
+
+combine: AND
+
+sector:
+  benchmark: NIFTY_50   # changed from NIFTY_MIDCAP_150, 26 Sep 2026 (Dharmin's decision):
+                        # benchmark Literal/T1's own return performance against the broad
+                        # market (Nifty 50), not the mid-cap index -- see docs/literal-spec-plan.md.
+  benchmark_ticker: "^NSEI"   # verified reachable via yfinance (real Nifty 50 index level)
+  rs_lookbacks_weeks: [4, 13, 1]   # 4w stays primary (ranks/outperforming flag); 1w ("this week") added per Q4 -- both shown
+  outperforming:
+    rs_gt: 0
+    top_k: 5
+  mode: report                    # brief step 3 wants a visible sector view, not a hidden score input (see literal-spec-plan.md)
+
+trade:
+  entry: signal_close             # decided 26 Sep 2026: EP = Friday close (brief's literal default)
+  entry_fill_check: next_week_open  # informational only — never used to build R/target/confidence
+  stop: vstop_line
+  target_r_multiple: 2.0
+  exit_horizon: fixed_1w
+  max_r_pct: null                  # brief step 4: a trade for every qualified stock, no risk-cap filter
+  confidence:
+    weights:
+      rr: 0.25
+      rsi_sweetspot: 0.15
+      sector_rs: 0.20
+      trend_quality: 0.15
+      volume: 0.15
+      liquidity: 0.10
+
+validation:
+  entry_fill: signal_close
+  return_definition: both          # brief step 5: close-to-close is the headline; trade-result (with SL hits) reported alongside
+  headline: close_to_close
+  exit:
+    stop_hit: "intraweek_low <= SL"
+    else: week_close
+  horizons_weeks: [1, 2, 3]        # "Step 5 extended", added 27 Sep 2026: R1w/R2w/R3w per pick,
+                                    # cumulative from the same buy price/date, both signal and trade
+                                    # views (src/backtest/horizons.py:grade_horizons()). Trade view's
+                                    # stop trails week-by-week (Dharmin's decision, 27 Sep 2026).
+
+data:
+  history_weeks: 260
+  min_bars_required: 30
+  cache_dir: data_cache_literal    # separate cache: full-NSE universe is ~4x Control's, don't collide with Control's cache

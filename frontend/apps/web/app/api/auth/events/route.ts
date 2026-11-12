@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   return withUser(raw, req, async (user) => {
     const body = await req.json().catch(() => null);
     if (body?.event !== "password_reset") return Response.json({ error: "unsupported event" }, { status: 400 });
-    recordAuthEvent(raw, { userId: user.userId, email: user.email, event: "password_reset", provider: "email", ip: req.headers.get("x-forwarded-for"), userAgent: req.headers.get("user-agent") });
+    await recordAuthEvent(raw, { userId: user.userId, email: user.email, event: "password_reset", provider: "email", ip: req.headers.get("x-forwarded-for"), userAgent: req.headers.get("user-agent") });
     return Response.json({ ok: true });
   });
 }

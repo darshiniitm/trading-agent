@@ -1,0 +1,51 @@
+# Index registry (spec §3.2). URLs verified reachable (HTTP 200, CSV with Symbol column) on 2026-10-07.
+# niftyindices URLs change occasionally — re-verify before editing.
+# approximation: how to synthesize the list when no real list is obtainable.
+# NIFTYMIDCAP/SMALLCAP rank bands are expressed as top_n_by_mcap with an optional skip_top_n.
+base_url: "https://www.niftyindices.com/IndexConstituent/"
+indices:
+  "NIFTY 50":
+    aliases: ["NIFTY50", "N50", "NIFTY FIFTY"]
+    file: ind_nifty50list.csv
+    approximation: {top_n_by_mcap: 50}
+    rebalance: semiannual
+  "NIFTY NEXT 50":
+    aliases: ["NIFTYNEXT50", "NIFTY JUNIOR", "NEXT 50"]
+    file: ind_niftynext50list.csv
+    approximation: {skip_top_n: 50, top_n_by_mcap: 50}
+    rebalance: semiannual
+  "NIFTY 100":
+    aliases: ["NIFTY100", "N100"]
+    file: ind_nifty100list.csv
+    approximation: {top_n_by_mcap: 100}
+    rebalance: semiannual
+  "NIFTY 200":
+    aliases: ["NIFTY200", "N200"]
+    file: ind_nifty200list.csv
+    approximation: {top_n_by_mcap: 200}
+    rebalance: semiannual
+  "NIFTY 500":
+    aliases: ["NIFTY500", "N500"]
+    file: ind_nifty500list.csv
+    approximation: {top_n_by_mcap: 500}
+    rebalance: semiannual
+  "NIFTY MIDCAP 100":
+    aliases: ["NIFTYMIDCAP100", "MIDCAP 100"]
+    file: ind_niftymidcap100list.csv
+    approximation: {skip_top_n: 100, top_n_by_mcap: 100}
+    rebalance: semiannual
+  "NIFTY MIDCAP 150":
+    aliases: ["NIFTYMIDCAP150", "MIDCAP 150"]
+    file: ind_niftymidcap150list.csv
+    approximation: {skip_top_n: 100, top_n_by_mcap: 150}
+    rebalance: semiannual
+  "NIFTY SMALLCAP 100":
+    aliases: ["NIFTYSMALLCAP100", "SMALLCAP 100"]
+    file: ind_niftysmallcap100list.csv
+    approximation: {skip_top_n: 250, top_n_by_mcap: 100}
+    rebalance: semiannual
+  "NIFTY SMALLCAP 250":
+    aliases: ["NIFTYSMALLCAP250", "SMALLCAP 250"]
+    file: ind_niftysmallcap250list.csv
+    approximation: {skip_top_n: 250, top_n_by_mcap: 250}
+    rebalance: semiannual

@@ -1,0 +1,15 @@
+{
+  "_readme": "Golden values read off the five TradingView watchlist screenshots of 15 Oct 2026 (Price, Financials, Performance, Risk, Technicals). NOT YET FILLED: the screenshots are not in the repo and the exact capture date/time was never confirmed (plan §6 / Task 0). Fill 'captured_at' and every 'values' entry from the screenshots, then run: python -m scripts.watchlist_parity. Never invent a value; leave it null if a cell was not visible. Keys per symbol: perf_1w perf_1m perf_3m perf_ytd perf_1y perf_5y perf_all avg_vol_10 market_cap beta_1y beta_3y beta_5y vol_1d vol_1w vol_1m rsi14 mom10 ao cci20 pe eps yield; ratings as labels: tech_rating ma_rating os_rating (Strong sell / Sell / Neutral / Buy / Strong buy).",
+  "captured_at": null,
+  "symbols": {
+    "NIFTY":      { "yahoo": "^NSEI",        "values": {} },
+    "BANKNIFTY":  { "yahoo": "^NSEBANK",     "values": {} },
+    "SENSEX":     { "yahoo": "^BSESN",       "values": {} },
+    "CNXIT":      { "yahoo": "^CNXIT",       "values": {} },
+    "RELIANCE":   { "yahoo": "RELIANCE.NS",  "values": {} },
+    "AXISBANK":   { "yahoo": "AXISBANK.NS",  "values": {} },
+    "HDFCBANK":   { "yahoo": "HDFCBANK.NS",  "values": {} },
+    "ICICIBANK":  { "yahoo": "ICICIBANK.NS", "values": {} },
+    "BAJFINANCE": { "yahoo": "BAJFINANCE.NS","values": {} }
+  }
+}

@@ -76,3 +76,16 @@ def test_candidate_score_is_never_negative_or_unbounded():
         sc = _score(r_pct_of_close=r_pct)
         assert 0.0 <= sc["candidate_score"] <= 100.0
         assert 0.0 <= sc["guardrail_multiplier"] <= 1.0
+
+
+def test_no_risk_cap_gives_full_headroom_credit_instead_of_crashing():
+    """Literal's spec (config/rules_literal.yaml, decided 26 Sep 2026) sets
+    trade.max_r_pct: null -- 'a trade for every qualified stock', no risk-cap
+    filter. score_row() passes that straight through as risk_cap_pct=None; there
+    is then no cap to have headroom against, so guardrails() must skip that
+    dimension (full credit) rather than crash on `None * 100`."""
+    no_cap = _score(risk_cap_pct=None, r_pct_of_close=40.0)  # would be deep past a 15% cap
+    assert no_cap["risk_cap_headroom_pct"] is None
+    assert no_cap["guardrail_multiplier"] == 1.0
+    capped = _score(risk_cap_pct=0.15, r_pct_of_close=14.5)  # tight against an actual cap
+    assert no_cap["guardrail_multiplier"] > capped["guardrail_multiplier"]

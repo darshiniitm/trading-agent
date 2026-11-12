@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request, { params }: { params: { watchlistId: string; entryId: string } }) {
   const raw = db();
   return withUser(raw, req, async (user) => {
-    if (!canReadWatchlist(raw, user.userId, Number(params.watchlistId))) return Response.json({ error: "entry not found" }, { status: 404 });
+    if (!(await canReadWatchlist(raw, user.userId, Number(params.watchlistId)))) return Response.json({ error: "entry not found" }, { status: 404 });
     try {
       const series = await getEntrySeries(raw, Number(params.watchlistId), Number(params.entryId));
       if (!series) return Response.json({ error: "entry not found" }, { status: 404 });

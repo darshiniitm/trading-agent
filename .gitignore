@@ -2,11 +2,19 @@
 __pycache__/
 *.pyc
 data_cache/
-results/
+data_cache_literal/
+/data_cache
+/data_cache_literal
+results/*
+!results/feature_flags/
+!results/threshold_experiment/
+!results/evidence/
+!results/prompt_arms/
 .DS_Store
 .pytest_cache/
-.claude/
+.env
 
 # secrets
 .env.local
 frontend/apps/web/.env.local
+.superpowers/

@@ -1,0 +1,110 @@
+{
+ "program": {
+  "program_version": 5,
+  "universe": {
+   "source": "index",
+   "index": "NIFTY 500"
+  },
+  "sets": [
+   {
+    "id": "S1",
+    "from": "universe",
+    "label": "qualified stocks",
+    "eval": {
+     "mode": "latest",
+     "timeframe": "1D",
+     "bar": "last_completed"
+    },
+    "where": {
+     "all": [
+      "C1"
+     ]
+    }
+   }
+  ],
+  "conditions": [
+   {
+    "id": "C1",
+    "lhs": {
+     "ind": "bar",
+     "params": {
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "op": ">",
+    "value": 0,
+    "phrase": "outperformed the index over the last 4 weeks"
+   }
+  ],
+  "actions": [
+   {
+    "id": "A1",
+    "type": "group_by",
+    "set": "S1",
+    "key": "sector",
+    "highlight": {
+     "metric": "ew_sector_return_vs_universe",
+     "lookback_sessions": 20,
+     "top_n_per_group": 3,
+     "rule": {}
+    }
+   }
+  ],
+  "source_phrases": [
+   {
+    "path": "universe.index",
+    "phrase": "Nifty 500",
+    "span": [
+     21,
+     30
+    ]
+   }
+  ],
+  "needs_input": [],
+  "unsupported": [],
+  "ignored": [],
+  "unrecognised": [],
+  "answers": [],
+  "assumptions": [
+   {
+    "path": "actions.A1.highlight.lookback_sessions",
+    "label": "4 weeks = 20 trading sessions",
+    "value": 20,
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C1.params.source",
+    "label": "the close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C1.value",
+    "label": "no stock filter: every stock in the universe is grouped",
+    "value": 0,
+    "provenance": "assumed"
+   }
+  ],
+  "not_evaluable": []
+ },
+ "english": "From **NIFTY 500** stocks, on **daily** candles, find stocks where **the close is above 0**. Group them by **sector** and highlight sectors whose equal-weight 20-session return beats the whole universe, listing each one's top 3 stocks.",
+ "issues": [],
+ "clauses": [
+  {
+   "id": "L1",
+   "text": "Which sectors in the Nifty 500 have outperformed the index over the last 4 weeks? Show the top 3 stocks in each.",
+   "span": [
+    0,
+    112
+   ],
+   "status": "ok",
+   "maps_to": "C1: the close [1D] > 0; A1: group S1 (C1) by sector, highlight outperformers; universe: NIFTY 500",
+   "questions": 0
+  }
+ ],
+ "reader": {
+  "calls": 0,
+  "dropped": []
+ }
+}

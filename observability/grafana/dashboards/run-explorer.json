@@ -1,0 +1,820 @@
+{
+  "uid": "ps-run-explorer",
+  "title": "Run explorer",
+  "description": "Pick a prompt id or run id: every task, agent call and tool call with status, duration, tokens and expandable input/output. Rows link to the trace and its logs.",
+  "tags": [
+    "prompt-screener",
+    "runs"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "graphTooltip": 1,
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "type": "query",
+        "name": "prompt_id",
+        "label": "Prompt id",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "supabase"
+        },
+        "query": "select distinct prompt_id::text from observability.runs where prompt_id is not null order by 1 desc limit 200",
+        "refresh": 2,
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "hide": 0,
+        "sort": 0
+      },
+      {
+        "type": "query",
+        "name": "run_id",
+        "label": "Run",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "supabase"
+        },
+        "query": "select run_id::text as __value, concat(to_char(started_at, 'MM-DD HH24:MI'), ' ', kind, ' ', status, ' p', coalesce(prompt_id::text, '-')) as __text from observability.runs where coalesce(prompt_id::text, '') like '$prompt_id' or '$prompt_id' = '%' order by started_at desc limit 200",
+        "refresh": 2,
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "hide": 0,
+        "sort": 0
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "type": "table",
+      "title": "Runs",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "supabase"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open trace in Tempo",
+                    "url": "/explore?orgId=1&left={%22datasource%22%3A%22tempo%22%2C%22queries%22%3A%5B{%22refId%22%3A%22A%22%2C%22datasource%22%3A{%22type%22%3A%22tempo%22%2C%22uid%22%3A%22tempo%22}%2C%22queryType%22%3A%22traceql%22%2C%22query%22%3A%22${__value.raw}%22}%5D%2C%22range%22%3A{%22from%22%3A%22now-24h%22%2C%22to%22%3A%22now%22}}",
+                    "targetBlank": true
+                  },
+                  {
+                    "title": "Logs for this trace in Loki",
+                    "url": "/explore?orgId=1&left={%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B{%22refId%22%3A%22A%22%2C%22datasource%22%3A{%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22}%2C%22expr%22%3A%22{service_name%3D~%5C%22.%2B%5C%22}%20%7C%20trace_id%20%3D%20%5C%22${__value.raw}%5C%22%22}%5D%2C%22range%22%3A{%22from%22%3A%22now-24h%22%2C%22to%22%3A%22now%22}}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "supabase"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "select started_at, kind, status, outcome, prompt_id, draft_id, user_hash, provider, model, duration_ms, error_type, error_msg, trace_id, run_id::text as run_id from observability.runs where coalesce(prompt_id::text, '') like '$prompt_id' or '$prompt_id' = '%' order by started_at desc limit 200"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "table",
+      "title": "Tasks",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "supabase"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 24,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "input"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "json-view"
+                }
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "output"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "json-view"
+                }
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open trace in Tempo",
+                    "url": "/explore?orgId=1&left={%22datasource%22%3A%22tempo%22%2C%22queries%22%3A%5B{%22refId%22%3A%22A%22%2C%22datasource%22%3A{%22type%22%3A%22tempo%22%2C%22uid%22%3A%22tempo%22}%2C%22queryType%22%3A%22traceql%22%2C%22query%22%3A%22${__value.raw}%22}%5D%2C%22range%22%3A{%22from%22%3A%22now-24h%22%2C%22to%22%3A%22now%22}}",
+                    "targetBlank": true
+                  },
+                  {
+                    "title": "Logs for this trace in Loki",
+                    "url": "/explore?orgId=1&left={%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B{%22refId%22%3A%22A%22%2C%22datasource%22%3A{%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22}%2C%22expr%22%3A%22{service_name%3D~%5C%22.%2B%5C%22}%20%7C%20trace_id%20%3D%20%5C%22${__value.raw}%5C%22%22}%5D%2C%22range%22%3A{%22from%22%3A%22now-24h%22%2C%22to%22%3A%22now%22}}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "supabase"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "select seq, task_name, status, duration_ms, rows_in, rows_out, input, output, error_type, error_msg, trace_id, span_id from observability.run_tasks where run_id::text like '$run_id' order by started_at"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "table",
+      "title": "Agent calls",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "supabase"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 24,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "input"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "json-view"
+                }
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "output"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "json-view"
+                }
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open trace in Tempo",
+                    "url": "/explore?orgId=1&left={%22datasource%22%3A%22tempo%22%2C%22queries%22%3A%5B{%22refId%22%3A%22A%22%2C%22datasource%22%3A{%22type%22%3A%22tempo%22%2C%22uid%22%3A%22tempo%22}%2C%22queryType%22%3A%22traceql%22%2C%22query%22%3A%22${__value.raw}%22}%5D%2C%22range%22%3A{%22from%22%3A%22now-24h%22%2C%22to%22%3A%22now%22}}",
+                    "targetBlank": true
+                  },
+                  {
+                    "title": "Logs for this trace in Loki",
+                    "url": "/explore?orgId=1&left={%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B{%22refId%22%3A%22A%22%2C%22datasource%22%3A{%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22}%2C%22expr%22%3A%22{service_name%3D~%5C%22.%2B%5C%22}%20%7C%20trace_id%20%3D%20%5C%22${__value.raw}%5C%22%22}%5D%2C%22range%22%3A{%22from%22%3A%22now-24h%22%2C%22to%22%3A%22now%22}}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "supabase"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "select started_at, agent_name, agent_version, status, model, provider, input_tokens, output_tokens, gpu_ms, duration_ms, input, output, error_type, error_msg, trace_id, span_id from observability.agent_calls where run_id::text like '$run_id' order by started_at"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "table",
+      "title": "Tool calls (incl. llm.chat)",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "supabase"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 24,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tool_args"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "json-view"
+                }
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "input"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "json-view"
+                }
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "output"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "json-view"
+                }
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open trace in Tempo",
+                    "url": "/explore?orgId=1&left={%22datasource%22%3A%22tempo%22%2C%22queries%22%3A%5B{%22refId%22%3A%22A%22%2C%22datasource%22%3A{%22type%22%3A%22tempo%22%2C%22uid%22%3A%22tempo%22}%2C%22queryType%22%3A%22traceql%22%2C%22query%22%3A%22${__value.raw}%22}%5D%2C%22range%22%3A{%22from%22%3A%22now-24h%22%2C%22to%22%3A%22now%22}}",
+                    "targetBlank": true
+                  },
+                  {
+                    "title": "Logs for this trace in Loki",
+                    "url": "/explore?orgId=1&left={%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B{%22refId%22%3A%22A%22%2C%22datasource%22%3A{%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22}%2C%22expr%22%3A%22{service_name%3D~%5C%22.%2B%5C%22}%20%7C%20trace_id%20%3D%20%5C%22${__value.raw}%5C%22%22}%5D%2C%22range%22%3A{%22from%22%3A%22now-24h%22%2C%22to%22%3A%22now%22}}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "supabase"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "select started_at, tool_name, status, duration_ms, rows_in, rows_out, model, input_tokens, output_tokens, gpu_ms, tool_args, input, output, error_type, error_msg, trace_id, span_id from observability.tool_calls where run_id::text like '$run_id' order by started_at"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Agent calls per minute",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 36,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "expr": "sum by (agent) (rate(agent_invocations_total[5m])) * 60",
+          "legendFormat": "{{agent}}",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Agent error rate",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 36,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "expr": "sum by (agent) (rate(agent_invocations_total{status=\"error\"}[30m])) / clamp_min(sum by (agent) (rate(agent_invocations_total[30m])), 1e-9)",
+          "legendFormat": "{{agent}}",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Agent p95 duration",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 36,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, agent) (rate(agent_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{agent}}",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Tool calls per minute",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 44,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "expr": "sum by (tool) (rate(tool_calls_total[5m])) * 60",
+          "legendFormat": "{{tool}}",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Tool error rate",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 44,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "expr": "sum by (tool) (rate(tool_calls_total{status=\"error\"}[30m])) / clamp_min(sum by (tool) (rate(tool_calls_total{status!=\"skipped\"}[30m])), 1e-9)",
+          "legendFormat": "{{tool}}",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Tool p95 duration",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 44,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, tool) (rate(tool_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{tool}}",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "table",
+      "title": "Tokens per agent (range)",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "supabase"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 52,
+        "w": 24,
+        "h": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "supabase"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "select agent_name, count(*) as calls, sum(input_tokens) as input_tokens, sum(output_tokens) as output_tokens, round(sum(gpu_ms)/1000.0, 1) as gpu_s from observability.agent_calls where $__timeFilter(started_at) group by 1 order by 3 desc nulls last"
+        }
+      ]
+    }
+  ]
+}

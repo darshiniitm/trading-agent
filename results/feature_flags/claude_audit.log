@@ -1,0 +1,24 @@
+The flag audit for WK=2026-09-21 came back **FAIL**. The auditor followed its decision table: the FAIL let it continue to the report and findings steps, and it stopped nowhere with an error. Its output, unchanged:
+
+```
+FLAG AUDIT 2026-09-21: FAIL
+# Flag audit 2026-09-21
+
+overall: **FAIL**
+
+| id | status | expected | actual |
+|---|---|---|---|
+| AU01 | PASS | all I1-I10 PASS/WARN | [{"id": "I1", "status": "PASS", "detail": "rows=262 expected(liquidity_filter)=2 |
+| AU02 | PASS | late_backfill | late_backfill |
+| AU03 | FAIL | no Control-file hash/diff changes | changed=['src/trade/builder.py'] git_clean=False |
+| AU04 | PASS | csv_sha256 matches; no M/D on picks_*/flags_* | sha_match=True bad_git_lines=[] |
+| AU05 | PASS | 2026-09-21 | 2026-09-21 |
+| AU06 | PASS | caveats present in manifest and status md | manifest_ok=True status_md_ok=True |
+| AU07 | PASS | n/a (no T4 picks this week) | no T4 picks |
+| AU08 | PASS | no dup keys; week rows == 262 | dup=0 week_rows=262 |
+| AU09 | PASS | n/a (not graded yet) | not graded yet |
+| AU10 | PASS | all stages done/skipped_already_done | ['done', 'skipped_already_done', 'done', 'done', 'skipped_already_done', 'done', |
+Findings: appended
+```
+
+The only failing check is AU03, which flags `src/trade/builder.py` because it has changed and isn't committed. That is the change you decided to keep on 15 Sep 2026, which removed the `R <= 0` reject. `CLAUDE.md` says AU03 will keep flagging it until it is committed, so this is not a new problem. All nine other checks passed, and a findings entry for this week was appended.

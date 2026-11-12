@@ -1,0 +1,21 @@
+{
+  email {$ACME_EMAIL}
+}
+
+{$ENGINE_DOMAIN} {
+  encode gzip
+  # The bearer-token check stays in the engine (one source of truth); Caddy only terminates TLS and proxies.
+  reverse_proxy engine:8080 {
+    health_uri /health
+    transport http {
+      read_timeout 120s
+    }
+  }
+  request_body {
+    max_size 8MB
+  }
+  log {
+    output stdout
+    format json
+  }
+}

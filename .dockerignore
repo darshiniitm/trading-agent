@@ -1,0 +1,21 @@
+.git
+.venv
+.venv-laya
+.superpowers
+.claude
+data_cache
+data_cache_literal
+results
+# frontend/ is needed by Dockerfile.jobs; only its heavy build output is excluded
+frontend/**/node_modules
+frontend/**/.next
+frontend/**/*.tsbuildinfo
+frontend/apps/web/data
+docs
+tests
+_to_delete
+Claude outputs
+**/__pycache__
+**/.pytest_cache
+.env
+.env.*

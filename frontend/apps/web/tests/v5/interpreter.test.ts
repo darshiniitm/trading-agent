@@ -76,20 +76,20 @@ describe("interpreter §9.2 — the full six-line prompt", () => {
 
 describe("saved user defaults are read from storage, not hard-coded", () => {
   it("a user's saved timeframe, price source, entry and horizons drive the fill", async () => {
-    const raw = createTestDb();
-    const userId = ensureOwnerUser(raw);
-    expect(getUserDefaults(raw, userId)).toEqual(BUILTIN_DEFAULTS);
-    const saved = setUserDefaults(raw, userId, { timeframe: "1D", price_source: "open", entry_recheck: "friday_close", horizons_weeks: [2, 4] });
-    expect(getUserDefaults(raw, userId)).toEqual(saved);
-    const { program: p } = await compileProgram(SIX_LINES, { defaults: getUserDefaults(raw, userId) });
+    const raw = await createTestDb();
+    const userId = await ensureOwnerUser(raw);
+    expect(await getUserDefaults(raw, userId)).toEqual(BUILTIN_DEFAULTS);
+    const saved = await setUserDefaults(raw, userId, { timeframe: "1D", price_source: "open", entry_recheck: "friday_close", horizons_weeks: [2, 4] });
+    expect(await getUserDefaults(raw, userId)).toEqual(saved);
+    const { program: p } = await compileProgram(SIX_LINES, { defaults: await getUserDefaults(raw, userId) });
     expect(chip(p, "conditions.C2.params.source").value).toBe("open");
     expect(chip(p, "conditions.C2.tf").value).toBe("1D");
     expect(chip(p, "actions.A2.entry.at").value).toBe("signal_close");
     expect(chip(p, "actions.A3.horizons_w").value).toEqual([2, 4]);
   });
-  it("rejects a nonsense default", () => {
-    const raw = createTestDb();
-    expect(() => setUserDefaults(raw, ensureOwnerUser(raw), { timeframe: "2W" as any })).toThrow(/timeframe/);
+  it("rejects a nonsense default", async () => {
+    const raw = await createTestDb();
+    await expect(setUserDefaults(raw, await ensureOwnerUser(raw), { timeframe: "2W" as any })).rejects.toThrow(/timeframe/);
   });
 });
 
@@ -152,8 +152,8 @@ describe("editing a chip", () => {
 describe("settings route", () => {
   it("round-trips saved defaults for the current user", async () => {
     const { vi } = await import("vitest");
-    const raw = createTestDb();
-    ensureOwnerUser(raw);
+    const raw = await createTestDb();
+    await ensureOwnerUser(raw);
     vi.doMock("@/server/db/client", () => ({ db: () => raw }));
     const { GET, PUT } = await import("../../app/api/settings/defaults/route");
     const put = await PUT(new Request("http://x", { method: "PUT", body: JSON.stringify({ timeframe: "1D", horizons_weeks: [1, 4] }) }));

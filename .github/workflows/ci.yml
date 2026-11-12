@@ -1,0 +1,71 @@
+# Engine Production Plan, Phase 4: test, build by git SHA, Trivy scan (CRITICAL fails), push to GHCR, record digests.
+# Third-party actions are pinned to commit SHAs (the release in the trailing comment, resolved 12 Nov 2026). To bump one,
+# look up the new tag's commit: gh api repos/<owner>/<action>/commits/<tag> --jq .sha
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with: { python-version: "3.11", cache: pip }
+      - run: pip install -r requirements.txt pytest
+      - run: python -m pytest tests/engine tests/test_deploy_scripts.py tests/test_secrets_env_shim.py -q
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with: { node-version: "22", cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci --omit=optional && npm test
+        working-directory: frontend
+
+  image:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - { name: engine, file: Dockerfile.engine }
+          - { name: jobs, file: Dockerfile.jobs }
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3.12.0
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3.7.0
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
+      - name: Build (loaded locally for the scan)
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8  # v6.19.2
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          load: true
+          tags: scan/${{ matrix.name }}:${{ github.sha }}
+          build-args: GIT_SHA=${{ github.sha }}
+      - name: Trivy scan (CRITICAL fails the build)
+        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2  # v0.28.0
+        with:
+          image-ref: scan/${{ matrix.name }}:${{ github.sha }}
+          severity: CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+      - name: Push to GHCR
+        id: push
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8  # v6.19.2
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          push: true
+          tags: ghcr.io/${{ github.repository }}/${{ matrix.name }}:${{ github.sha }}
+          build-args: GIT_SHA=${{ github.sha }}
+      - name: Record digest
+        run: |
+          echo "### ${{ matrix.name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "ghcr.io/${{ github.repository }}/${{ matrix.name }}@${{ steps.push.outputs.digest }}" | tee -a "$GITHUB_STEP_SUMMARY"

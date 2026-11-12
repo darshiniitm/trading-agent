@@ -46,7 +46,7 @@ def run_band(band, weeks, rule_spec, adapter, universe_df, weekly_panels, shares
     print(f"  [{label}] band=[{lo},{hi}] over {len(weeks)} weeks ...")
     graded = rolling_walk_forward(weeks, spec, adapter, universe_df, weekly_panels, shares_map, progress_every=0)
     trade_summary = summarize_trades(graded)
-    port_summary = portfolio_metrics(weekly_portfolio_returns(graded))
+    port_summary = portfolio_metrics(weekly_portfolio_returns(graded, calendar=weeks))
     return {
         "band_lo": lo, "band_hi": hi,
         "n_trades": trade_summary.get("n_trades", 0),

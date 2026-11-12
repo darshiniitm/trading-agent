@@ -1,4 +1,4 @@
-import type Database from "better-sqlite3";
+import type { Db } from "./db/pg";
 
 // Saved per-user defaults the interpreter uses to fill a slot the prompt did not state (priority 2 in
 // docs/prompt-interpreter-spec.md §4). Stored in `user_defaults`; BUILTIN_DEFAULTS only seeds a user who has
@@ -18,16 +18,16 @@ export const BUILTIN_DEFAULTS: UserDefaults = {
   entry_recheck: "monday_open", horizons_weeks: [1, 2, 3], universe: "nse_all",
 };
 
-export function getUserDefaults(raw: Database.Database, userId: number): UserDefaults {
-  const row = raw.prepare("SELECT defaults_json FROM user_defaults WHERE user_id = ?").get(userId) as { defaults_json: string } | undefined;
+export async function getUserDefaults(raw: Db, userId: number): Promise<UserDefaults> {
+  const row = await raw.get<{ defaults_json: string }>("SELECT defaults_json FROM user_defaults WHERE user_id = ?", [userId]);
   return { ...BUILTIN_DEFAULTS, ...(row ? JSON.parse(row.defaults_json) : {}) };
 }
 
-export function setUserDefaults(raw: Database.Database, userId: number, patch: Partial<UserDefaults>): UserDefaults {
-  const next = validate({ ...getUserDefaults(raw, userId), ...patch });
-  raw.prepare(`INSERT INTO user_defaults (user_id, defaults_json, updated_at) VALUES (?, ?, ?)
-               ON CONFLICT(user_id) DO UPDATE SET defaults_json = excluded.defaults_json, updated_at = excluded.updated_at`)
-    .run(userId, JSON.stringify(next), new Date().toISOString());
+export async function setUserDefaults(raw: Db, userId: number, patch: Partial<UserDefaults>): Promise<UserDefaults> {
+  const next = validate({ ...(await getUserDefaults(raw, userId)), ...patch });
+  await raw.run(`INSERT INTO user_defaults (user_id, defaults_json, updated_at) VALUES (?, ?, ?)
+               ON CONFLICT(user_id) DO UPDATE SET defaults_json = excluded.defaults_json, updated_at = excluded.updated_at`,
+    [userId, JSON.stringify(next), new Date().toISOString()]);
   return next;
 }
 

@@ -1,0 +1,40 @@
+# Screening engine as its own always-on service (docs/netlify-production-plan.md §5).
+# The image is stateless: the market-data caches and forward records live on a mounted volume (ENGINE_DATA_DIR).
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PIP_NO_CACHE_DIR=1
+# glibc gives each thread its own malloc arena (up to 8 x cores) and never shrinks them; two arenas keep the threadpool's
+# pandas work from ratcheting RSS up on the 2 GB VM (engine/memory.py trims the heap after each load).
+ENV MALLOC_ARENA_MAX=2
+
+WORKDIR /app
+COPY requirements.txt ./
+RUN pip install -r requirements.txt
+
+COPY engine ./engine
+COPY src ./src
+COPY config ./config
+COPY db ./db
+# engine/env.py loads the live environment through scripts/common.py (bootstrap)
+COPY scripts ./scripts
+COPY docker/secrets-env.sh /usr/local/bin/secrets-env
+COPY docker/engine-entrypoint.sh /usr/local/bin/engine-entrypoint
+RUN chmod +x /usr/local/bin/engine-entrypoint
+
+# /health has no git inside the image: the build bakes the commit in (docker build --build-arg GIT_SHA=…)
+ARG GIT_SHA=unknown
+ENV ENGINE_GIT_SHA=$GIT_SHA
+
+# Run unprivileged. The entrypoint re-links /app/{data_cache,…} into the volume, so /app must be writable by this user;
+# the host chowns the bind-mounted data dir to 10001 (deploy/swarm/bootstrap-host.sh).
+RUN useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin engine && chown engine:engine /app
+USER engine
+
+# The volume mount point; the entrypoint links data_cache/, data_cache_literal/ and results/ into it.
+ENV ENGINE_DATA_DIR=/data
+VOLUME ["/data"]
+
+# ENGINE_TOKEN (required in production) is supplied by the host's secret store, never baked into the image.
+EXPOSE 8080
+ENTRYPOINT ["engine-entrypoint"]
+CMD ["sh", "-c", "exec uvicorn --factory engine.app:create_app --host 0.0.0.0 --port ${PORT:-8080}"]

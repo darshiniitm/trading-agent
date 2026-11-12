@@ -1,0 +1,501 @@
+{
+ "program": {
+  "program_version": 5,
+  "universe": {
+   "source": "index",
+   "index": "NIFTY 500"
+  },
+  "sets": [
+   {
+    "id": "S1",
+    "from": "universe",
+    "label": "Scan Nifty 500 for Mark Minervini's trend template: price above the 150 and 200 day SMA, 150 SMA above 200 SMA, 200 SMA trending up for at least 1 month, 50 SMA above both 150 and 200 SMA, price above 50 SMA, at least 30% above the 52-week low, within 25% of the 52-week high, and RS rating of 70 or more.",
+    "where": {
+     "all": [
+      "C10"
+     ]
+    }
+   },
+   {
+    "id": "S2",
+    "from": "S1",
+    "label": "qualified stocks",
+    "eval": {
+     "mode": "latest",
+     "timeframe": "1D",
+     "bar": "last_completed"
+    },
+    "where": {
+     "all": [
+      "C1",
+      "C2",
+      "C3",
+      "C4",
+      "C5",
+      "C6",
+      "C7",
+      "C8",
+      "C9"
+     ]
+    }
+   }
+  ],
+  "conditions": [
+   {
+    "id": "C1",
+    "lhs": {
+     "ind": "bar",
+     "params": {
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "op": ">",
+    "rhs": {
+     "ind": "sma",
+     "params": {
+      "length": 150,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "phrase": "price above the 150 and 200 day SMA"
+   },
+   {
+    "id": "C2",
+    "lhs": {
+     "ind": "bar",
+     "params": {
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "op": ">",
+    "rhs": {
+     "ind": "sma",
+     "params": {
+      "length": 200,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "phrase": "price above the 150 and 200 day SMA"
+   },
+   {
+    "id": "C3",
+    "lhs": {
+     "ind": "sma",
+     "params": {
+      "length": 150,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "op": ">",
+    "rhs": {
+     "ind": "sma",
+     "params": {
+      "length": 200,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "phrase": "150 SMA above 200 SMA"
+   },
+   {
+    "id": "C4",
+    "lhs": {
+     "ind": "sma",
+     "params": {
+      "length": 200,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "op": "up_over",
+    "bars": 21,
+    "phrase": "200 SMA trending up for at least 1 month"
+   },
+   {
+    "id": "C5",
+    "lhs": {
+     "ind": "sma",
+     "params": {
+      "length": 50,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "op": ">",
+    "rhs": {
+     "ind": "sma",
+     "params": {
+      "length": 150,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "phrase": "50 SMA above both 150 and 200 SMA"
+   },
+   {
+    "id": "C6",
+    "lhs": {
+     "ind": "sma",
+     "params": {
+      "length": 50,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "op": ">",
+    "rhs": {
+     "ind": "sma",
+     "params": {
+      "length": 200,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "phrase": "50 SMA above both 150 and 200 SMA"
+   },
+   {
+    "id": "C7",
+    "lhs": {
+     "ind": "bar",
+     "params": {
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "op": ">",
+    "rhs": {
+     "ind": "sma",
+     "params": {
+      "length": 50,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "phrase": "price above 50 SMA"
+   },
+   {
+    "id": "C8",
+    "lhs": {
+     "ind": "bar",
+     "params": {
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "op": ">=",
+    "rhs": {
+     "ind": "low_n",
+     "params": {
+      "lookback": 252,
+      "skip": 0
+     },
+     "tf": "1D"
+    },
+    "rhs_mult": 1.3,
+    "phrase": "at least 30% above the 52-week low"
+   },
+   {
+    "id": "C9",
+    "lhs": {
+     "ind": "bar",
+     "params": {
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "op": ">=",
+    "rhs": {
+     "ind": "high_n",
+     "params": {
+      "lookback": 252,
+      "skip": 0
+     },
+     "tf": "1D"
+    },
+    "rhs_mult": 0.75,
+    "phrase": "within 25% of the 52-week high"
+   },
+   {
+    "id": "C10",
+    "lhs": {
+     "field": "rs_rating",
+     "params": {
+      "lookback": 252
+     }
+    },
+    "op": ">=",
+    "value": 70,
+    "phrase": "RS rating of 70 or more"
+   }
+  ],
+  "actions": [],
+  "source_phrases": [
+   {
+    "path": "conditions.C1.rhs.params.length",
+    "phrase": "150",
+    "span": [
+     68,
+     71
+    ]
+   },
+   {
+    "path": "conditions.C2.rhs.params.length",
+    "phrase": "200",
+    "span": [
+     76,
+     79
+    ]
+   },
+   {
+    "path": "conditions.C3.params.length",
+    "phrase": "150",
+    "span": [
+     89,
+     92
+    ]
+   },
+   {
+    "path": "conditions.C3.rhs.params.length",
+    "phrase": "200",
+    "span": [
+     103,
+     106
+    ]
+   },
+   {
+    "path": "conditions.C4.params.length",
+    "phrase": "200",
+    "span": [
+     112,
+     115
+    ]
+   },
+   {
+    "path": "conditions.C5.params.length",
+    "phrase": "50",
+    "span": [
+     154,
+     156
+    ]
+   },
+   {
+    "path": "conditions.C5.rhs.params.length",
+    "phrase": "150",
+    "span": [
+     172,
+     175
+    ]
+   },
+   {
+    "path": "conditions.C6.params.length",
+    "phrase": "50",
+    "span": [
+     154,
+     156
+    ]
+   },
+   {
+    "path": "conditions.C6.rhs.params.length",
+    "phrase": "200",
+    "span": [
+     180,
+     183
+    ]
+   },
+   {
+    "path": "conditions.C7.rhs.params.length",
+    "phrase": "50",
+    "span": [
+     201,
+     203
+    ]
+   },
+   {
+    "path": "conditions.C10.value",
+    "phrase": "70",
+    "span": [
+     294,
+     296
+    ]
+   },
+   {
+    "path": "universe.index",
+    "phrase": "Nifty 500",
+    "span": [
+     5,
+     14
+    ]
+   }
+  ],
+  "needs_input": [],
+  "unsupported": [],
+  "ignored": [],
+  "unrecognised": [],
+  "answers": [],
+  "assumptions": [
+   {
+    "path": "conditions.C1.params.source",
+    "label": "price = the close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C1.rhs.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C10.params.lookback",
+    "label": "RS rating = percentile of the 12-month (252-session) return within the universe",
+    "value": 252,
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C2.params.source",
+    "label": "price = the close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C2.rhs.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C3.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C3.rhs.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C4.bars",
+    "label": "1 month = 21 trading sessions",
+    "value": 21,
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C4.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C5.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C5.rhs.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C6.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C6.rhs.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C7.params.source",
+    "label": "price = the close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C7.rhs.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C8.params.source",
+    "label": "price = the close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C8.rhs_mult",
+    "label": "30% above = x1.3",
+    "value": 1.3,
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C8.rhs.params.lookback",
+    "label": "52 weeks = 252 trading sessions",
+    "value": 252,
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C8.rhs.params.skip",
+    "label": "including today's bar",
+    "value": 0,
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C9.params.source",
+    "label": "price = the close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C9.rhs_mult",
+    "label": "within 25% = x0.75",
+    "value": 0.75,
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C9.rhs.params.lookback",
+    "label": "52 weeks = 252 trading sessions",
+    "value": 252,
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C9.rhs.params.skip",
+    "label": "including today's bar",
+    "value": 0,
+    "provenance": "assumed"
+   }
+  ],
+  "not_evaluable": []
+ },
+ "english": "From **NIFTY 500** stocks, on **daily** candles, find stocks where **the close is above SMA(150, close)**, and **the close is above SMA(200, close)**, and **SMA(150, close) is above SMA(200, close)**, and **SMA(200, close) is higher than it was 21 bars ago**, and **SMA(50, close) is above SMA(150, close)**, and **SMA(50, close) is above SMA(200, close)**, and **the close is above SMA(50, close)**, and **the close is at least Lowest low of N bars(252) × 1.3**, and **the close is at least Highest high of N bars(252) × 0.75**, and **RS rating is at least 70**.",
+ "issues": [],
+ "clauses": [
+  {
+   "id": "L1",
+   "text": "Scan Nifty 500 for Mark Minervini's trend template: price above the 150 and 200 day SMA, 150 SMA above 200 SMA, 200 SMA trending up for at least 1 month, 50 SMA above both 150 and 200 SMA, price above 50 SMA, at least 30% above the 52-week low, within 25% of the 52-week high, and RS rating of 70 or more.",
+   "span": [
+    0,
+    305
+   ],
+   "status": "ok",
+   "maps_to": "C1: the close [1D] > SMA(150, close); C2: the close [1D] > SMA(200, close); C3: SMA(150, close) [1D] > SMA(200, close); C4: SMA(200, close) [1D] higher than 21 bars ago; C5: SMA(50, close) [1D] > SMA(150, close); C6: SMA(50, close) [1D] > SMA(200, close); C7: the close [1D] > SMA(50, close); C8: the close [1D] ≥ Lowest low of N bars(252, 0) × 1.3; C9: the close [1D] ≥ Highest high of N bars(252, 0) × 0.75; C10: RS rating ≥ 70; universe: NIFTY 500",
+   "questions": 0
+  }
+ ],
+ "reader": {
+  "calls": 0,
+  "dropped": []
+ }
+}

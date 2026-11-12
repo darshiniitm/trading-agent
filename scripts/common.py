@@ -12,8 +12,12 @@ from src.config import load_rule_spec
 from src.data.adapter import build_adapter
 
 
-def bootstrap(rule_spec_path: str = "config/rules.yaml", ticker_limit: int | None = None):
+def bootstrap(rule_spec_path: str = "config/rules.yaml", ticker_limit: int | None = None, progress=None):
+    # `progress(phase, done=None, total=None)` lets a host (the engine's warm-up) report where the load is; scripts pass nothing
+    hosted = progress is not None
+    progress = progress or (lambda *a, **k: None)
     rule_spec = load_rule_spec(rule_spec_path)
+    progress("universe")
     adapter = build_adapter(rule_spec)
 
     universe_df = adapter.nse_equities_pit(as_of=None)
@@ -24,11 +28,14 @@ def bootstrap(rule_spec_path: str = "config/rules.yaml", ticker_limit: int | Non
     history_weeks = rule_spec["data"]["history_weeks"]
 
     print(f"Fetching weekly OHLCV for {len(tickers)} tickers ({history_weeks} weeks each)...")
+    progress("weekly_prices", 0, len(tickers))
     weekly_panels = adapter.weekly_ohlcv(tickers, history_weeks)
     print(f"  got data for {len(weekly_panels)}/{len(tickers)} tickers")
 
     print("Fetching shares outstanding (current; PIT caveat — see adapter.KNOWN_CAVEATS)...")
-    shares_map = adapter.shares_outstanding(list(weekly_panels.keys()))
+    progress("shares", 0, len(weekly_panels))
+    shares_map = (adapter.shares_outstanding(list(weekly_panels.keys()), progress=lambda d, t: progress("shares", d, t))
+                  if hosted else adapter.shares_outstanding(list(weekly_panels.keys())))
     print(f"  got shares for {len(shares_map)}/{len(weekly_panels)} tickers")
 
     return rule_spec, adapter, universe_df, weekly_panels, shares_map

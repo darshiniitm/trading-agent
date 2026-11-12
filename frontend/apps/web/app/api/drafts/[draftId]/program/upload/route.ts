@@ -20,8 +20,8 @@ async function handle(req: Request, { params }: { params: { draftId: string } })
 
 export async function POST(req: Request, ctx: { params: { draftId: string } }) {
   const raw = db();
-  return withUser(raw, req, (user) => {
-    if (!ownsDraft(raw, user.userId, Number(ctx.params.draftId))) return Response.json({ error: "draft not found" }, { status: 404 });
+  return withUser(raw, req, async (user) => {
+    if (!(await ownsDraft(raw, user.userId, Number(ctx.params.draftId)))) return Response.json({ error: "draft not found" }, { status: 404 });
     return handle(req, ctx);
   });
 }

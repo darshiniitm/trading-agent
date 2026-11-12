@@ -163,6 +163,91 @@ Flagged, not started — deliberately excluded pending a separate decision:
 
 **What this is not, yet:** a ranking formula, a set of weights, or anything that changes which T1 candidates get traded. The next step — separate from this plan — is B6's rank-IC test, run first on the existing single `confidence` score, then extended to whichever of 3.8.1's parameters are cheap enough to add before the next T1 review, with 3.8.2 wired in as a gate/discount rather than a blended input. 3.8.1's sector-RS is cheap and fine to include; the pop-size entry stays flagged, not included.
 
+### 3.9 T4 — Flag-count selection
+
+Registered 15 Sep 2026, per `docs/feature-flag-matrix-plan.md` §7 (the full spec for
+the weekly feature-flag condition matrix this Test arm is built on top of).
+Registration is recorded here **before** any replay run that produces T4
+numbers, per this section's own ordering rule and §3.5's pre-registration
+discipline.
+
+| field | value |
+|---|---|
+| **id** | T4 — Flag-count selection |
+| **Mechanism (only this changes)** | Weekly shadow basket = eligible stocks with `A02=1` AND `A04=1` AND `flags_met ≥ K`, top `max_names=10` by tie-break order (`flags_met desc, median_weekly_turnover_cr desc, ticker asc`), equal weight, EP = next-week open, SL = `vstop_line`, Control's gap-stop-aware 1-week exit, 0.5% round trip. |
+| **Identical to Control** | Universe/base gate, VStop/RSI definitions, risk cap (A04 is a hard requirement), exit rule, costs. |
+| **Different from Control (acknowledged)** | Does **not** require a flip or RSI band — it is a selection change, closer to the V-series than T1–T3 (§3.6, `.claude/HARNESS.md` §9). Registered as a Test arm by Dharmin's explicit decision (15 Sep 2026); it never touches Control's picks or capital. |
+| **Hypothesis** | Stocks meeting more registered conditions earn higher 1-week excess return than the eligible universe and than Control's basket. |
+| **Kill criteria** | (a) VALIDATE replay mean weekly net ≤ 0 → retire before forward start. (b) At 26 forward weeks, paired T4−Control CI includes or is below zero → stays shadow/retired. (c) `flags_met` rank-IC CI at 26 forward weeks includes zero → matrix is not an ordering signal; T4 retired. |
+| **Graduation** | At `REAL_READ_WEEKS = 26` **forward-mode** weeks only: T4 mean weekly net > 0 AND paired weekly `T4 − Control` bootstrap CI lower bound > 0. One decision, no second look (§3.5.4). `FIRST_LOOK_WEEKS = 13` is informational only. |
+
+**Weekly comparison rules:** a week with zero T4 names or zero Control trades
+counts as 0.0% return for that arm — never dropped (this project's own §7
+"flat weeks dropped" defect, avoided deliberately here). Pair by
+`signal_week`, never by array position. Only `forward` records count toward
+the gates above; `late_backfill` and `replay` never do.
+
+**Why A02 + A04 are hard requirements:** without an uptrend and a valid
+≤15% stop, there is no Control-comparable SL and the exit rule is undefined
+— this keeps T4 inside Control's risk envelope.
+
+**Choosing K:** one-time, pre-registered DEV/VALIDATE protocol against 104
+weeks of replay (`docs/feature-flag-matrix-plan.md` §7.3) — see
+`docs/forward_test_findings.md` for the dated entry recording the result.
+
+### 3.10 Threshold experiment — risk-cap sweep
+
+Registered 15 Sep 2026 by Dharmin's explicit decision. Full spec, decisions and invariants:
+`docs/threshold-experiment-plan.md`. Registration is recorded here before any forward week is
+graded; the only data looked at beforehand were survivor **counts** by R% band (no returns).
+
+| field | value |
+|---|---|
+| **id** | `threshold-experiment` — arms `threshold-experiment_15`, `_17.5`, `_20`, `_22.5`, `_25`, `_30`, `_40`, `_50` |
+| **Mechanism (only this changes)** | Per arm, Control's survivors split into SELECTED (`(signal_close − vstop_line_SL)/signal_close ≤ cap/100`) and REJECTED (above it). Equal weight; Control's own gap-stop-aware 1-week grade and 0.5% cost. |
+| **Identical to Control** | Universe, liquidity floor, VStop/RSI, exit rule, costs, sizing method. `_15` reproduces Control exactly (invariant X1/X6). |
+| **Different from Control (acknowledged)** | Loosens the 15% risk cap — the change §4 says not to make on one week's evidence. Shadow only; Control's cap and capital are untouched. |
+| **Hypothesis** | Names rejected by the 15% cap do no worse over one week than names it keeps. |
+| **Kill** | At 26 forward weeks: paired `selected − Control` CI upper bound < 0, or REJECTED-basket CI upper bound < 0 → arm retired. |
+| **Graduation** | At 26 forward weeks: paired weekly `selected − Control` bootstrap CI lower bound > 0 with BH q < 0.05 across arms that differ from Control. One decision per arm. A graduating arm is a proposal to change `rules.yaml`, decided separately. |
+
+**Comparison rules:** zero SELECTED names = 0.0% that week, never dropped; zero REJECTED names = no
+rejected basket that week. Only `forward` records (picks and threshold record both before Monday
+09:15 IST) count. Forward-only — no historical replay unless explicitly requested, and then as dev
+evidence only.
+
+**Note on the grid:** on a flip bar `R/EP = 2·ATR/close`; across 576 replay survivors it never
+exceeded 27.7%, so `_30`, `_40` and `_50` are expected to equal "no cap" almost every week.
+
+### 3.11 Literal — Dharmin's five-step brief, run without our interpretations
+
+Registered 26 Sep 2026, per `docs/literal-spec-plan.md` (the full spec, gap-by-gap
+comparison against Control's interpretation, and decisions 1–9). Unlike T1–T4 and the
+threshold experiment above, **Literal is not a Test arm and §3.5's graduation gate does not
+apply to it** — it does not compete against Control for a single verdict, it is a second,
+independently frozen implementation of the same five-step brief, kept running in parallel so
+the effect of the original interpretation gaps (G1–G10, `docs/literal-spec-plan.md`) is
+visible week by week.
+
+| field | value |
+|---|---|
+| **id** | Literal |
+| **Mechanism (only this changes)** | Universe = full NSE equity list (not the ~500-index proxy), history from 2024-01-01; signals = VStop(10,2) weekly `flip_up` AND RSI in [50, 65] (`combine: AND`); sector benchmark Nifty 50 (`^NSEI`), relative-strength lookbacks [4, 13, 1] weeks, report-only (no filter); trade EP = signal close, SL = VStop line, **no risk-cap filter** (`max_r_pct: null`), one confidence score. Own config `config/rules_literal.yaml`, own universe/weekly-bar cache, own immutable record/grade cadence (`tests/track_literal.py`), never touching Control's files. |
+| **Identical to Control** | VStop(10,2) recurrence, RSI(14) formula, weekly cadence, gap-stop-aware grading, 0.5% round-trip cost, the single shared `run_screen()` funnel (parameterized by `rules_literal.yaml` instead of `rules.yaml`). |
+| **Different from Control (acknowledged)** | Universe (full list vs. index proxy), no 15% risk-cap filter, T1 rescoped as a rolling Friday-window loop over Literal's own universe rather than the mid-week scan Control's T1 used. Each difference traces to a specific gap in `docs/literal-spec-plan.md`'s comparison table, not an unregistered strategy change. |
+| **Hypothesis** | None — Literal is not being tested against Control for edge. The question it answers is whether the five-step brief, implemented without the interpretation choices listed as gaps, behaves differently from Control's numbers, not which one is "better." |
+| **Kill / graduation** | Not applicable — there is no gate to clear and no capital decision attached. Control keeps recording for 4–6 weeks alongside Literal for a side-by-side read, then stops unless Dharmin wants it kept (`docs/literal-spec-plan.md`). |
+
+**Comparison rules:** same as Control's own (§3.4) — zero-survivor weeks count as 0.0%,
+never dropped; only `forward` records count as forward evidence; replay history back to
+2024-01-01 is backtest evidence, not forward evidence, even when it uses the exact same
+`run_screen()`/`grade_horizons()` code path as the live week.
+
+**Old Control-interpretation results stay in the ledger, unchanged:** the −1.37%/trade
+104-week walk-forward and every T1/threshold-experiment finding recorded before this section
+remain labelled "Control interpretation" — they are not evidence for or against Literal, and
+nothing about registering Literal edits or supersedes them (rule 6, append-only findings).
+
 ---
 
 ## 4. What not to do
@@ -172,6 +257,8 @@ Flagged, not started — deliberately excluded pending a separate decision:
 - Do not widen the universe or the VStop sensitivity to chase trade count inside this plan — that path exists (the V-series), this isn't it.
 - Do not let a good (or bad) forward-test week change the phase-3/4/5 sequencing gates already agreed (dev set only, one validation pass, frozen finalists).
 - Do not judge T1 on one week in either direction — the point of §3.7 is better instrumentation, not an early verdict.
+
+*Dated note, 15 Sep 2026:* the risk-cap rule above still holds for Control. The cap is now studied in shadow only, as the registered threshold experiment in §3.10.
 
 ---
 
@@ -192,3 +279,4 @@ Standing rule 1 in `forward-test-log.md`: *"Record before the week opens. A pick
 7. §3.8 scoring architecture: implement risk-guardrail parameters (headroom, liquidity multiple, band position) as a multiplicative discount on the edge-signal score, or as a hard gate below some threshold, or just as separate ledger columns with no single blended number at all?
 8. §3.8.1 per-ticker reversal frequency: what's the minimum number of past T1 appearances before this parameter is trusted enough to include, given only one or two T1 weeks are graded so far?
 9. §3.8 v1 scope: ship a first version of the score from 3.8.1 + 3.8.2's already-computed parameters now, or wait until §3.7 items 2–3 (window-offset, days-since-flip) land so the full parameter set is available at once?
+10. Threshold experiment (§3.10): decisions D1–D5 settled 15 Sep 2026 (grid 15/17.5/20/22.5/25/30/40/50; plain arm names; `R <= 0` removal kept; equal-weight SELECTED vs REJECTED; forward-only). Open: whether to run a historical replay if forward weeks show a signal.

@@ -66,16 +66,45 @@ def test_rsi_bounds_and_extremes():
     assert rsi2.iloc[-1] < 10, f"expected RSI near 0 in pure downtrend, got {rsi2.iloc[-1]}"
 
 
-def test_rsi_flat_series_is_neutral_not_nan():
+def test_rsi_flat_series_matches_tradingview_100():
+    # TradingView's Pine v6 RSI: `down == 0 ? 100 : ...` -- unconditional, even when
+    # up is also 0 (a truly flat series). Confirmed against the real source 2026-09-29;
+    # supersedes the old "D4" neutral-50 override (see docs/forward_test_findings.md).
     flat = np.full(30, 100.0)
     panel = make_panel(flat)
     rsi = compute_rsi(panel["close"], period=14)
-    assert not rsi.iloc[-1] != rsi.iloc[-1]  # not NaN
+    assert rsi.iloc[-1] == 100.0, f"expected 100.0 (TradingView-matching), got {rsi.iloc[-1]}"
+
+
+# Real reference-value check (2026-09-29, TradingView parity fix): URBANCO.NS's actual
+# weekly closes through 2026-09-21, cached in data_cache_literal/weekly_ohlcv_260w.parquet
+# at the time of the fix. TradingView's RSI(14) for this same bar reads 64.57 (verified
+# against its own displayed OHLC, which matched our cached bar exactly). Only 54 weeks of
+# history exist for this recently-listed ticker, short enough that the seeding method
+# still matters (see docs/forward_test_findings.md's 2026-09-29 entry) -- this is what
+# exposed the ewm-from-bar-1 vs SMA-seeded Wilder discrepancy in the first place.
+URBANCO_WEEKLY_CLOSES = [
+    184.81, 171.63, 174.39, 156.74, 152.91, 147.11, 157.75, 142.34, 140.7, 143.0,
+    135.03, 130.02, 128.84, 127.02, 128.4, 132.7, 135.66, 130.55, 124.85, 120.73,
+    122.13, 121.25, 117.77, 107.1, 106.08, 110.13, 114.12, 114.56, 121.8, 134.52,
+    133.61, 142.42, 151.66, 139.67, 120.94, 120.03, 120.03, 125.45, 126.45, 130.15,
+    129.83, 131.9, 132.75, 130.35, 129.76, 129.39, 143.74, 144.39, 158.6, 168.41,
+    181.09, 166.89, 169.11, 168.99,
+]
+
+
+def test_rsi_matches_tradingview_reference_short_history_ticker():
+    panel = make_panel(URBANCO_WEEKLY_CLOSES)
+    rsi = compute_rsi(panel["close"], period=14)
+    assert abs(rsi.iloc[-1] - 64.57) < 0.01, (
+        f"expected RSI ~=64.57 (TradingView, URBANCO.NS week of 2026-09-21), got {rsi.iloc[-1]}"
+    )
 
 
 if __name__ == "__main__":
     test_vstop_flips_up_on_sustained_rally_after_downtrend()
     test_vstop_no_flip_in_pure_monotonic_uptrend_after_warmup()
     test_rsi_bounds_and_extremes()
-    test_rsi_flat_series_is_neutral_not_nan()
+    test_rsi_flat_series_matches_tradingview_100()
+    test_rsi_matches_tradingview_reference_short_history_ticker()
     print("All indicator sanity tests passed.")

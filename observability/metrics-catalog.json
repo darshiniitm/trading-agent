@@ -1,0 +1,24 @@
+{
+  "_comment": "Every Prometheus metric the stack uses. `source.token` must appear in `source.file` (checked by tests/observability), so a rename in code cannot silently break a dashboard or alert. OTel->Prometheus naming: unit s adds _seconds, counters add _total, histograms add _bucket/_sum/_count.",
+  "metrics": [
+    {"name": "prompt_run_duration_seconds", "type": "histogram", "labels": ["stage", "outcome"], "source": {"file": "frontend/apps/web/src/server/telemetry/runtime.ts", "token": "prompt.run.duration"}},
+    {"name": "task_duration_seconds", "type": "histogram", "labels": ["task", "status"], "source": {"file": "frontend/apps/web/src/server/telemetry/runtime.ts", "token": "task.duration"}},
+    {"name": "agent_invocations_total", "type": "counter", "labels": ["agent", "status"], "source": {"file": "frontend/apps/web/src/server/telemetry/runtime.ts", "token": "agent.invocations"}},
+    {"name": "agent_duration_seconds", "type": "histogram", "labels": ["agent"], "source": {"file": "frontend/apps/web/src/server/telemetry/runtime.ts", "token": "agent.duration"}},
+    {"name": "tool_calls_total", "type": "counter", "labels": ["tool", "status"], "source": {"file": "frontend/apps/web/src/server/telemetry/runtime.ts", "token": "tool.calls"}},
+    {"name": "tool_duration_seconds", "type": "histogram", "labels": ["tool"], "source": {"file": "frontend/apps/web/src/server/telemetry/runtime.ts", "token": "tool.duration"}},
+    {"name": "telemetry_dropped_total", "type": "counter", "labels": [], "source": {"file": "frontend/apps/web/src/server/telemetry/runtime.ts", "token": "telemetry.dropped"}},
+    {"name": "llm_request_duration_seconds", "type": "histogram", "labels": ["model", "provider", "status"], "source": {"file": "frontend/apps/web/src/server/telemetry/runtime.ts", "token": "llm.request.duration"}},
+    {"name": "llm_requests_total", "type": "counter", "labels": ["model", "status"], "source": {"file": "frontend/apps/web/src/server/telemetry/runtime.ts", "token": "llm.requests"}},
+    {"name": "llm_tokens_total", "type": "counter", "labels": ["model", "direction"], "source": {"file": "frontend/apps/web/src/server/telemetry/runtime.ts", "token": "llm.tokens"}},
+    {"name": "llm_gpu_seconds_total", "type": "counter", "labels": ["model"], "source": {"file": "frontend/apps/web/src/server/telemetry/runtime.ts", "token": "llm.gpu"}},
+    {"name": "llm_retry_total", "type": "counter", "labels": ["from_model", "to_model"], "source": {"file": "frontend/apps/web/src/server/telemetry/runtime.ts", "token": "llm.retry"}},
+    {"name": "llm_fallback_total", "type": "counter", "labels": ["from_model", "to_model"], "source": {"file": "frontend/apps/web/src/server/telemetry/runtime.ts", "token": "llm.fallback"}},
+    {"name": "data_fetch_errors_total", "type": "counter", "labels": ["source", "symbol_bucket"], "source": {"file": "src/telemetry/core.py", "token": "data_fetch.errors"}},
+    {"name": "data_fetch_symbols_total", "type": "counter", "labels": ["source"], "source": {"file": "src/telemetry/core.py", "token": "data_fetch.symbols"}},
+    {"name": "screener_job_last_success_timestamp", "type": "gauge", "labels": ["screener_job"], "source": {"file": "scripts/emit_job_metrics.py", "token": "screener_job_last_success_timestamp"}},
+    {"name": "screener_universe_size", "type": "gauge", "labels": ["screener_job", "arm"], "source": {"file": "scripts/emit_job_metrics.py", "token": "screener_universe_size"}},
+    {"name": "screener_candidates", "type": "gauge", "labels": ["screener_job", "arm"], "source": {"file": "scripts/emit_job_metrics.py", "token": "screener_candidates"}},
+    {"name": "golden_suite_accuracy", "type": "gauge", "labels": ["provider", "model", "suite_version"], "source": {"file": "frontend/apps/web/scripts/eval-llm-parity.ts", "token": "golden_suite_accuracy"}}
+  ]
+}

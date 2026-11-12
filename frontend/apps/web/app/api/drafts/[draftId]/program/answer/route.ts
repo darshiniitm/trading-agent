@@ -23,9 +23,9 @@ async function handle(req: Request, { params }: { params: { draftId: string } })
     const id = Number(params.draftId);
     const d = body.data;
     const view = "edit" in d ? await editProgramClause(db(), id, d.edit.clause_id, d.edit.text)
-      : "liquidity" in d ? setAddon(db(), id, { liquidity: d.liquidity })
-      : "min_price" in d ? setAddon(db(), id, { min_price: d.min_price })
-      : editChip(db(), id, d.path, d.value);
+      : "liquidity" in d ? await setAddon(db(), id, { liquidity: d.liquidity })
+      : "min_price" in d ? await setAddon(db(), id, { min_price: d.min_price })
+      : await editChip(db(), id, d.path, d.value);
     return Response.json(view);
   } catch (err) {
     return Response.json({ error: (err as Error).message }, { status: 400 });
@@ -34,8 +34,8 @@ async function handle(req: Request, { params }: { params: { draftId: string } })
 
 export async function POST(req: Request, ctx: { params: { draftId: string } }) {
   const raw = db();
-  return withUser(raw, req, (user) => {
-    if (!ownsDraft(raw, user.userId, Number(ctx.params.draftId))) return Response.json({ error: "draft not found" }, { status: 404 });
+  return withUser(raw, req, async (user) => {
+    if (!(await ownsDraft(raw, user.userId, Number(ctx.params.draftId)))) return Response.json({ error: "draft not found" }, { status: 404 });
     return rateLimited(user.userId, "model") ?? handle(req, ctx);
   });
 }

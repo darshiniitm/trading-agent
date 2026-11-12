@@ -1,0 +1,218 @@
+{
+ "program": {
+  "program_version": 5,
+  "universe": {
+   "source": "index",
+   "index": "NIFTY 200"
+  },
+  "sets": [
+   {
+    "id": "S1",
+    "from": "universe",
+    "label": "qualified stocks",
+    "eval": {
+     "mode": "latest",
+     "timeframe": "1D",
+     "bar": "last_completed"
+    },
+    "where": {
+     "all": [
+      "C1",
+      "C2",
+      "C3"
+     ]
+    }
+   }
+  ],
+  "conditions": [
+   {
+    "id": "C1",
+    "lhs": {
+     "ind": "ema",
+     "params": {
+      "length": 9,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "op": "cross_above",
+    "rhs": {
+     "ind": "ema",
+     "params": {
+      "length": 21,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "within_bars": 3,
+    "emit": [
+     "event_date"
+    ],
+    "phrase": "9 EMA crossing above 21 EMA in the last 3 sessions"
+   },
+   {
+    "id": "C2",
+    "lhs": {
+     "ind": "ema",
+     "params": {
+      "length": 9,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "op": ">",
+    "rhs": {
+     "ind": "ema",
+     "params": {
+      "length": 21,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "phrase": "9 EMA crossing above 21 EMA in the last 3 sessions"
+   },
+   {
+    "id": "C3",
+    "lhs": {
+     "ind": "bar",
+     "params": {
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "op": ">",
+    "rhs": {
+     "ind": "ema",
+     "params": {
+      "length": 200,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "phrase": "price above 200 EMA"
+   }
+  ],
+  "actions": [],
+  "source_phrases": [
+   {
+    "path": "conditions.C1.params.length",
+    "phrase": "9",
+    "span": [
+     0,
+     1
+    ]
+   },
+   {
+    "path": "conditions.C1.rhs.params.length",
+    "phrase": "21",
+    "span": [
+     21,
+     23
+    ]
+   },
+   {
+    "path": "conditions.C1.within_bars",
+    "phrase": "3",
+    "span": [
+     40,
+     41
+    ]
+   },
+   {
+    "path": "conditions.C2.params.length",
+    "phrase": "9",
+    "span": [
+     0,
+     1
+    ]
+   },
+   {
+    "path": "conditions.C2.rhs.params.length",
+    "phrase": "21",
+    "span": [
+     21,
+     23
+    ]
+   },
+   {
+    "path": "conditions.C3.rhs.params.length",
+    "phrase": "200",
+    "span": [
+     68,
+     71
+    ]
+   },
+   {
+    "path": "universe.index",
+    "phrase": "Nifty 200",
+    "span": [
+     77,
+     86
+    ]
+   }
+  ],
+  "needs_input": [],
+  "unsupported": [],
+  "ignored": [],
+  "unrecognised": [],
+  "answers": [],
+  "assumptions": [
+   {
+    "path": "conditions.C1.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C1.rhs.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C2.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C2.rhs.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C3.params.source",
+    "label": "price = the close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C3.rhs.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   }
+  ],
+  "not_evaluable": []
+ },
+ "english": "From **NIFTY 200** stocks, on **daily** candles, find stocks where **EMA(9, close) crossed above EMA(21, close) within the last 3 bars**, and **EMA(9, close) is above EMA(21, close)**, and **the close is above EMA(200, close)**.",
+ "issues": [],
+ "clauses": [
+  {
+   "id": "L1",
+   "text": "9 EMA crossing above 21 EMA in the last 3 sessions with price above 200 EMA, Nifty 200",
+   "span": [
+    0,
+    86
+   ],
+   "status": "ok",
+   "maps_to": "C1: EMA(9, close) [1D] crosses above EMA(21, close); C2: EMA(9, close) [1D] > EMA(21, close); C3: the close [1D] > EMA(200, close); universe: NIFTY 200",
+   "questions": 0
+  }
+ ],
+ "reader": {
+  "calls": 0,
+  "dropped": []
+ }
+}

@@ -1,0 +1,3 @@
+ticker,name,sector,control_status,signal_close,vstop_line_SL,r_pct,confidence,threshold-experiment_15,threshold-experiment_17.5,threshold-experiment_20,threshold-experiment_22.5,threshold-experiment_25,threshold-experiment_30,threshold-experiment_40,threshold-experiment_50
+HBLENGINE.NS,HBL Engineering Ltd.,Capital Goods,SHADOW_rejected_by_risk_cap,806.0,679.9609,15.6376,,REJECTED,SELECTED,SELECTED,SELECTED,SELECTED,SELECTED,SELECTED,SELECTED
+WHIRLPOOL.NS,Whirlpool of India Ltd.,Consumer Durables,SHADOW_rejected_by_risk_cap,918.9,770.0594,16.1977,,REJECTED,SELECTED,SELECTED,SELECTED,SELECTED,SELECTED,SELECTED,SELECTED

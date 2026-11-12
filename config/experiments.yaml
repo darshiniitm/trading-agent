@@ -1,0 +1,98 @@
+# Experiment registry for backtest-lane variants and diagnostics
+# (docs/open-decisions-implementation-plan.md P2 / A3; vstop-strategy-revision-plan.md §4, §6).
+#
+# Registered 2026-09-16, BEFORE any of these runs, with decisions D1-D6 as settled by Dharmin.
+# Rules: src/backtest code refuses to write results for an id not listed here; editing a
+# registered entry's rule/kill fields after `registry-lock` is refused — add a new id instead.
+# Forward shadow arms keep their own registries (config/feature_flags.yaml, config/threshold_experiment.yaml).
+#
+# Variant budget (revision plan §4): 7, Bonferroni p < 0.007. counts_toward_budget marks the slots used.
+registered_on: '2026-09-16'
+budget: 7
+experiments:
+  - id: V2
+    name: fixed N-week hold
+    counts_toward_budget: true
+    mechanism: horizon effect without stop-path complexity (revision plan §2a)
+    rule: >
+      Control's weekly trades (run_screen + build_trades, unchanged). Entry = open of the first
+      holding week. Static stop = signal-week VStop line; each holding week, open <= SL exits at
+      the open, else low <= SL exits at SL. Otherwise exit at the close of holding week N.
+      N in {2, 4, 8} (one variant, three points). Weekly bars built from daily (src/data/resample.py).
+      Cost 0.5% round trip per trade.
+    segment: dev
+    kill: no N with net expectancy per trade > 0 on dev
+    finalist: false
+
+  - id: V3
+    name: pullback limit entry
+    counts_toward_budget: true
+    depends_on: [V2]
+    mechanism: harvest the one-week give-back after the flip week (revision plan §2b)
+    rule: >
+      Control's weekly trades. Limit buy at the signal-week close, valid for the next 5 sessions
+      (daily bars). Fill at min(open, limit) on the first session whose low <= limit; no fill ->
+      no trade (recorded, not dropped). Stop = signal-week VStop line, gap-aware on daily bars.
+      Horizons: exit at the close of the first holding week, and at the close of holding week N*
+      where N* is the best N chosen by V2 on dev. Cost 0.5% round trip per filled trade.
+    segment: dev
+    kill: fill rate < 40%, or filled-trade net expectancy <= baseline (Control 1-week, D1-fixed) on the same weeks
+    finalist: false
+
+  - id: V4
+    name: same-week entry on daily confirmation
+    counts_toward_budget: true
+    mechanism: how much of the loss is the 1-5 day entry lag (revision plan §2b)
+    rule: >
+      Detection = the weekly VStop(10,2)+RSI[50,65] rule evaluated on each daily bar of the signal
+      week via daily_rule_spec()/run_screen() (T1's detection code, not a reimplementation). Entry =
+      next session's open after the first day the rule is true. Stop = VStop line at detection,
+      gap-aware on daily bars. Exit = close of the same Friday Control exits on (end of the first
+      holding week), so the only difference from Control is the entry date/price.
+    segment: dev
+    kill: net expectancy per trade not above baseline on the same weeks
+    finalist: false
+
+  - id: V7a
+    name: alpha decomposition (diagnostic)
+    counts_toward_budget: false
+    mechanism: is Control's -1.10%/wk alpha beta/timing or stock-specific (revision plan §2c)
+    rule: >
+      For Control's graded 1-week trades: regress next-week return on the benchmark's same-week
+      return per ticker using the prior 52 weeks for beta; report mean residual (alpha), beta
+      contribution, and excess vs the eligible-universe mean, each with bootstrap CI.
+    segment: dev
+    kill: n/a — diagnostic, can never graduate
+    finalist: false
+
+  - id: V7b
+    name: short-signal mirror (diagnostic)
+    counts_toward_budget: false
+    mechanism: if the long side's negative alpha is real, does the mirrored short signal earn it (revision plan §4 V7)
+    rule: >
+      Same universe, cap band and liquidity floor. Signal = VStop flip_down AND 35 <= RSI(14) <= 50
+      (mirror of the long band about 50). Short at the next open; stop = VStop line (above price) at
+      signal; open >= SL exits at the open, else high >= SL exits at SL, else week close. Risk cap
+      mirrored: reject (SL - EP)/EP > 0.15. Cost 0.5% round trip + 0.25% per week borrow placeholder.
+    segment: dev
+    kill: n/a — diagnostic only. Never traded without a separate study of F&O eligibility, futures basis/roll, margin and borrow cost.
+    finalist: false
+
+  - id: G
+    name: guardrail threshold calibration (§3.8.2)
+    counts_toward_budget: false
+    mechanism: are the v1 full-credit thresholds in src/screen/candidate_score.py set at points that matter
+    rule: >
+      Population: eligible rows (flag matrix replay) on dev weeks 2021-07..2024-08, plus forward.
+      Grids — G1 risk-cap headroom pp {2.5, 5, 7.5}; G2 liquidity multiple {1.5, 2, 3}; G3 band position
+      {0.25, 0.5, 0.75}. BOTH criteria must hold for a threshold (decision D6):
+      (1) own risk metric — G1: 1-week stop-hit + gap-stop rate and worst-decile loss; G2: |open - signal close|
+      gap size and gap-stop rate; G3: probability still in the market-cap band 4 and 13 weeks later.
+      Choose the smallest threshold beyond which the risk metric stops improving by >= 10% relative.
+      (2) returns — names at or above the chosen threshold vs below it: weekly paired mean 1-week net
+      return difference >= 0 with bootstrap CI lower bound >= -0.5 pp (non-inferiority).
+      If no grid point meets both, the guardrail is dropped from the multiplier (kept as a logged column).
+    segment: dev
+    kill: forward 26 weeks — ordering of the risk metric not reproduced, or returns criterion fails -> revert to logged column
+    finalist: false
+checksum: 'sha256:d71a2dfc38c01d4e079370fdf23d1e62b7ce3d887e7c220e1efe084e45818912'

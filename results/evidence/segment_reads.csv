@@ -1,0 +1,10 @@
+read_utc,experiment_id,segment,first_week,last_week,n_weeks,note
+2026-09-16T04:38:59+00:00,V2,dev,2021-07-05,2024-07-01,157,"V2 fixed-N-week-hold dev backtest, N in {2,4,8}, unread part of dev"
+2026-09-16T04:42:40+00:00,V2,dev,2021-07-05,2024-07-01,157,"V2 fixed-N-week-hold dev backtest, N in {2,4,8}, unread part of dev"
+2026-09-16T04:49:41+00:00,V3,dev,2021-07-05,2024-07-01,157,V3 pullback-limit dev backtest
+2026-09-16T04:49:41+00:00,V4,dev,2021-07-05,2024-07-01,157,V4 same-week-confirmation dev backtest
+2026-09-16T04:54:11+00:00,V3,dev,2021-07-05,2024-07-01,157,V3 pullback-limit dev backtest
+2026-09-16T04:54:11+00:00,V4,dev,2021-07-05,2024-07-01,157,V4 same-week-confirmation dev backtest
+2026-09-29T06:07:17+00:00,V2,dev,2021-07-05,2024-07-01,157,"V2 fixed-N-week-hold dev backtest, N in {2,4,8}, unread part of dev"
+2026-09-29T06:07:56+00:00,V3,dev,2021-07-05,2024-07-01,157,V3 pullback-limit dev backtest
+2026-09-29T06:07:56+00:00,V4,dev,2021-07-05,2024-07-01,157,V4 same-week-confirmation dev backtest

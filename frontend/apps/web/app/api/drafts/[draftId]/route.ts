@@ -11,9 +11,9 @@ const notFound = () => Response.json({ error: "draft not found" }, { status: 404
 
 export async function GET(req: Request, { params }: { params: { draftId: string } }) {
   const raw = db();
-  return withUser(raw, req, (user) => {
+  return withUser(raw, req, async (user) => {
     const id = Number(params.draftId);
-    const draft = ownsDraft(raw, user.userId, id) ? getDraft(raw, id) : null;
+    const draft = (await ownsDraft(raw, user.userId, id)) ? await getDraft(raw, id) : null;
     if (!draft) return notFound();
     return Response.json(draft);
   });
@@ -24,11 +24,11 @@ export async function PATCH(req: Request, { params }: { params: { draftId: strin
   const raw = db();
   return withUser(raw, req, async (user) => {
     const id = Number(params.draftId);
-    if (!ownsDraft(raw, user.userId, id)) return notFound();
+    if (!(await ownsDraft(raw, user.userId, id))) return notFound();
     const patch = await req.json();
     for (const key of SERVER_OWNED_KEYS) delete patch[key];
     try {
-      return Response.json(updateDraft(raw, id, patch));
+      return Response.json(await updateDraft(raw, id, patch));
     } catch (err: any) {
       const status = /not found/.test(err.message) ? 404 : 400;
       return Response.json({ error: err.message }, { status });

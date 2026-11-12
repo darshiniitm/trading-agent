@@ -1,0 +1,177 @@
+{
+ "program": {
+  "program_version": 5,
+  "universe": {
+   "source": "index",
+   "index": "NIFTY 100"
+  },
+  "sets": [
+   {
+    "id": "S1",
+    "from": "universe",
+    "label": "qualified stocks",
+    "eval": {
+     "mode": "latest",
+     "timeframe": "1D",
+     "bar": "last_completed"
+    },
+    "where": {
+     "all": [
+      "C1",
+      "C2"
+     ]
+    }
+   }
+  ],
+  "conditions": [
+   {
+    "id": "C1",
+    "lhs": {
+     "ind": "sma",
+     "params": {
+      "length": 50,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "op": "cross_above",
+    "rhs": {
+     "ind": "sma",
+     "params": {
+      "length": 200,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "within_bars": 10,
+    "emit": [
+     "event_date"
+    ],
+    "phrase": "50 DMA crossed above the 200 DMA in the last 10 trading sessions"
+   },
+   {
+    "id": "C2",
+    "lhs": {
+     "ind": "sma",
+     "params": {
+      "length": 50,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "op": ">",
+    "rhs": {
+     "ind": "sma",
+     "params": {
+      "length": 200,
+      "source": "close"
+     },
+     "tf": "1D"
+    },
+    "phrase": "50 DMA crossed above the 200 DMA in the last 10 trading sessions"
+   }
+  ],
+  "actions": [],
+  "source_phrases": [
+   {
+    "path": "conditions.C1.params.length",
+    "phrase": "50",
+    "span": [
+     27,
+     29
+    ]
+   },
+   {
+    "path": "conditions.C1.rhs.params.length",
+    "phrase": "200",
+    "span": [
+     52,
+     55
+    ]
+   },
+   {
+    "path": "conditions.C1.within_bars",
+    "phrase": "10",
+    "span": [
+     72,
+     74
+    ]
+   },
+   {
+    "path": "conditions.C2.params.length",
+    "phrase": "50",
+    "span": [
+     27,
+     29
+    ]
+   },
+   {
+    "path": "conditions.C2.rhs.params.length",
+    "phrase": "200",
+    "span": [
+     52,
+     55
+    ]
+   },
+   {
+    "path": "universe.index",
+    "phrase": "Nifty 100",
+    "span": [
+     0,
+     9
+    ]
+   }
+  ],
+  "needs_input": [],
+  "unsupported": [],
+  "ignored": [],
+  "unrecognised": [],
+  "answers": [],
+  "assumptions": [
+   {
+    "path": "conditions.C1.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C1.rhs.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C2.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C2.rhs.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   }
+  ],
+  "not_evaluable": []
+ },
+ "english": "From **NIFTY 100** stocks, on **daily** candles, find stocks where **SMA(50, close) crossed above SMA(200, close) within the last 10 bars**, and **SMA(50, close) is above SMA(200, close)**.",
+ "issues": [],
+ "clauses": [
+  {
+   "id": "L1",
+   "text": "Nifty 100 stocks where the 50 DMA crossed above the 200 DMA in the last 10 trading sessions",
+   "span": [
+    0,
+    91
+   ],
+   "status": "ok",
+   "maps_to": "C1: SMA(50, close) [1D] crosses above SMA(200, close); C2: SMA(50, close) [1D] > SMA(200, close); universe: NIFTY 100",
+   "questions": 0
+  }
+ ],
+ "reader": {
+  "calls": 0,
+  "dropped": []
+ }
+}

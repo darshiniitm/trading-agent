@@ -1,0 +1,118 @@
+{
+  "audit_schema_version": 1,
+  "as_of": "2026-09-21",
+  "recording_mode": "late_backfill",
+  "overall": "FAIL",
+  "checks": [
+    {
+      "id": "AU01",
+      "status": "PASS",
+      "expected": "all I1-I10 PASS/WARN",
+      "actual": "[{\"id\": \"I1\", \"status\": \"PASS\", \"detail\": \"rows=262 expected(liquidity_filter)=262\"}, {\"id\": \"I2\", \"status\": \"PASS\", \"detail\": \"matrix=['HBLENGINE.NS', 'WHIRLPOOL.NS'] control=['HBLENGINE.NS', 'WHIRLPOOL.NS']\"}, {\"id\": \"I3\", \"status\": \"PASS\", \"detail\": \"matrix=[] control=[]\"}, {\"id\": \"I4\", \"status\": \"PASS\", \"detail\": \"bad_tickers=[]\"}, {\"id\": \"I5\", \"status\": \"PASS\", \"detail\": \"bad_columns=[]\"}, {\"id\": \"I6\", \"status\": \"PASS\", \"detail\": \"ok\"}, {\"id\": \"I7\", \"status\": \"PASS\", \"detail\": \"manifest=sha"
+    },
+    {
+      "id": "AU02",
+      "status": "PASS",
+      "expected": "late_backfill",
+      "actual": "late_backfill"
+    },
+    {
+      "id": "AU03",
+      "status": "FAIL",
+      "expected": "no Control-file hash/diff changes",
+      "actual": "changed=['src/trade/builder.py'] git_clean=False"
+    },
+    {
+      "id": "AU04",
+      "status": "PASS",
+      "expected": "csv_sha256 matches; no M/D on picks_*/flags_*",
+      "actual": "sha_match=True bad_git_lines=[]"
+    },
+    {
+      "id": "AU05",
+      "status": "PASS",
+      "expected": "2026-09-21",
+      "actual": "2026-09-21"
+    },
+    {
+      "id": "AU06",
+      "status": "PASS",
+      "expected": "caveats present in manifest and status md",
+      "actual": "manifest_ok=True status_md_ok=True"
+    },
+    {
+      "id": "AU07",
+      "status": "PASS",
+      "expected": "n/a (no T4 picks this week)",
+      "actual": "no T4 picks"
+    },
+    {
+      "id": "AU08",
+      "status": "PASS",
+      "expected": "no dup keys; week rows == 262",
+      "actual": "dup=0 week_rows=262"
+    },
+    {
+      "id": "AU09",
+      "status": "PASS",
+      "expected": "n/a (not graded yet)",
+      "actual": "not graded yet"
+    },
+    {
+      "id": "AU10",
+      "status": "PASS",
+      "expected": "all stages done/skipped_already_done",
+      "actual": [
+        "done",
+        "skipped_already_done",
+        "done",
+        "done",
+        "skipped_already_done",
+        "done",
+        "done"
+      ]
+    }
+  ],
+  "facts": {
+    "eligible_count": 262,
+    "flags_met_histogram": {
+      "0": 1,
+      "1": 59,
+      "2": 63,
+      "3": 23,
+      "4": 30,
+      "5": 34,
+      "6": 30,
+      "7": 19,
+      "8": 3
+    },
+    "t4_picks": [],
+    "control_trades": [],
+    "forward_weeks_graded": 0,
+    "maturity": "TOO_EARLY",
+    "last_graded": {
+      "signal_week": null,
+      "eligible_mean_pct": null,
+      "control_net_pct": null,
+      "t4_net_pct": null,
+      "benchmark_pct": null
+    },
+    "control_file_hashes": {
+      "config/rules.yaml": "6ca3fd17f85701e755831b7872a4f342d4f5d430a7cc9be421f240639fb76edc",
+      "src/screen/engine.py": "8e8b5e8471726631e6380c9fb7c0fc8d430114bf27023ea6b5db1dfe70822460",
+      "src/trade/builder.py": "d92149901c0274ee92ea18a62b83ef231bb5f35d1b88a7c9b14a824385b5a43c"
+    }
+  },
+  "noteworthy": {
+    "any": true,
+    "reasons": [
+      "check_failed",
+      "recording_mode_late_backfill"
+    ]
+  },
+  "inputs_sha256": {
+    "flags_csv": "sha256:e27b2f747bfbc1a8f8a33c6df822747306deaf40b464dca2afa6bdd9474e8f60",
+    "manifest": "sha256:8ee478bd13b9d6cc21e74775c26018acd07c65cd661e9b767283ad7a4fab023f"
+  },
+  "created_utc": "2026-09-28T15:04:47+00:00"
+}

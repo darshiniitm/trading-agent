@@ -1,0 +1,161 @@
+{
+  "prompt_id": 2,
+  "as_of": "2026-10-05",
+  "created_utc": "2026-10-11T19:28:41+00:00",
+  "structure": "literal",
+  "program": {
+    "program_version": 5,
+    "universe": {
+      "source": "index",
+      "index": "NIFTY 500"
+    },
+    "sets": [
+      {
+        "id": "S1",
+        "from": "universe",
+        "label": "qualified stocks",
+        "eval": {
+          "mode": "literal",
+          "timeframe": "1W",
+          "bar": "last_completed"
+        },
+        "where": {
+          "all": [
+            "C1",
+            "C2",
+            "C3",
+            "C4"
+          ]
+        }
+      }
+    ],
+    "conditions": [
+      {
+        "id": "C1",
+        "lhs": {
+          "ind": "bar",
+          "params": {
+            "source": "close"
+          },
+          "tf": "1W"
+        },
+        "op": ">",
+        "rhs": {
+          "ind": "sma",
+          "params": {
+            "length": 30,
+            "source": "close"
+          },
+          "tf": "1W"
+        },
+        "phrase": "weekly close above a rising 30-week moving average"
+      },
+      {
+        "id": "C2",
+        "lhs": {
+          "ind": "sma",
+          "params": {
+            "length": 30,
+            "source": "close"
+          },
+          "tf": "1W"
+        },
+        "op": "up_over",
+        "bars": 4,
+        "phrase": "weekly close above a rising 30-week moving average"
+      },
+      {
+        "id": "C3",
+        "lhs": {
+          "ind": "bar",
+          "params": {
+            "source": "close"
+          },
+          "tf": "1W"
+        },
+        "op": ">",
+        "rhs": {
+          "ind": "high_n",
+          "params": {
+            "lookback": 26,
+            "skip": 1
+          },
+          "tf": "1W"
+        },
+        "phrase": "breaking above the 26-week high"
+      },
+      {
+        "id": "C4",
+        "lhs": {
+          "ind": "bar",
+          "params": {
+            "source": "volume"
+          },
+          "tf": "1W"
+        },
+        "op": ">=",
+        "rhs": {
+          "ind": "volume_avg",
+          "params": {
+            "length": 10,
+            "skip": 1
+          },
+          "tf": "1W"
+        },
+        "rhs_mult": 2,
+        "phrase": "on at least twice the 10-week average volume"
+      }
+    ],
+    "actions": [],
+    "source_phrases": [
+      {
+        "path": "conditions.C1.rhs.params.length",
+        "phrase": "30",
+        "span": [
+          94,
+          96
+        ]
+      },
+      {
+        "path": "conditions.C2.params.length",
+        "phrase": "30",
+        "span": [
+          94,
+          96
+        ]
+      },
+      {
+        "path": "conditions.C3.rhs.params.lookback",
+        "phrase": "26",
+        "span": [
+          137,
+          139
+        ]
+      },
+      {
+        "path": "conditions.C4.rhs.params.length",
+        "phrase": "10",
+        "span": [
+          173,
+          175
+        ]
+      },
+      {
+        "path": "universe.index",
+        "phrase": "Nifty 500",
+        "span": [
+          55,
+          64
+        ]
+      }
+    ],
+    "needs_input": [],
+    "unsupported": [],
+    "ignored": [],
+    "unrecognised": [],
+    "answers": []
+  },
+  "scored": true,
+  "picks": [],
+  "graded": null
+}

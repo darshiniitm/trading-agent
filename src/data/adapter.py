@@ -16,11 +16,19 @@ from pathlib import Path
 import pandas as pd
 import requests
 
+from src.data.atomic import atomic_write_csv, atomic_write_json, atomic_write_parquet, read_json_or_none, read_parquet_or_none
+
 NSE_ARCHIVE_URLS = {
     "midcap150": "https://archives.nseindia.com/content/indices/ind_niftymidcap150list.csv",
     "smallcap250": "https://archives.nseindia.com/content/indices/ind_niftysmallcap250list.csv",
     "nifty500": "https://archives.nseindia.com/content/indices/ind_nifty500list.csv",
 }
+
+# Literal spec (step 1: "all stocks", not an index-constituent proxy) — NSE's public
+# master equity list, no API key. Unlike the index CSVs above it has no sector column;
+# sector_map_pit() falls back to the index-CSV union for names it covers and "Unknown"
+# for the rest (see literal-spec-plan.md — a documented caveat, not a silent gap).
+FULL_EQUITY_LIST_URL = "https://archives.nseindia.com/content/equities/EQUITY_L.csv"
 
 UA = {
     "User-Agent": (
@@ -39,6 +47,53 @@ KNOWN_CAVEATS = [
     "sector map is NSE index-classification 'Industry' field as of the CSV "
     "snapshot date, not strictly point-in-time historically",
 ]
+
+FULL_LIST_KNOWN_CAVEATS = KNOWN_CAVEATS + [
+    "universe.source=full_nse_equity_list (Literal spec): the same shares-outstanding "
+    "and survivorship caveats above now apply across ~4x more tickers than the "
+    "index-constituent proxy — a larger surface for the same unresolved limitations, "
+    "not a fix for them",
+    "the full equity master list carries no sector field; sector_map_pit() reports "
+    "'Unknown' for any ticker outside the midcap150/smallcap250/nifty500 union",
+]
+
+
+DOWNLOAD_CHUNK = 100   # tickers per yf.download call: one call for ~2,300 tickers peaked at ~1.8 GB on a 2 GB VM
+
+
+def _download_long(yf, tickers: list[str], chunk: int = DOWNLOAD_CHUNK, **kwargs) -> pd.DataFrame:
+    """yf.download in batches of `chunk` tickers -> one long frame [ticker, date, open, high, low, close, volume].
+    Each ticker's rows are the same as from one bulk call; only one batch's wide frame is alive at a time."""
+    frames = []
+    for i in range(0, len(tickers), chunk):
+        batch = tickers[i:i + chunk]
+        fetched = yf.download(tickers=batch, auto_adjust=False, group_by="ticker", threads=True, progress=False, **kwargs)
+        for t in batch:
+            try:
+                sub = fetched[t]  # yf.download with group_by='ticker' is always MultiIndex, even for 1 ticker
+                sub = sub.dropna(how="all")
+                if sub.empty:
+                    continue
+                sub = sub.reset_index().rename(columns=str.lower)
+                sub["ticker"] = t
+                frames.append(sub[["ticker", "date", "open", "high", "low", "close", "volume"]])
+            except Exception:
+                continue
+        del fetched
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+
+
+def _split_by_ticker(panel: pd.DataFrame | None, tickers: list[str]) -> dict[str, pd.DataFrame]:
+    """{ticker: its rows sorted by date}, in `tickers` order, in one groupby pass (not one full-column scan per ticker)."""
+    if panel is None or panel.empty:
+        return {}
+    groups = dict(tuple(panel.groupby("ticker", sort=False)))
+    out = {}
+    for t in tickers:
+        g = groups.get(t)
+        if g is not None and not g.empty:
+            out[t] = g.sort_values("date").reset_index(drop=True)
+    return out
 
 
 class SourceAdapter:
@@ -70,6 +125,7 @@ class SourceAdapter:
 class OpenSourceAdapter(SourceAdapter):
     cache_dir: Path
     index_lists: list[str]
+    universe_source: str = "index_lists"  # "index_lists" (Control) | "full_nse_equity_list" (Literal)
 
     def __post_init__(self):
         self.cache_dir = Path(self.cache_dir)
@@ -84,7 +140,7 @@ class OpenSourceAdapter(SourceAdapter):
         r = requests.get(url, headers=UA, timeout=20)
         r.raise_for_status()
         df = pd.read_csv(io.StringIO(r.text))
-        df.to_csv(cache_path, index=False)
+        atomic_write_csv(df, cache_path)
         return df
 
     def _load_universe_raw(self) -> pd.DataFrame:
@@ -105,15 +161,50 @@ class OpenSourceAdapter(SourceAdapter):
         out["ticker"] = out["symbol"].astype(str).str.strip() + ".NS"
         return out.reset_index(drop=True)
 
+    def _fetch_full_equity_list(self) -> pd.DataFrame:
+        """NSE's public EQ-series master list (Literal spec, step 1). No sector column."""
+        cache_path = self.cache_dir / "universe_full_equity_list.csv"
+        if cache_path.exists() and (time.time() - cache_path.stat().st_mtime) < 24 * 3600:
+            df = pd.read_csv(cache_path)
+        else:
+            r = requests.get(FULL_EQUITY_LIST_URL, headers=UA, timeout=30)
+            r.raise_for_status()
+            df = pd.read_csv(io.StringIO(r.text))
+            atomic_write_csv(df, cache_path)
+        df.columns = [c.strip() for c in df.columns]
+        df = df[df["SERIES"].astype(str).str.strip() == "EQ"]
+        df = df.rename(columns={
+            "SYMBOL": "symbol",
+            "NAME OF COMPANY": "name",
+            "ISIN NUMBER": "isin",
+        })
+        return df[["symbol", "name", "isin"]].reset_index(drop=True)
+
+    def _load_universe_full(self) -> pd.DataFrame:
+        full = self._fetch_full_equity_list()
+        full["symbol"] = full["symbol"].astype(str).str.strip()
+        # Sector coverage: NSE's full equity list has no sector field. Backfill from the
+        # index-constituent CSVs' 'Industry' field where available; the rest are "Unknown"
+        # (a documented caveat — see FULL_LIST_KNOWN_CAVEATS — not a silent gap).
+        sector_map = self._load_universe_raw()[["symbol", "sector"]].drop_duplicates(subset="symbol")
+        out = full.merge(sector_map, on="symbol", how="left")
+        out["sector"] = out["sector"].fillna("Unknown")
+        out["ticker"] = out["symbol"] + ".NS"
+        return out.drop_duplicates(subset="symbol").reset_index(drop=True)
+
     def nse_equities_pit(self, as_of) -> pd.DataFrame:
-        # NOTE: index constituent CSVs are the CURRENT list, not the constituent
-        # list as of `as_of` historically. This is a known open-source limitation
-        # (see caveats()); intraday-index-reconstitution drift is out of scope for
-        # the POC. The union across 3 broad indices mitigates most of the drift.
+        # NOTE: both paths return the CURRENT list, not the constituent/listing list as
+        # of `as_of` historically. This is a known open-source limitation (see caveats());
+        # intraday-index-reconstitution / delisting drift is out of scope for the POC.
+        if self.universe_source == "full_nse_equity_list":
+            return self._load_universe_full()
         return self._load_universe_raw()
 
     def sector_map_pit(self, as_of) -> pd.DataFrame:
-        u = self._load_universe_raw()
+        if self.universe_source == "full_nse_equity_list":
+            u = self._load_universe_full()
+        else:
+            u = self._load_universe_raw()
         return u[["ticker", "symbol", "sector"]]
 
     # ---- OHLCV ------------------------------------------------------------
@@ -124,48 +215,22 @@ class OpenSourceAdapter(SourceAdapter):
         meta_path = self.cache_dir / f"weekly_ohlcv_{history_weeks}w.meta.json"
         cached_tickers = set()
         panel = None
-        if cache_path.exists() and meta_path.exists():
-            meta = json.loads(meta_path.read_text())
-            if time.time() - meta.get("fetched_at", 0) < 12 * 3600:
-                panel = pd.read_parquet(cache_path)
+        meta = read_json_or_none(meta_path) if cache_path.exists() else None
+        if meta is not None and time.time() - meta.get("fetched_at", 0) < 12 * 3600:
+            panel = read_parquet_or_none(cache_path)   # unreadable -> None: a cache miss, refetched below
+            if panel is not None:
                 cached_tickers = set(panel["ticker"].unique())
 
         missing = [t for t in tickers if t not in cached_tickers]
         if missing:
             period = f"{int(history_weeks * 7 / 30) + 2}mo"
-            fetched = yf.download(
-                tickers=missing,
-                period=period,
-                interval="1wk",
-                auto_adjust=False,
-                group_by="ticker",
-                threads=True,
-                progress=False,
-            )
-            frames = []
-            for t in missing:
-                try:
-                    sub = fetched[t]  # yf.download with group_by='ticker' is always MultiIndex, even for 1 ticker
-                    sub = sub.dropna(how="all")
-                    if sub.empty:
-                        continue
-                    sub = sub.reset_index().rename(columns=str.lower)
-                    sub["ticker"] = t
-                    frames.append(sub[["ticker", "date", "open", "high", "low", "close", "volume"]])
-                except Exception:
-                    continue
-            new_panel = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+            new_panel = _download_long(yf, missing, period=period, interval="1wk")
             panel = pd.concat([panel, new_panel], ignore_index=True) if panel is not None else new_panel
             panel = panel.drop_duplicates(subset=["ticker", "date"]).sort_values(["ticker", "date"])
-            panel.to_parquet(cache_path, index=False)
-            meta_path.write_text(json.dumps({"fetched_at": time.time()}))
+            atomic_write_parquet(panel, cache_path)
+            atomic_write_json(meta_path, {"fetched_at": time.time()})
 
-        out = {}
-        for t in tickers:
-            sub = panel[panel["ticker"] == t].sort_values("date").reset_index(drop=True)
-            if not sub.empty:
-                out[t] = sub
-        return out
+        return _split_by_ticker(panel, tickers)
 
     # ---- daily OHLCV (T1 rolling-window shadow arm only; weekly path above is untouched) --
     def daily_ohlcv(self, tickers: list[str], history_days: int) -> dict[str, pd.DataFrame]:
@@ -175,63 +240,45 @@ class OpenSourceAdapter(SourceAdapter):
         meta_path = self.cache_dir / f"daily_ohlcv_{history_days}d.meta.json"
         cached_tickers = set()
         panel = None
-        if cache_path.exists() and meta_path.exists():
-            meta = json.loads(meta_path.read_text())
-            if time.time() - meta.get("fetched_at", 0) < 12 * 3600:
-                panel = pd.read_parquet(cache_path)
+        meta = read_json_or_none(meta_path) if cache_path.exists() else None
+        if meta is not None and time.time() - meta.get("fetched_at", 0) < 12 * 3600:
+            panel = read_parquet_or_none(cache_path)   # unreadable -> None: a cache miss, refetched below
+            if panel is not None:
                 cached_tickers = set(panel["ticker"].unique())
 
         missing = [t for t in tickers if t not in cached_tickers]
         if missing:
-            period = f"{history_days}d"
-            fetched = yf.download(
-                tickers=missing,
-                period=period,
-                interval="1d",
-                auto_adjust=False,
-                group_by="ticker",
-                threads=True,
-                progress=False,
-            )
-            frames = []
-            for t in missing:
-                try:
-                    sub = fetched[t]  # yf.download with group_by='ticker' is always MultiIndex, even for 1 ticker
-                    sub = sub.dropna(how="all")
-                    if sub.empty:
-                        continue
-                    sub = sub.reset_index().rename(columns=str.lower)
-                    sub["ticker"] = t
-                    frames.append(sub[["ticker", "date", "open", "high", "low", "close", "volume"]])
-                except Exception:
-                    continue
-            new_panel = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+            new_panel = _download_long(yf, missing, period=f"{history_days}d", interval="1d")
             panel = pd.concat([panel, new_panel], ignore_index=True) if panel is not None else new_panel
             panel = panel.drop_duplicates(subset=["ticker", "date"]).sort_values(["ticker", "date"])
-            panel.to_parquet(cache_path, index=False)
-            meta_path.write_text(json.dumps({"fetched_at": time.time()}))
+            atomic_write_parquet(panel, cache_path)
+            atomic_write_json(meta_path, {"fetched_at": time.time()})
 
-        out = {}
-        for t in tickers:
-            sub = panel[panel["ticker"] == t].sort_values("date").reset_index(drop=True)
-            if not sub.empty:
-                out[t] = sub
-        return out
+        return _split_by_ticker(panel, tickers)
+
+    def daily_ohlcv_since(self, tickers: list[str], start) -> dict[str, pd.DataFrame]:
+        """Daily bars from `start` on, straight from Yahoo (no combined-cache read or write). The engine's incremental
+        top-up: a stock whose per-symbol cache is a few days behind needs those days, not five years again."""
+        import yfinance as yf
+
+        return _split_by_ticker(_download_long(yf, list(tickers), start=str(pd.Timestamp(start).date()), interval="1d"), tickers)
 
     def daily_benchmark_series(self, ticker: str, history_days: int) -> pd.DataFrame:
         d = self.daily_ohlcv([ticker], history_days)
         return d.get(ticker, pd.DataFrame())
 
-    def shares_outstanding(self, tickers: list[str]) -> dict[str, float]:
+    def shares_outstanding(self, tickers: list[str], progress=None) -> dict[str, float]:
         import yfinance as yf
 
         cache_path = self.cache_dir / "shares_outstanding.json"
         cached = {}
         if cache_path.exists() and (time.time() - cache_path.stat().st_mtime) < 24 * 3600:
-            cached = json.loads(cache_path.read_text())
+            cached = read_json_or_none(cache_path) or {}
 
         missing = [t for t in tickers if t not in cached]
-        for t in missing:
+        for i, t in enumerate(missing):
+            if progress and i % 25 == 0:
+                progress(i, len(missing))
             try:
                 fi = yf.Ticker(t).fast_info
                 shares = fi.get("shares")
@@ -239,7 +286,7 @@ class OpenSourceAdapter(SourceAdapter):
                     cached[t] = float(shares)
             except Exception:
                 continue
-        cache_path.write_text(json.dumps(cached))
+        atomic_write_json(cache_path, cached)
         return {t: cached[t] for t in tickers if t in cached}
 
     def benchmark_series(self, ticker: str, history_weeks: int) -> pd.DataFrame:
@@ -247,14 +294,19 @@ class OpenSourceAdapter(SourceAdapter):
         return d.get(ticker, pd.DataFrame())
 
     def caveats(self) -> list[str]:
+        if self.universe_source == "full_nse_equity_list":
+            return FULL_LIST_KNOWN_CAVEATS
         return KNOWN_CAVEATS
 
 
 def build_adapter(rule_spec: dict) -> SourceAdapter:
     source = rule_spec.get("data_source", "opensource")
     if source == "opensource":
+        universe_cfg = rule_spec["universe"]
+        universe_source = universe_cfg.get("source", "index_lists")
         return OpenSourceAdapter(
             cache_dir=rule_spec["data"]["cache_dir"],
-            index_lists=rule_spec["universe"]["index_lists"],
+            index_lists=universe_cfg.get("index_lists", []),
+            universe_source=universe_source,
         )
     raise NotImplementedError(f"data_source={source!r} not implemented (POC is opensource-only)")

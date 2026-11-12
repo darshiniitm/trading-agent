@@ -13,7 +13,8 @@ import pytest
 from src.screen.engine import run_screen, _slice_as_of
 from src.trade.builder import build_trades
 from src.backtest.harness import single_week_check
-from tests.offline import env, all_dates
+from src.backtest.horizons import grade_horizons
+from tests.offline import env, all_dates, make_panel
 
 RNG = np.random.default_rng(20260829)
 
@@ -139,3 +140,78 @@ def test_build_trades_live_marks_entry_pending():
     if trades.empty:
         pytest.skip("no survivors at last as_of")
     assert (trades["entry_status"] == "pending_next_week_open").all()
+
+
+def _horizon_test_setup():
+    """One ticker, a clean uptrend long enough for VStop's 10-week warmup plus every
+    horizon plus room to corrupt beyond it. No stop ever triggers (SL pinned far below
+    every close) -- this canary is about leakage, not stop-hit behaviour."""
+    closes = np.linspace(100.0, 160.0, 30)
+    panel = make_panel(closes, start="2024-01-01")  # Monday-dated weekly bars
+    ticker = "T.NS"
+    as_of = panel["date"].iloc[14]
+    ep = float(panel[panel["date"] == as_of]["close"].iloc[0])
+    pick = {"ticker": ticker, "EP": ep, "SL": 1.0}
+    rule_spec = {"signals": [{"id": "vstop_flip", "params": {"length": 10, "mult": 2.0, "source": "close"}}]}
+    return pick, {ticker: panel}, as_of, rule_spec
+
+
+def _corrupt_weekly_after(panels: dict, boundary: pd.Timestamp) -> dict:
+    out = {}
+    for t, p in panels.items():
+        q = p.copy(deep=True)
+        mask = q["date"] > boundary
+        n = int(mask.sum())
+        if n:
+            noise = RNG.uniform(1.0, 5000.0, size=n)
+            q.loc[mask, ["open", "high", "low", "close"]] = np.column_stack(
+                [noise, noise * 1.5, noise * 0.5, noise])
+        out[t] = q
+    return out
+
+
+@pytest.mark.parametrize("horizon", [1, 2, 3])
+def test_grade_horizons_future_mutation_canary(horizon):
+    """A horizon-N grade for signal Friday t may only read bars up to t+N. Corrupting
+    every bar strictly after that boundary must not change horizon N's row, in EITHER
+    view -- if it does, a later week's data reached an earlier horizon's grade."""
+    pick, panels, as_of, rule_spec = _horizon_test_setup()
+    horizons = [1, 2, 3]
+
+    base_rows = grade_horizons([pick], panels, as_of, horizons, bench=None, rule_spec=rule_spec)
+    boundary = as_of + pd.Timedelta(weeks=horizon)
+    mutated_rows = grade_horizons([pick], _corrupt_weekly_after(panels, boundary), as_of, horizons,
+                                   bench=None, rule_spec=rule_spec)
+
+    def _row_at(rows, h, view):
+        return next(r for r in rows if r["horizon_weeks"] == h and r["view"] == view)
+
+    for view in ("signal", "trade"):
+        base_row = _row_at(base_rows, horizon, view)
+        mut_row = _row_at(mutated_rows, horizon, view)
+        assert base_row["status"] == "graded", f"horizon {horizon} ({view}) should be gradable in this setup"
+        assert mut_row["r_Nw"] == pytest.approx(base_row["r_Nw"]), (
+            f"horizon {horizon} ({view}) return changed when data after t+{horizon} was "
+            f"corrupted — LOOK-AHEAD LEAK"
+        )
+        assert mut_row["mdd_to_Nw"] == pytest.approx(base_row["mdd_to_Nw"]), (
+            f"horizon {horizon} ({view}) drawdown changed when future-only data was corrupted"
+        )
+
+
+def test_grade_horizons_pending_never_guesses_an_ungraded_horizon():
+    """A horizon that hasn't happened yet in the data available must be 'pending',
+    never a fabricated number."""
+    closes = np.linspace(100.0, 130.0, 16)  # only 1 week of forward data past week 14
+    panel = make_panel(closes, start="2024-01-01")
+    ticker = "T.NS"
+    as_of = panel["date"].iloc[14]
+    pick = {"ticker": ticker, "EP": float(panel[panel["date"] == as_of]["close"].iloc[0]), "SL": 1.0}
+    rule_spec = {"signals": [{"id": "vstop_flip", "params": {"length": 10, "mult": 2.0, "source": "close"}}]}
+
+    rows = grade_horizons([pick], {ticker: panel}, as_of, [1, 2, 3], bench=None, rule_spec=rule_spec)
+    by_h = {(r["horizon_weeks"], r["view"]): r for r in rows}
+    assert by_h[(1, "signal")]["status"] == "graded"
+    assert by_h[(2, "signal")]["status"] == "pending"
+    assert by_h[(2, "signal")]["r_Nw"] is None
+    assert by_h[(3, "trade")]["status"] == "pending"

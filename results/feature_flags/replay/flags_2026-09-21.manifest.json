@@ -1,0 +1,64 @@
+{
+  "record_id": "flags_2026-09-21",
+  "signal_week": "2026-09-21",
+  "holding_week": "2026-09-28",
+  "recording_mode": "replay",
+  "created_utc": "2026-09-29T05:38:58+00:00",
+  "created_ist": "2026-09-29T11:08:56+05:30",
+  "monday_open_deadline_ist": "2026-09-28T09:15:00+05:30",
+  "registry_version": 1,
+  "registry_checksum": "sha256:d8164388d645879ab937757c356184153873b26d53dbe865a48474be24cd648d",
+  "data": {
+    "n_panels": 500,
+    "benchmark_ticker": "NIFTYMIDCAP150.NS"
+  },
+  "funnel": {
+    "candidate_universe": 501,
+    "universe_market_cap_band": 262,
+    "liquidity_filter": 262,
+    "vstop_flip": 4,
+    "survivors_after_rsi_band": 2
+  },
+  "counts": {
+    "rows": 262,
+    "flags_met_histogram": {
+      "1": 16,
+      "2": 43,
+      "3": 49,
+      "4": 30,
+      "5": 27,
+      "6": 27,
+      "7": 34,
+      "8": 24,
+      "9": 9,
+      "10": 3
+    },
+    "prevalence_by_flag": {
+      "A01_vstop_flip_up": 0.0153,
+      "A02_vstop_uptrend": 0.4542,
+      "A03_rsi_in_band": 0.3473,
+      "A04_risk_cap_ok": 0.4084,
+      "B01_sector_rs_4w_pos": 0.6145,
+      "B02_sector_top_k": 0.2023,
+      "B03_sector_rs_13w_pos": 0.4695,
+      "B04_volume_expansion": 0.1412,
+      "B05_trend_quality_strong": 0.042,
+      "B06_rsi_sweetspot_core": 0.1794,
+      "C01_risk_headroom_5pp": 0.2786,
+      "C02_liquidity_2x": 0.9962,
+      "C03_cap_band_central": 0.458
+    }
+  },
+  "t4": {
+    "k": null,
+    "selected": []
+  },
+  "checks": [],
+  "caveats": [
+    "yfinance weekly bars / corporate-action adjustment not independently verified",
+    "market cap uses TODAY's shares outstanding held constant across history (no point-in-time share count available from open-source sources) \u2014 see design doc section 3.2",
+    "delisted / merged tickers are not included -> survivorship bias, backtest returns are likely biased upward",
+    "sector map is NSE index-classification 'Industry' field as of the CSV snapshot date, not strictly point-in-time historically"
+  ],
+  "replay_run_id": "replay_2026-09-29T11:03:48+05:30"
+}

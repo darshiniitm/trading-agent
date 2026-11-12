@@ -11,6 +11,10 @@ import type { Example, ReaderFn } from "./reader";
 import { segment } from "./segment";
 import { verifyProgram } from "./verify";
 import { resolveProgram } from "./resolve";
+import { tool } from "@/server/telemetry";
+
+// observability: the pure default-filling / assumption-chip step, traced only on the compile path (resolveProgram is also called from viewOf on every read)
+const tracedResolve = tool("conditions.resolve", resolveProgram);
 import { BUILTIN_DEFAULTS, type UserDefaults } from "@/server/userDefaults";
 
 export type ProgramDraft = {
@@ -72,10 +76,12 @@ export async function compileProgram(promptText: string, opts: CompileProgramOpt
     const unavailable = notComputable(clause, covered);
     if (fragments.length === 0 && unavailable.length > 0) fragments = unavailable;
     else if (unavailable.length > 0) fragments = [...fragments, ...unavailable];
-    if (fragments.length === 0 && opts.fallback) {
+    if (fragments.length === 0 && opts.fallback && !modelError) {
       modelCalls += 1;
-      fragments = await opts.fallback(clause.text, clause.start);
-      viaModel = fragments.length > 0;
+      try {
+        fragments = await opts.fallback(clause.text, clause.start);
+        viaModel = fragments.length > 0;
+      } catch (e) { modelError = (e as Error).message; }   // unreachable model / spent time budget: the line stays unread and is flagged
     }
     // words nothing read: ask the local model, one rule-sized piece at a time; whatever it cannot read is flagged, never silently dropped
     const hasUnsupported = fragments.some((f) => f.kind === "unsupported" || f.kind === "noise");
@@ -109,7 +115,14 @@ export async function compileProgram(promptText: string, opts: CompileProgramOpt
   const unresolved = results.filter((r) => r.fragments.length === 0);
   if (opts.reader && unresolved.length > 0) {
     const found = results.flatMap((r) => r.fragments).filter((f) => f.kind === "condition").map((f: any) => f.phrase as string);
-    const out = await opts.reader({ norm, clauses, unresolved: unresolved.map((r) => r.clause), found, annotations: preannotate(norm, clauses), issues: opts.readerIssues, examples: opts.examples });
+    // like the per-line model reads above: a model that cannot be reached (or ran out of the request's time) leaves the rules' reading standing
+    let out: Awaited<ReturnType<NonNullable<typeof opts.reader>>>;
+    try {
+      out = await opts.reader({ norm, clauses, unresolved: unresolved.map((r) => r.clause), found, annotations: preannotate(norm, clauses), issues: opts.readerIssues, examples: opts.examples });
+    } catch (e) {
+      modelError ??= (e as Error).message;
+      out = { fragments: [], calls: 0, dropped: [] };
+    }
     modelCalls += out.calls;
     const dropped = [...out.dropped];
     for (const f of out.fragments) {
@@ -131,7 +144,7 @@ export async function compileProgram(promptText: string, opts: CompileProgramOpt
   const { trace } = assembled;
   // A failure here is a compiler bug (an untraceable value), never a user error: surface it loudly.
   const verified = verifyProgram(assembled.program, norm);
-  const program = opts.resolve === false ? verified : resolveProgram(verified, opts.defaults ?? BUILTIN_DEFAULTS);
+  const program = opts.resolve === false ? verified : tracedResolve(verified, opts.defaults ?? BUILTIN_DEFAULTS);
   const views: ClauseView[] = clauses.map((c) => {
     const t = trace.get(c.id);
     const unrec = verified.unrecognised.some((u) => u.clause_id === c.id);

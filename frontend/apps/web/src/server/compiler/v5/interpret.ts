@@ -44,7 +44,11 @@ export async function interpret(text: string, opts: InterpretOptions = {}): Prom
     for (const i of ruleCritic(draft.normalised, draft.clauses, draft.program)) found.set(key(i), i);
     // the model critic is a second opinion on a model's reading: it runs only when a model read part of the prompt.
     // A prompt the rules read alone is already checked by ruleCritic, and a large local model takes minutes over the extra call.
-    if (opts.critic && draft.modelCalls > 0) for (const i of await opts.critic(draft.normalised, english)) found.set(key(i), i);
+    // The critic is advisory: if the model cannot be reached (or the request ran out of time) the rules' checks stand.
+    if (opts.critic && draft.modelCalls > 0) {
+      try { for (const i of await opts.critic(draft.normalised, english)) found.set(key(i), i); }
+      catch (e) { draft.modelError ??= (e as Error).message; }
+    }
     const issues = [...found.values()];
     // fewer problems wins; a line still unread counts as one
     const score = (d: ProgramDraft, n: number) => n + d.clauses.filter((c) => c.status === "not_understood").length;

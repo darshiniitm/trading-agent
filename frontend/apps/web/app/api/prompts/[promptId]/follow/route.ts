@@ -10,13 +10,13 @@ function errorResponse(error: unknown) {
 
 export async function POST(req: Request, { params }: { params: { promptId: string } }) {
   const raw = db();
-  return withUser(raw, req, (user) => {
-    try { return Response.json(followPrompt(raw, { promptId: Number(params.promptId), userId: user.userId }), { status: 201 }); } catch (error) { return errorResponse(error); }
+  return withUser(raw, req, async (user) => {
+    try { return Response.json(await followPrompt(raw, { promptId: Number(params.promptId), userId: user.userId }), { status: 201 }); } catch (error) { return errorResponse(error); }
   });
 }
 export async function DELETE(req: Request, { params }: { params: { promptId: string } }) {
   const raw = db();
-  return withUser(raw, req, (user) => {
-    try { unfollowPrompt(raw, { promptId: Number(params.promptId), userId: user.userId }); return Response.json({ ok: true }); } catch (error) { return errorResponse(error); }
+  return withUser(raw, req, async (user) => {
+    try { await unfollowPrompt(raw, { promptId: Number(params.promptId), userId: user.userId }); return Response.json({ ok: true }); } catch (error) { return errorResponse(error); }
   });
 }

@@ -1,0 +1,124 @@
+{
+  "audit_schema_version": 1,
+  "as_of": "2026-09-07",
+  "recording_mode": "late_backfill",
+  "overall": "FAIL",
+  "checks": [
+    {
+      "id": "AU01",
+      "status": "PASS",
+      "expected": "all I1-I10 PASS/WARN",
+      "actual": "[{\"id\": \"I1\", \"status\": \"PASS\", \"detail\": \"rows=264 expected(liquidity_filter)=264\"}, {\"id\": \"I2\", \"status\": \"PASS\", \"detail\": \"matrix=['JUBLPHARMA.NS', 'PINELABS.NS', 'SPLPETRO.NS'] control=['JUBLPHARMA.NS', 'PINELABS.NS', 'SPLPETRO.NS']\"}, {\"id\": \"I3\", \"status\": \"PASS\", \"detail\": \"matrix=['JUBLPHARMA.NS', 'SPLPETRO.NS'] control=['JUBLPHARMA.NS', 'SPLPETRO.NS']\"}, {\"id\": \"I4\", \"status\": \"PASS\", \"detail\": \"bad_tickers=[]\"}, {\"id\": \"I5\", \"status\": \"PASS\", \"detail\": \"bad_columns=[]\"}, {\"id\": \"I6\","
+    },
+    {
+      "id": "AU02",
+      "status": "PASS",
+      "expected": "late_backfill",
+      "actual": "late_backfill"
+    },
+    {
+      "id": "AU03",
+      "status": "PASS",
+      "expected": "no working-tree diff on Control files",
+      "actual": "git_clean=True; no previous audit to compare hashes against"
+    },
+    {
+      "id": "AU04",
+      "status": "PASS",
+      "expected": "csv_sha256 matches; no M/D on picks_*/flags_*",
+      "actual": "sha_match=True bad_git_lines=[]"
+    },
+    {
+      "id": "AU05",
+      "status": "PASS",
+      "expected": "2026-09-07",
+      "actual": "2026-09-07"
+    },
+    {
+      "id": "AU06",
+      "status": "FAIL",
+      "expected": "caveats present in manifest and status md",
+      "actual": "manifest_ok=False status_md_ok=True"
+    },
+    {
+      "id": "AU07",
+      "status": "PASS",
+      "expected": "n/a (no T4 picks this week)",
+      "actual": "no T4 picks"
+    },
+    {
+      "id": "AU08",
+      "status": "PASS",
+      "expected": "no dup keys; week rows == 264",
+      "actual": "dup=0 week_rows=264"
+    },
+    {
+      "id": "AU09",
+      "status": "PASS",
+      "expected": "n/a (not graded yet)",
+      "actual": "not graded yet"
+    },
+    {
+      "id": "AU10",
+      "status": "PASS",
+      "expected": "all stages done/skipped_already_done",
+      "actual": [
+        "done",
+        "skipped_already_done",
+        "done",
+        "skipped_already_done",
+        "skipped_already_done",
+        "done",
+        "done"
+      ]
+    }
+  ],
+  "facts": {
+    "eligible_count": 264,
+    "flags_met_histogram": {
+      "1": 11,
+      "2": 41,
+      "3": 41,
+      "4": 30,
+      "5": 37,
+      "6": 38,
+      "7": 32,
+      "8": 22,
+      "9": 10,
+      "10": 1,
+      "11": 1
+    },
+    "t4_picks": [],
+    "control_trades": [
+      "JUBLPHARMA.NS",
+      "SPLPETRO.NS"
+    ],
+    "forward_weeks_graded": 0,
+    "maturity": "TOO_EARLY",
+    "last_graded": {
+      "signal_week": null,
+      "eligible_mean_pct": null,
+      "control_net_pct": null,
+      "t4_net_pct": null,
+      "benchmark_pct": null
+    },
+    "control_file_hashes": {
+      "config/rules.yaml": "6ca3fd17f85701e755831b7872a4f342d4f5d430a7cc9be421f240639fb76edc",
+      "src/screen/engine.py": "8e8b5e8471726631e6380c9fb7c0fc8d430114bf27023ea6b5db1dfe70822460",
+      "src/trade/builder.py": "ae76f98bcde4ff11f6a011488452ebb5cc604fba8bfb1cbe0e6094a9fba08984"
+    }
+  },
+  "noteworthy": {
+    "any": true,
+    "reasons": [
+      "check_failed",
+      "recording_mode_late_backfill",
+      "first_record_for_registry_version"
+    ]
+  },
+  "inputs_sha256": {
+    "flags_csv": "sha256:de165ca4de2309fc20dd9fc3eee5a3e2de67e07704c49839605215ace7111394",
+    "manifest": "sha256:5668b8d73cd2ffe8da29c8857f1d0aea94b4d5e92fd1636fe4168eb6a91aeee0"
+  },
+  "created_utc": "2026-09-15T05:51:41+00:00"
+}

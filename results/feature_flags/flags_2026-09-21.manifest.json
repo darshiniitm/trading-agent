@@ -1,0 +1,107 @@
+{
+  "record_id": "flags_2026-09-21",
+  "signal_week": "2026-09-21",
+  "holding_week": "2026-09-28",
+  "recording_mode": "late_backfill",
+  "created_utc": "2026-09-28T15:04:15+00:00",
+  "created_ist": "2026-09-28T20:34:13+05:30",
+  "monday_open_deadline_ist": "2026-09-28T09:15:00+05:30",
+  "registry_version": 1,
+  "registry_checksum": "sha256:d8164388d645879ab937757c356184153873b26d53dbe865a48474be24cd648d",
+  "data": {
+    "n_panels": 500,
+    "benchmark_ticker": "NIFTYMIDCAP150.NS"
+  },
+  "funnel": {
+    "candidate_universe": 501,
+    "universe_market_cap_band": 262,
+    "liquidity_filter": 262,
+    "vstop_flip": 4,
+    "survivors_after_rsi_band": 2
+  },
+  "counts": {
+    "rows": 262,
+    "flags_met_histogram": {
+      "0": 1,
+      "1": 59,
+      "2": 63,
+      "3": 23,
+      "4": 30,
+      "5": 34,
+      "6": 30,
+      "7": 19,
+      "8": 3
+    },
+    "prevalence_by_flag": {
+      "A01_vstop_flip_up": 0.0153,
+      "A02_vstop_uptrend": 0.4542,
+      "A03_rsi_in_band": 0.3473,
+      "A04_risk_cap_ok": 0.4084,
+      "B02_sector_top_k": 0.0,
+      "B04_volume_expansion": 0.187,
+      "B05_trend_quality_strong": 0.042,
+      "B06_rsi_sweetspot_core": 0.1756,
+      "C01_risk_headroom_5pp": 0.2786,
+      "C02_liquidity_2x": 0.9962,
+      "C03_cap_band_central": 0.458
+    }
+  },
+  "t4": {
+    "k": null,
+    "selected": []
+  },
+  "checks": [
+    {
+      "id": "I1",
+      "status": "PASS",
+      "detail": "rows=262 expected(liquidity_filter)=262"
+    },
+    {
+      "id": "I2",
+      "status": "PASS",
+      "detail": "matrix=['HBLENGINE.NS', 'WHIRLPOOL.NS'] control=['HBLENGINE.NS', 'WHIRLPOOL.NS']"
+    },
+    {
+      "id": "I3",
+      "status": "PASS",
+      "detail": "matrix=[] control=[]"
+    },
+    {
+      "id": "I4",
+      "status": "PASS",
+      "detail": "bad_tickers=[]"
+    },
+    {
+      "id": "I5",
+      "status": "PASS",
+      "detail": "bad_columns=[]"
+    },
+    {
+      "id": "I6",
+      "status": "PASS",
+      "detail": "ok"
+    },
+    {
+      "id": "I7",
+      "status": "PASS",
+      "detail": "manifest=sha256:d8164388d645879ab937757c356184153873b26d53dbe865a48474be24cd648d current=sha256:d8164388d645879ab937757c356184153873b26d53dbe865a48474be24cd648d"
+    },
+    {
+      "id": "I8",
+      "status": "PASS",
+      "detail": "tickers_with_future_bars=[]"
+    },
+    {
+      "id": "I9",
+      "status": "WARN",
+      "detail": "not observable at this layer \u2014 adapter has no per-fetch timestamp"
+    }
+  ],
+  "caveats": [
+    "yfinance weekly bars / corporate-action adjustment not independently verified",
+    "market cap uses TODAY's shares outstanding held constant across history (no point-in-time share count available from open-source sources) \u2014 see design doc section 3.2",
+    "delisted / merged tickers are not included -> survivorship bias, backtest returns are likely biased upward",
+    "sector map is NSE index-classification 'Industry' field as of the CSV snapshot date, not strictly point-in-time historically"
+  ],
+  "csv_sha256": "sha256:e27b2f747bfbc1a8f8a33c6df822747306deaf40b464dca2afa6bdd9474e8f60"
+}

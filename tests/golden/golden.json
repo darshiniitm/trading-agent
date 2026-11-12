@@ -1,0 +1,3463 @@
+{
+ "screen_date": "2026-09-04",
+ "entry_date": "2026-09-07",
+ "data_files": [
+  "data_cache_literal/daily_ohlcv_since_2024-01-01.parquet",
+  "data_cache_literal/shares_outstanding.json",
+  "data_cache/sector/sector_map.parquet",
+  "data_cache/index_lists/*/2026-10-09.csv"
+ ],
+ "cases": {
+  "TC01": {
+   "universe_size": 494,
+   "count": 76,
+   "expected_tickers": [
+    "ABB",
+    "ABCAPITAL",
+    "ABSLAMC",
+    "ACMESOLAR",
+    "AETHER",
+    "ANANDRATHI",
+    "APARINDS",
+    "ATHERENERG",
+    "AUBANK",
+    "AUROPHARMA",
+    "AZAD",
+    "BAJAJ-AUTO",
+    "BALRAMCHIN",
+    "BELRISE",
+    "BHEL",
+    "CAPLIPOINT",
+    "CARBORUNIV",
+    "CGCL",
+    "CHENNPETRO",
+    "CPPLUS",
+    "CRAFTSMAN",
+    "CUPID",
+    "DATAPATTNS",
+    "DIVISLAB",
+    "ELGIEQUIP",
+    "EMCURE",
+    "ENGINERSIN",
+    "FINCABLES",
+    "FLUOROCHEM",
+    "GLAND",
+    "GLENMARK",
+    "GRASIM",
+    "HEGAM",
+    "HINDALCO",
+    "HONASA",
+    "IDEA",
+    "IFCI",
+    "INDUSINDBK",
+    "INOXINDIA",
+    "IPCALAB",
+    "JINDALSAW",
+    "KARURVYSYA",
+    "KPRMILL",
+    "LAURUSLABS",
+    "MAHABANK",
+    "MCX",
+    "MOTHERSON",
+    "NAVINFLUOR",
+    "NETWEB",
+    "NEULANDLAB",
+    "NUVAMA",
+    "NYKAA",
+    "OFSS",
+    "PFOCUS",
+    "PNBHOUSING",
+    "RADICO",
+    "RBLBANK",
+    "RKFORGE",
+    "SAIL",
+    "SAILIFE",
+    "SANSERA",
+    "SCI",
+    "SHRIPISTON",
+    "SIEMENS",
+    "SOLARINDS",
+    "SONACOMS",
+    "SYRMA",
+    "TDPOWERSYS",
+    "TITAN",
+    "UNIONBANK",
+    "USHAMART",
+    "VIJAYA",
+    "WELCORP",
+    "WELSPUNLIV",
+    "WOCKPHARMA",
+    "ZENTEC"
+   ],
+   "rows": [
+    {
+     "ticker": "ABB",
+     "close": 7410.0,
+     "sma50": 7372.75,
+     "sma150": 6832.96,
+     "sma200": 6401.44,
+     "pct_above_52w_low": 59.78,
+     "pct_below_52w_high": 6.49,
+     "rs_rank": 83.19
+    },
+    {
+     "ticker": "ABCAPITAL",
+     "close": 404.9,
+     "sma50": 403.54,
+     "sma150": 364.09,
+     "sma200": 361.02,
+     "pct_above_52w_low": 46.81,
+     "pct_below_52w_high": 5.99,
+     "rs_rank": 85.11
+    },
+    {
+     "ticker": "ABSLAMC",
+     "close": 1062.3,
+     "sma50": 1061.5,
+     "sma150": 1014.56,
+     "sma200": 954.65,
+     "pct_above_52w_low": 50.04,
+     "pct_below_52w_high": 13.27,
+     "rs_rank": 74.68
+    },
+    {
+     "ticker": "ACMESOLAR",
+     "close": 418.0,
+     "sma50": 380.77,
+     "sma150": 313.35,
+     "sma200": 291.47,
+     "pct_above_52w_low": 113.37,
+     "pct_below_52w_high": 2.9,
+     "rs_rank": 82.13
+    },
+    {
+     "ticker": "AETHER",
+     "close": 1625.6,
+     "sma50": 1531.27,
+     "sma150": 1245.42,
+     "sma200": 1162.17,
+     "pct_above_52w_low": 123.77,
+     "pct_below_52w_high": 5.32,
+     "rs_rank": 97.66
+    },
+    {
+     "ticker": "ANANDRATHI",
+     "close": 2215.9,
+     "sma50": 2109.0,
+     "sma150": 1823.85,
+     "sma200": 1742.23,
+     "pct_above_52w_low": 63.67,
+     "pct_below_52w_high": 1.16,
+     "rs_rank": 87.45
+    },
+    {
+     "ticker": "APARINDS",
+     "close": 17421.0,
+     "sma50": 15491.3,
+     "sma150": 13004.89,
+     "sma200": 11844.09,
+     "pct_above_52w_low": 156.15,
+     "pct_below_52w_high": 5.65,
+     "rs_rank": 97.87
+    },
+    {
+     "ticker": "ATHERENERG",
+     "close": 1584.0,
+     "sma50": 1362.18,
+     "sma150": 1018.67,
+     "sma200": 931.97,
+     "pct_above_52w_low": 226.6,
+     "pct_below_52w_high": 9.17,
+     "rs_rank": 99.79
+    },
+    {
+     "ticker": "AUBANK",
+     "close": 1065.0,
+     "sma50": 1059.28,
+     "sma150": 1005.83,
+     "sma200": 998.63,
+     "pct_above_52w_low": 56.12,
+     "pct_below_52w_high": 6.91,
+     "rs_rank": 87.02
+    },
+    {
+     "ticker": "AUROPHARMA",
+     "close": 1653.1,
+     "sma50": 1598.22,
+     "sma150": 1436.22,
+     "sma200": 1375.38,
+     "pct_above_52w_low": 61.91,
+     "pct_below_52w_high": 3.72,
+     "rs_rank": 90.43
+    },
+    {
+     "ticker": "AZAD",
+     "close": 2777.3,
+     "sma50": 2495.4,
+     "sma150": 2066.44,
+     "sma200": 1948.15,
+     "pct_above_52w_low": 104.21,
+     "pct_below_52w_high": 7.01,
+     "rs_rank": 92.55
+    },
+    {
+     "ticker": "BAJAJ-AUTO",
+     "close": 11919.0,
+     "sma50": 11144.48,
+     "sma150": 10266.29,
+     "sma200": 10010.35,
+     "pct_above_52w_low": 40.36,
+     "pct_below_52w_high": 4.42,
+     "rs_rank": 76.81
+    },
+    {
+     "ticker": "BALRAMCHIN",
+     "close": 690.6,
+     "sma50": 624.04,
+     "sma150": 543.9,
+     "sma200": 516.46,
+     "pct_above_52w_low": 75.48,
+     "pct_below_52w_high": 11.57,
+     "rs_rank": 73.62
+    },
+    {
+     "ticker": "BELRISE",
+     "close": 236.86,
+     "sma50": 235.83,
+     "sma150": 215.4,
+     "sma200": 203.51,
+     "pct_above_52w_low": 74.66,
+     "pct_below_52w_high": 11.69,
+     "rs_rank": 91.7
+    },
+    {
+     "ticker": "BHEL",
+     "close": 431.1,
+     "sma50": 412.87,
+     "sma150": 354.88,
+     "sma200": 335.24,
+     "pct_above_52w_low": 105.68,
+     "pct_below_52w_high": 3.45,
+     "rs_rank": 95.96
+    },
+    {
+     "ticker": "CAPLIPOINT",
+     "close": 2810.8,
+     "sma50": 2578.61,
+     "sma150": 2104.04,
+     "sma200": 2046.15,
+     "pct_above_52w_low": 87.35,
+     "pct_below_52w_high": 2.31,
+     "rs_rank": 77.87
+    },
+    {
+     "ticker": "CARBORUNIV",
+     "close": 1130.6,
+     "sma50": 1105.03,
+     "sma150": 987.49,
+     "sma200": 950.96,
+     "pct_above_52w_low": 53.78,
+     "pct_below_52w_high": 13.49,
+     "rs_rank": 71.06
+    },
+    {
+     "ticker": "CGCL",
+     "close": 279.9,
+     "sma50": 240.31,
+     "sma150": 202.76,
+     "sma200": 197.6,
+     "pct_above_52w_low": 85.24,
+     "pct_below_52w_high": 1.72,
+     "rs_rank": 86.17
+    },
+    {
+     "ticker": "CHENNPETRO",
+     "close": 1452.2,
+     "sma50": 1274.0,
+     "sma150": 1104.64,
+     "sma200": 1048.7,
+     "pct_above_52w_low": 111.97,
+     "pct_below_52w_high": 2.52,
+     "rs_rank": 96.6
+    },
+    {
+     "ticker": "CPPLUS",
+     "close": 3704.6,
+     "sma50": 3572.8,
+     "sma150": 2699.52,
+     "sma200": 2397.05,
+     "pct_above_52w_low": 201.92,
+     "pct_below_52w_high": 9.51,
+     "rs_rank": 99.15
+    },
+    {
+     "ticker": "CRAFTSMAN",
+     "close": 11398.0,
+     "sma50": 10008.78,
+     "sma150": 8682.32,
+     "sma200": 8328.3,
+     "pct_above_52w_low": 80.23,
+     "pct_below_52w_high": 1.22,
+     "rs_rank": 90.21
+    },
+    {
+     "ticker": "CUPID",
+     "close": 283.15,
+     "sma50": 243.16,
+     "sma150": 154.6,
+     "sma200": 136.44,
+     "pct_above_52w_low": 761.48,
+     "pct_below_52w_high": 5.3,
+     "rs_rank": 100.0
+    },
+    {
+     "ticker": "DATAPATTNS",
+     "close": 4585.0,
+     "sma50": 4479.78,
+     "sma150": 3920.84,
+     "sma200": 3603.5,
+     "pct_above_52w_low": 115.16,
+     "pct_below_52w_high": 8.3,
+     "rs_rank": 94.04
+    },
+    {
+     "ticker": "DIVISLAB",
+     "close": 9100.0,
+     "sma50": 7924.28,
+     "sma150": 6908.46,
+     "sma200": 6773.55,
+     "pct_above_52w_low": 61.45,
+     "pct_below_52w_high": 3.88,
+     "rs_rank": 86.6
+    },
+    {
+     "ticker": "ELGIEQUIP",
+     "close": 642.1,
+     "sma50": 596.2,
+     "sma150": 556.93,
+     "sma200": 534.6,
+     "pct_above_52w_low": 57.28,
+     "pct_below_52w_high": 0.51,
+     "rs_rank": 77.02
+    },
+    {
+     "ticker": "EMCURE",
+     "close": 1927.6,
+     "sma50": 1882.48,
+     "sma150": 1702.91,
+     "sma200": 1638.61,
+     "pct_above_52w_low": 52.98,
+     "pct_below_52w_high": 5.88,
+     "rs_rank": 82.55
+    },
+    {
+     "ticker": "ENGINERSIN",
+     "close": 279.45,
+     "sma50": 240.57,
+     "sma150": 228.12,
+     "sma200": 219.51,
+     "pct_above_52w_low": 70.87,
+     "pct_below_52w_high": 3.52,
+     "rs_rank": 80.64
+    },
+    {
+     "ticker": "FINCABLES",
+     "close": 1220.2,
+     "sma50": 1126.62,
+     "sma150": 1007.82,
+     "sma200": 944.27,
+     "pct_above_52w_low": 74.12,
+     "pct_below_52w_high": 11.19,
+     "rs_rank": 82.98
+    },
+    {
+     "ticker": "FLUOROCHEM",
+     "close": 4554.0,
+     "sma50": 4406.18,
+     "sma150": 3788.78,
+     "sma200": 3700.52,
+     "pct_above_52w_low": 56.14,
+     "pct_below_52w_high": 8.17,
+     "rs_rank": 78.51
+    },
+    {
+     "ticker": "GLAND",
+     "close": 2932.4,
+     "sma50": 2639.94,
+     "sma150": 2158.92,
+     "sma200": 2048.36,
+     "pct_above_52w_low": 86.35,
+     "pct_below_52w_high": 3.53,
+     "rs_rank": 89.36
+    },
+    {
+     "ticker": "GLENMARK",
+     "close": 2437.2,
+     "sma50": 2292.03,
+     "sma150": 2222.56,
+     "sma200": 2162.66,
+     "pct_above_52w_low": 35.96,
+     "pct_below_52w_high": 3.96,
+     "rs_rank": 72.77
+    },
+    {
+     "ticker": "GRASIM",
+     "close": 3322.0,
+     "sma50": 3209.95,
+     "sma150": 2989.02,
+     "sma200": 2938.74,
+     "pct_above_52w_low": 32.75,
+     "pct_below_52w_high": 2.61,
+     "rs_rank": 70.21
+    },
+    {
+     "ticker": "HEGAM",
+     "close": 728.25,
+     "sma50": 642.7,
+     "sma150": 588.49,
+     "sma200": 579.85,
+     "pct_above_52w_low": 54.68,
+     "pct_below_52w_high": 3.4,
+     "rs_rank": 86.38
+    },
+    {
+     "ticker": "HINDALCO",
+     "close": 1011.0,
+     "sma50": 996.59,
+     "sma150": 996.03,
+     "sma200": 966.47,
+     "pct_above_52w_low": 38.12,
+     "pct_below_52w_high": 14.03,
+     "rs_rank": 79.36
+    },
+    {
+     "ticker": "HONASA",
+     "close": 471.05,
+     "sma50": 468.07,
+     "sma150": 382.38,
+     "sma200": 356.48,
+     "pct_above_52w_low": 89.63,
+     "pct_below_52w_high": 7.6,
+     "rs_rank": 89.79
+    },
+    {
+     "ticker": "IDEA",
+     "close": 15.02,
+     "sma50": 13.81,
+     "sma150": 12.26,
+     "sma200": 11.91,
+     "pct_above_52w_low": 128.27,
+     "pct_below_52w_high": 2.28,
+     "rs_rank": 98.3
+    },
+    {
+     "ticker": "IFCI",
+     "close": 101.38,
+     "sma50": 78.16,
+     "sma150": 68.09,
+     "sma200": 64.18,
+     "pct_above_52w_low": 119.29,
+     "pct_below_52w_high": 5.69,
+     "rs_rank": 95.53
+    },
+    {
+     "ticker": "INDUSINDBK",
+     "close": 1008.5,
+     "sma50": 1006.43,
+     "sma150": 929.32,
+     "sma200": 915.16,
+     "pct_above_52w_low": 41.92,
+     "pct_below_52w_high": 6.43,
+     "rs_rank": 77.45
+    },
+    {
+     "ticker": "INOXINDIA",
+     "close": 2247.8,
+     "sma50": 1968.62,
+     "sma150": 1587.12,
+     "sma200": 1473.38,
+     "pct_above_52w_low": 110.43,
+     "pct_below_52w_high": 3.11,
+     "rs_rank": 95.74
+    },
+    {
+     "ticker": "IPCALAB",
+     "close": 1965.3,
+     "sma50": 1819.99,
+     "sma150": 1627.74,
+     "sma200": 1583.88,
+     "pct_above_52w_low": 57.02,
+     "pct_below_52w_high": 1.81,
+     "rs_rank": 84.26
+    },
+    {
+     "ticker": "JINDALSAW",
+     "close": 305.3,
+     "sma50": 272.51,
+     "sma150": 234.03,
+     "sma200": 217.31,
+     "pct_above_52w_low": 99.54,
+     "pct_below_52w_high": 4.44,
+     "rs_rank": 85.32
+    },
+    {
+     "ticker": "KARURVYSYA",
+     "close": 348.85,
+     "sma50": 327.64,
+     "sma150": 306.48,
+     "sma200": 294.7,
+     "pct_above_52w_low": 72.85,
+     "pct_below_52w_high": 2.73,
+     "rs_rank": 91.49
+    },
+    {
+     "ticker": "KPRMILL",
+     "close": 1186.3,
+     "sma50": 1115.7,
+     "sma150": 999.58,
+     "sma200": 985.76,
+     "pct_above_52w_low": 49.01,
+     "pct_below_52w_high": 11.07,
+     "rs_rank": 70.0
+    },
+    {
+     "ticker": "LAURUSLABS",
+     "close": 1840.0,
+     "sma50": 1716.18,
+     "sma150": 1349.39,
+     "sma200": 1271.73,
+     "pct_above_52w_low": 123.55,
+     "pct_below_52w_high": 5.59,
+     "rs_rank": 96.81
+    },
+    {
+     "ticker": "MAHABANK",
+     "close": 85.95,
+     "sma50": 82.16,
+     "sma150": 77.11,
+     "sma200": 73.02,
+     "pct_above_52w_low": 65.8,
+     "pct_below_52w_high": 9.05,
+     "rs_rank": 90.64
+    },
+    {
+     "ticker": "MCX",
+     "close": 3275.4,
+     "sma50": 2912.09,
+     "sma150": 2798.4,
+     "sma200": 2644.42,
+     "pct_above_52w_low": 118.94,
+     "pct_below_52w_high": 5.88,
+     "rs_rank": 97.23
+    },
+    {
+     "ticker": "MOTHERSON",
+     "close": 160.7,
+     "sma50": 155.27,
+     "sma150": 137.38,
+     "sma200": 132.08,
+     "pct_above_52w_low": 71.89,
+     "pct_below_52w_high": 7.25,
+     "rs_rank": 91.06
+    },
+    {
+     "ticker": "NAVINFLUOR",
+     "close": 8557.5,
+     "sma50": 7956.13,
+     "sma150": 7086.9,
+     "sma200": 6789.94,
+     "pct_above_52w_low": 90.23,
+     "pct_below_52w_high": 2.48,
+     "rs_rank": 93.83
+    },
+    {
+     "ticker": "NETWEB",
+     "close": 5193.0,
+     "sma50": 4727.66,
+     "sma150": 4116.8,
+     "sma200": 3890.6,
+     "pct_above_52w_low": 106.6,
+     "pct_below_52w_high": 10.67,
+     "rs_rank": 96.38
+    },
+    {
+     "ticker": "NEULANDLAB",
+     "close": 22660.0,
+     "sma50": 20758.66,
+     "sma150": 16820.29,
+     "sma200": 16433.24,
+     "pct_above_52w_low": 97.04,
+     "pct_below_52w_high": 5.11,
+     "rs_rank": 89.57
+    },
+    {
+     "ticker": "NUVAMA",
+     "close": 1815.6,
+     "sma50": 1804.96,
+     "sma150": 1527.34,
+     "sma200": 1503.97,
+     "pct_above_52w_low": 65.52,
+     "pct_below_52w_high": 12.12,
+     "rs_rank": 81.06
+    },
+    {
+     "ticker": "NYKAA",
+     "close": 332.5,
+     "sma50": 327.76,
+     "sma150": 285.57,
+     "sma200": 277.93,
+     "pct_above_52w_low": 45.9,
+     "pct_below_52w_high": 4.88,
+     "rs_rank": 81.91
+    },
+    {
+     "ticker": "OFSS",
+     "close": 12058.0,
+     "sma50": 11536.1,
+     "sma150": 9346.81,
+     "sma200": 8980.62,
+     "pct_above_52w_low": 93.41,
+     "pct_below_52w_high": 3.84,
+     "rs_rank": 83.83
+    },
+    {
+     "ticker": "PFOCUS",
+     "close": 307.0,
+     "sma50": 277.18,
+     "sma150": 275.57,
+     "sma200": 259.44,
+     "pct_above_52w_low": 116.88,
+     "pct_below_52w_high": 16.35,
+     "rs_rank": 97.45
+    },
+    {
+     "ticker": "PNBHOUSING",
+     "close": 1166.0,
+     "sma50": 1114.39,
+     "sma150": 988.67,
+     "sma200": 971.75,
+     "pct_above_52w_low": 59.81,
+     "pct_below_52w_high": 3.76,
+     "rs_rank": 85.96
+    },
+    {
+     "ticker": "RADICO",
+     "close": 4494.0,
+     "sma50": 4338.08,
+     "sma150": 3527.05,
+     "sma200": 3425.42,
+     "pct_above_52w_low": 79.76,
+     "pct_below_52w_high": 5.33,
+     "rs_rank": 88.94
+    },
+    {
+     "ticker": "RBLBANK",
+     "close": 414.35,
+     "sma50": 377.42,
+     "sma150": 343.69,
+     "sma200": 334.3,
+     "pct_above_52w_low": 58.39,
+     "pct_below_52w_high": 0.65,
+     "rs_rank": 88.3
+    },
+    {
+     "ticker": "RKFORGE",
+     "close": 700.85,
+     "sma50": 656.16,
+     "sma150": 590.44,
+     "sma200": 571.75,
+     "pct_above_52w_low": 52.31,
+     "pct_below_52w_high": 9.31,
+     "rs_rank": 72.34
+    },
+    {
+     "ticker": "SAIL",
+     "close": 196.8,
+     "sma50": 173.59,
+     "sma150": 172.87,
+     "sma200": 164.65,
+     "pct_above_52w_low": 58.71,
+     "pct_below_52w_high": 6.15,
+     "rs_rank": 87.66
+    },
+    {
+     "ticker": "SAILIFE",
+     "close": 1584.3,
+     "sma50": 1358.99,
+     "sma150": 1149.76,
+     "sma200": 1083.56,
+     "pct_above_52w_low": 102.12,
+     "pct_below_52w_high": 2.8,
+     "rs_rank": 95.32
+    },
+    {
+     "ticker": "SANSERA",
+     "close": 3782.6,
+     "sma50": 3524.44,
+     "sma150": 2803.64,
+     "sma200": 2535.33,
+     "pct_above_52w_low": 190.5,
+     "pct_below_52w_high": 7.4,
+     "rs_rank": 99.36
+    },
+    {
+     "ticker": "SCI",
+     "close": 295.35,
+     "sma50": 290.19,
+     "sma150": 282.39,
+     "sma200": 267.38,
+     "pct_above_52w_low": 51.04,
+     "pct_below_52w_high": 19.91,
+     "rs_rank": 78.09
+    },
+    {
+     "ticker": "SHRIPISTON",
+     "close": 4536.9,
+     "sma50": 4379.59,
+     "sma150": 3655.17,
+     "sma200": 3479.5,
+     "pct_above_52w_low": 79.62,
+     "pct_below_52w_high": 5.2,
+     "rs_rank": 93.62
+    },
+    {
+     "ticker": "SIEMENS",
+     "close": 3977.0,
+     "sma50": 3796.26,
+     "sma150": 3574.72,
+     "sma200": 3459.5,
+     "pct_above_52w_low": 40.73,
+     "pct_below_52w_high": 4.15,
+     "rs_rank": 74.04
+    },
+    {
+     "ticker": "SOLARINDS",
+     "close": 21445.0,
+     "sma50": 19068.0,
+     "sma150": 16599.87,
+     "sma200": 15652.68,
+     "pct_above_52w_low": 84.14,
+     "pct_below_52w_high": 1.15,
+     "rs_rank": 88.09
+    },
+    {
+     "ticker": "SONACOMS",
+     "close": 789.0,
+     "sma50": 747.2,
+     "sma150": 621.42,
+     "sma200": 586.74,
+     "pct_above_52w_low": 96.12,
+     "pct_below_52w_high": 6.52,
+     "rs_rank": 92.77
+    },
+    {
+     "ticker": "SYRMA",
+     "close": 1457.3,
+     "sma50": 1417.52,
+     "sma150": 1121.6,
+     "sma200": 1026.62,
+     "pct_above_52w_low": 129.68,
+     "pct_below_52w_high": 5.55,
+     "rs_rank": 94.89
+    },
+    {
+     "ticker": "TDPOWERSYS",
+     "close": 740.1,
+     "sma50": 639.72,
+     "sma150": 559.71,
+     "sma200": 507.61,
+     "pct_above_52w_low": 181.84,
+     "pct_below_52w_high": 7.35,
+     "rs_rank": 98.94
+    },
+    {
+     "ticker": "TITAN",
+     "close": 5020.0,
+     "sma50": 4837.74,
+     "sma150": 4432.38,
+     "sma200": 4320.9,
+     "pct_above_52w_low": 51.98,
+     "pct_below_52w_high": 3.21,
+     "rs_rank": 79.15
+    },
+    {
+     "ticker": "UNIONBANK",
+     "close": 187.22,
+     "sma50": 176.6,
+     "sma150": 176.25,
+     "sma200": 172.19,
+     "pct_above_52w_low": 49.24,
+     "pct_below_52w_high": 8.89,
+     "rs_rank": 85.53
+    },
+    {
+     "ticker": "USHAMART",
+     "close": 514.15,
+     "sma50": 501.39,
+     "sma150": 464.16,
+     "sma200": 456.91,
+     "pct_above_52w_low": 37.47,
+     "pct_below_52w_high": 2.86,
+     "rs_rank": 79.79
+    },
+    {
+     "ticker": "VIJAYA",
+     "close": 1493.2,
+     "sma50": 1407.77,
+     "sma150": 1204.69,
+     "sma200": 1155.27,
+     "pct_above_52w_low": 76.08,
+     "pct_below_52w_high": 5.07,
+     "rs_rank": 84.89
+    },
+    {
+     "ticker": "WELCORP",
+     "close": 2590.6,
+     "sma50": 1853.57,
+     "sma150": 1339.8,
+     "sma200": 1203.84,
+     "pct_above_52w_low": 264.87,
+     "pct_below_52w_high": 3.19,
+     "rs_rank": 99.57
+    },
+    {
+     "ticker": "WELSPUNLIV",
+     "close": 208.51,
+     "sma50": 171.85,
+     "sma150": 146.11,
+     "sma200": 142.33,
+     "pct_above_52w_low": 94.69,
+     "pct_below_52w_high": 0.68,
+     "rs_rank": 94.47
+    },
+    {
+     "ticker": "WOCKPHARMA",
+     "close": 2088.7,
+     "sma50": 1909.16,
+     "sma150": 1649.63,
+     "sma200": 1582.25,
+     "pct_above_52w_low": 92.21,
+     "pct_below_52w_high": 13.77,
+     "rs_rank": 82.34
+    },
+    {
+     "ticker": "ZENTEC",
+     "close": 1801.4,
+     "sma50": 1793.39,
+     "sma150": 1628.27,
+     "sma200": 1559.95,
+     "pct_above_52w_low": 47.29,
+     "pct_below_52w_high": 11.86,
+     "rs_rank": 72.13
+    }
+   ]
+  },
+  "TC02": {
+   "universe_size": 100,
+   "count": 2,
+   "expected_tickers": [
+    "HYUNDAI",
+    "BAJAJFINSV"
+   ],
+   "rows": [
+    {
+     "ticker": "HYUNDAI",
+     "cross_date": "2026-09-01",
+     "sma50": 2093.39,
+     "sma200": 2075.92
+    },
+    {
+     "ticker": "BAJAJFINSV",
+     "cross_date": "2026-08-24",
+     "sma50": 1949.55,
+     "sma200": 1904.01
+    }
+   ]
+  },
+  "TC03": {
+   "universe_size": 494,
+   "count": 3,
+   "expected_tickers": [
+    "ACMESOLAR",
+    "NIACL",
+    "RBLBANK"
+   ],
+   "rows": [
+    {
+     "ticker": "ACMESOLAR",
+     "close": 418.0,
+     "prev_52w_high": 411.5,
+     "vol_x_avg20": 3.29
+    },
+    {
+     "ticker": "NIACL",
+     "close": 229.91,
+     "prev_52w_high": 218.0,
+     "vol_x_avg20": 16.76
+    },
+    {
+     "ticker": "RBLBANK",
+     "close": 414.35,
+     "prev_52w_high": 410.7,
+     "vol_x_avg20": 2.79
+    }
+   ]
+  },
+  "TC04": {
+   "universe_size": 100,
+   "count": 11,
+   "expected_tickers": [
+    "APOLLOHOSP",
+    "BOSCHLTD",
+    "CUMMINSIND",
+    "EICHERMOT",
+    "ETERNAL",
+    "INDIGO",
+    "MOTHERSON",
+    "POWERINDIA",
+    "SHRIRAMFIN",
+    "TVSMOTOR",
+    "ZYDUSLIFE"
+   ],
+   "rows": [
+    {
+     "ticker": "APOLLOHOSP",
+     "close": 8650.0,
+     "sma200": 7898.74,
+     "rsi2": 6.95,
+     "exit_level_sma5": 8742.9
+    },
+    {
+     "ticker": "BOSCHLTD",
+     "close": 46820.0,
+     "sma200": 38046.4,
+     "rsi2": 9.84,
+     "exit_level_sma5": 47924.0
+    },
+    {
+     "ticker": "CUMMINSIND",
+     "close": 5035.0,
+     "sma200": 4968.1,
+     "rsi2": 0.82,
+     "exit_level_sma5": 5080.9
+    },
+    {
+     "ticker": "EICHERMOT",
+     "close": 7630.5,
+     "sma200": 7385.22,
+     "rsi2": 2.19,
+     "exit_level_sma5": 7791.1
+    },
+    {
+     "ticker": "ETERNAL",
+     "close": 322.75,
+     "sma200": 273.62,
+     "rsi2": 1.4,
+     "exit_level_sma5": 326.14
+    },
+    {
+     "ticker": "INDIGO",
+     "close": 4977.0,
+     "sma200": 4877.39,
+     "rsi2": 8.14,
+     "exit_level_sma5": 5052.6
+    },
+    {
+     "ticker": "MOTHERSON",
+     "close": 160.7,
+     "sma200": 132.08,
+     "rsi2": 9.45,
+     "exit_level_sma5": 164.46
+    },
+    {
+     "ticker": "POWERINDIA",
+     "close": 31650.0,
+     "sma200": 27689.67,
+     "rsi2": 5.17,
+     "exit_level_sma5": 32450.0
+    },
+    {
+     "ticker": "SHRIRAMFIN",
+     "close": 1041.0,
+     "sma200": 993.5,
+     "rsi2": 9.31,
+     "exit_level_sma5": 1060.24
+    },
+    {
+     "ticker": "TVSMOTOR",
+     "close": 4133.1,
+     "sma200": 3711.55,
+     "rsi2": 3.15,
+     "exit_level_sma5": 4215.48
+    },
+    {
+     "ticker": "ZYDUSLIFE",
+     "close": 1120.0,
+     "sma200": 992.6,
+     "rsi2": 4.98,
+     "exit_level_sma5": 1149.26
+    }
+   ]
+  },
+  "TC05": {
+   "universe_size": 200,
+   "count": 1,
+   "expected_tickers": [
+    "COALINDIA"
+   ],
+   "rows": [
+    {
+     "ticker": "COALINDIA",
+     "turn_date": "2026-09-02",
+     "supertrend": 398.17,
+     "adx": 25.29
+    }
+   ]
+  },
+  "TC06": {
+   "universe_size": 200,
+   "count": 10,
+   "expected_tickers": [
+    "BLUESTARCO",
+    "BSE",
+    "HDFCBANK",
+    "HDFCLIFE",
+    "IOC",
+    "NHPC",
+    "RELIANCE",
+    "TATASTEEL",
+    "WAAREEENER",
+    "YESBANK"
+   ],
+   "rows": [
+    {
+     "ticker": "BLUESTARCO",
+     "cross_date": "2026-09-03",
+     "macd": -34.16,
+     "signal": -37.1
+    },
+    {
+     "ticker": "BSE",
+     "cross_date": "2026-09-03",
+     "macd": -73.82,
+     "signal": -87.42
+    },
+    {
+     "ticker": "HDFCBANK",
+     "cross_date": "2026-09-04",
+     "macd": -11.7,
+     "signal": -11.97
+    },
+    {
+     "ticker": "HDFCLIFE",
+     "cross_date": "2026-09-04",
+     "macd": -3.03,
+     "signal": -3.28
+    },
+    {
+     "ticker": "IOC",
+     "cross_date": "2026-09-04",
+     "macd": -0.85,
+     "signal": -0.85
+    },
+    {
+     "ticker": "NHPC",
+     "cross_date": "2026-09-03",
+     "macd": -0.54,
+     "signal": -0.6
+    },
+    {
+     "ticker": "RELIANCE",
+     "cross_date": "2026-09-04",
+     "macd": -0.18,
+     "signal": -0.72
+    },
+    {
+     "ticker": "TATASTEEL",
+     "cross_date": "2026-09-04",
+     "macd": -0.63,
+     "signal": -0.89
+    },
+    {
+     "ticker": "WAAREEENER",
+     "cross_date": "2026-09-04",
+     "macd": -39.71,
+     "signal": -40.04
+    },
+    {
+     "ticker": "YESBANK",
+     "cross_date": "2026-09-03",
+     "macd": -0.19,
+     "signal": -0.2
+    }
+   ]
+  },
+  "TC07": {
+   "universe_size": 494,
+   "count": 4,
+   "expected_tickers": [
+    "GESHIP",
+    "RBLBANK",
+    "SUNDARMFIN",
+    "TITAGARH"
+   ],
+   "rows": [
+    {
+     "ticker": "GESHIP",
+     "close": 1369.7,
+     "bb_upper": 1364.32,
+     "bandwidth_pct": 7.41
+    },
+    {
+     "ticker": "RBLBANK",
+     "close": 414.35,
+     "bb_upper": 405.58,
+     "bandwidth_pct": 8.84
+    },
+    {
+     "ticker": "SUNDARMFIN",
+     "close": 4648.7,
+     "bb_upper": 4645.87,
+     "bandwidth_pct": 4.64
+    },
+    {
+     "ticker": "TITAGARH",
+     "close": 871.85,
+     "bb_upper": 860.89,
+     "bandwidth_pct": 5.64
+    }
+   ]
+  },
+  "TC08": {
+   "universe_size": 200,
+   "count": 15,
+   "expected_tickers": [
+    "ADANIPOWER",
+    "BANKINDIA",
+    "GODREJPROP",
+    "HINDCOPPER",
+    "ICICIAMC",
+    "INDIGO",
+    "INDUSTOWER",
+    "IOC",
+    "JUBLFOOD",
+    "KOTAKBANK",
+    "MAHABANK",
+    "NHPC",
+    "NMDC",
+    "PREMIERENE",
+    "SUPREMEIND"
+   ],
+   "rows": [
+    {
+     "ticker": "ADANIPOWER",
+     "high": 208.99,
+     "low": 206.75,
+     "range": 2.24,
+     "buy_stop_above": 208.99,
+     "sell_stop_below": 206.75
+    },
+    {
+     "ticker": "BANKINDIA",
+     "high": 145.8,
+     "low": 144.11,
+     "range": 1.69,
+     "buy_stop_above": 145.8,
+     "sell_stop_below": 144.11
+    },
+    {
+     "ticker": "GODREJPROP",
+     "high": 2021.7,
+     "low": 1971.0,
+     "range": 50.7,
+     "buy_stop_above": 2021.7,
+     "sell_stop_below": 1971.0
+    },
+    {
+     "ticker": "HINDCOPPER",
+     "high": 523.95,
+     "low": 518.0,
+     "range": 5.95,
+     "buy_stop_above": 523.95,
+     "sell_stop_below": 518.0
+    },
+    {
+     "ticker": "ICICIAMC",
+     "high": 2995.9,
+     "low": 2958.5,
+     "range": 37.4,
+     "buy_stop_above": 2995.9,
+     "sell_stop_below": 2958.5
+    },
+    {
+     "ticker": "INDIGO",
+     "high": 5035.0,
+     "low": 4977.0,
+     "range": 58.0,
+     "buy_stop_above": 5035.0,
+     "sell_stop_below": 4977.0
+    },
+    {
+     "ticker": "INDUSTOWER",
+     "high": 380.45,
+     "low": 374.15,
+     "range": 6.3,
+     "buy_stop_above": 380.45,
+     "sell_stop_below": 374.15
+    },
+    {
+     "ticker": "IOC",
+     "high": 137.76,
+     "low": 136.87,
+     "range": 0.89,
+     "buy_stop_above": 137.76,
+     "sell_stop_below": 136.87
+    },
+    {
+     "ticker": "JUBLFOOD",
+     "high": 488.0,
+     "low": 481.35,
+     "range": 6.65,
+     "buy_stop_above": 488.0,
+     "sell_stop_below": 481.35
+    },
+    {
+     "ticker": "KOTAKBANK",
+     "high": 425.95,
+     "low": 421.65,
+     "range": 4.3,
+     "buy_stop_above": 425.95,
+     "sell_stop_below": 421.65
+    },
+    {
+     "ticker": "MAHABANK",
+     "high": 86.95,
+     "low": 85.7,
+     "range": 1.25,
+     "buy_stop_above": 86.95,
+     "sell_stop_below": 85.7
+    },
+    {
+     "ticker": "NHPC",
+     "high": 76.75,
+     "low": 75.91,
+     "range": 0.84,
+     "buy_stop_above": 76.75,
+     "sell_stop_below": 75.91
+    },
+    {
+     "ticker": "NMDC",
+     "high": 85.18,
+     "low": 84.26,
+     "range": 0.92,
+     "buy_stop_above": 85.18,
+     "sell_stop_below": 84.26
+    },
+    {
+     "ticker": "PREMIERENE",
+     "high": 1008.8,
+     "low": 996.0,
+     "range": 12.8,
+     "buy_stop_above": 1008.8,
+     "sell_stop_below": 996.0
+    },
+    {
+     "ticker": "SUPREMEIND",
+     "high": 3526.4,
+     "low": 3475.0,
+     "range": 51.4,
+     "buy_stop_above": 3526.4,
+     "sell_stop_below": 3475.0
+    }
+   ]
+  },
+  "TC09": {
+   "universe_size": 200,
+   "count": 1,
+   "expected_tickers": [
+    "GVT&D"
+   ],
+   "rows": [
+    {
+     "ticker": "GVT&D",
+     "cross_date": "2026-09-03",
+     "ema9": 4310.3,
+     "ema21": 4309.51,
+     "ema200": 3994.06
+    }
+   ]
+  },
+  "TC10": {
+   "universe_size": 368,
+   "count": 2,
+   "expected_tickers": [
+    "LICHSGFIN",
+    "TEJASNET"
+   ],
+   "band_count": 368,
+   "flipped": [
+    "CGCL",
+    "LICHSGFIN",
+    "TEJASNET"
+   ],
+   "flipped_rsi_outside": [
+    {
+     "ticker": "CGCL",
+     "weekly_rsi": 74.04
+    }
+   ],
+   "qualified_by_sector": {
+    "Financial Services": [
+     "LICHSGFIN"
+    ],
+    "Telecommunication": [
+     "TEJASNET"
+    ]
+   },
+   "band_ew_ret_4w_pct": 0.95,
+   "sector_ew_ret_4w_pct": {
+    "Telecommunication": 8.05,
+    "Textiles": 4.55,
+    "Unclassified": 4.44,
+    "Media Entertainment & Publication": 3.22,
+    "Realty": 2.83,
+    "Oil Gas & Consumable Fuels": 2.42,
+    "Healthcare": 1.95,
+    "Capital Goods": 1.65,
+    "Consumer Services": 1.29,
+    "Financial Services": 1.12,
+    "Metals & Mining": 0.04,
+    "Information Technology": -0.35,
+    "Services": -0.74,
+    "Construction": -1.91,
+    "Consumer Durables": -2.58,
+    "Fast Moving Consumer Goods": -3.08,
+    "Power": -3.28,
+    "Chemicals": -4.14,
+    "Automobile and Auto Components": -4.87,
+    "Construction Materials": -5.08,
+    "Diversified": -11.28
+   },
+   "sector_counts": {
+    "Unclassified": 100,
+    "Capital Goods": 46,
+    "Financial Services": 43,
+    "Healthcare": 24,
+    "Automobile and Auto Components": 24,
+    "Chemicals": 17,
+    "Fast Moving Consumer Goods": 17,
+    "Information Technology": 14,
+    "Construction": 11,
+    "Consumer Services": 11,
+    "Oil Gas & Consumable Fuels": 9,
+    "Power": 8,
+    "Consumer Durables": 8,
+    "Services": 8,
+    "Construction Materials": 7,
+    "Realty": 5,
+    "Metals & Mining": 5,
+    "Textiles": 5,
+    "Media Entertainment & Publication": 3,
+    "Telecommunication": 2,
+    "Diversified": 1
+   },
+   "outperforming_sectors": [
+    "Capital Goods",
+    "Consumer Services",
+    "Financial Services",
+    "Healthcare",
+    "Media Entertainment & Publication",
+    "Oil Gas & Consumable Fuels",
+    "Realty",
+    "Telecommunication",
+    "Textiles"
+   ],
+   "plans": [
+    {
+     "ticker": "LICHSGFIN",
+     "sector": "Financial Services",
+     "weekly_close": 562.05,
+     "weekly_rsi": 57.5,
+     "EP": 563.15,
+     "SL": 498.75,
+     "risk_pct": 11.44
+    },
+    {
+     "ticker": "TEJASNET",
+     "sector": "Telecommunication",
+     "weekly_close": 614.15,
+     "weekly_rsi": 61.2,
+     "EP": 615.0,
+     "SL": 498.37,
+     "risk_pct": 18.96
+    }
+   ]
+  },
+  "TC11": {
+   "universe_size": 367,
+   "count": 4,
+   "expected_tickers": [
+    "ENGINERSIN",
+    "GODREJAGRO",
+    "NSLNISP",
+    "RATNAMANI"
+   ],
+   "signal_friday": "2026-08-28",
+   "entry": "2026-08-31",
+   "results": [
+    {
+     "ticker": "ENGINERSIN",
+     "EP": 254.0,
+     "ret_1w_pct": 10.02,
+     "ret_2w_pct": 5.89,
+     "ret_3w_pct": 4.86
+    },
+    {
+     "ticker": "GODREJAGRO",
+     "EP": 608.25,
+     "ret_1w_pct": 6.02,
+     "ret_2w_pct": 11.11,
+     "ret_3w_pct": 8.77
+    },
+    {
+     "ticker": "NSLNISP",
+     "EP": 48.35,
+     "ret_1w_pct": -4.82,
+     "ret_2w_pct": -9.7,
+     "ret_3w_pct": -11.89
+    },
+    {
+     "ticker": "RATNAMANI",
+     "EP": 2616.1,
+     "ret_1w_pct": 4.24,
+     "ret_2w_pct": 7.47,
+     "ret_3w_pct": 9.29
+    }
+   ],
+   "avg": {
+    "ret_1w_pct": 3.86,
+    "ret_2w_pct": 3.69,
+    "ret_3w_pct": 2.76
+   }
+  },
+  "TC12": {
+   "universe_size": 200,
+   "count": 20,
+   "expected_tickers": [
+    "HINDCOPPER",
+    "ADANIENSOL",
+    "LAURUSLABS",
+    "APARINDS",
+    "BHARATFORG",
+    "SHRIRAMFIN",
+    "IDEA",
+    "BHEL",
+    "NATIONALUM",
+    "FEDERALBNK",
+    "MCX",
+    "ADANIPOWER",
+    "POWERINDIA",
+    "MOTHERSON",
+    "AUROPHARMA",
+    "BSE",
+    "GVT&D",
+    "RADICO",
+    "AUBANK",
+    "ABCAPITAL"
+   ],
+   "ranked": [
+    {
+     "rank": 1,
+     "ticker": "HINDCOPPER",
+     "ret_12_1_pct": 120.17
+    },
+    {
+     "rank": 2,
+     "ticker": "ADANIENSOL",
+     "ret_12_1_pct": 112.13
+    },
+    {
+     "rank": 3,
+     "ticker": "LAURUSLABS",
+     "ret_12_1_pct": 109.21
+    },
+    {
+     "rank": 4,
+     "ticker": "APARINDS",
+     "ret_12_1_pct": 105.1
+    },
+    {
+     "rank": 5,
+     "ticker": "BHARATFORG",
+     "ret_12_1_pct": 94.78
+    },
+    {
+     "rank": 6,
+     "ticker": "SHRIRAMFIN",
+     "ret_12_1_pct": 94.61
+    },
+    {
+     "rank": 7,
+     "ticker": "IDEA",
+     "ret_12_1_pct": 92.24
+    },
+    {
+     "rank": 8,
+     "ticker": "BHEL",
+     "ret_12_1_pct": 88.11
+    },
+    {
+     "rank": 9,
+     "ticker": "NATIONALUM",
+     "ret_12_1_pct": 83.95
+    },
+    {
+     "rank": 10,
+     "ticker": "FEDERALBNK",
+     "ret_12_1_pct": 82.97
+    },
+    {
+     "rank": 11,
+     "ticker": "MCX",
+     "ret_12_1_pct": 71.26
+    },
+    {
+     "rank": 12,
+     "ticker": "ADANIPOWER",
+     "ret_12_1_pct": 70.79
+    },
+    {
+     "rank": 13,
+     "ticker": "POWERINDIA",
+     "ret_12_1_pct": 66.15
+    },
+    {
+     "rank": 14,
+     "ticker": "MOTHERSON",
+     "ret_12_1_pct": 60.57
+    },
+    {
+     "rank": 15,
+     "ticker": "AUROPHARMA",
+     "ret_12_1_pct": 55.44
+    },
+    {
+     "rank": 16,
+     "ticker": "BSE",
+     "ret_12_1_pct": 55.15
+    },
+    {
+     "rank": 17,
+     "ticker": "GVT&D",
+     "ret_12_1_pct": 54.99
+    },
+    {
+     "rank": 18,
+     "ticker": "RADICO",
+     "ret_12_1_pct": 54.31
+    },
+    {
+     "rank": 19,
+     "ticker": "AUBANK",
+     "ret_12_1_pct": 52.34
+    },
+    {
+     "rank": 20,
+     "ticker": "ABCAPITAL",
+     "ret_12_1_pct": 50.94
+    }
+   ],
+   "next_two": [
+    {
+     "ticker": "M&MFIN",
+     "ret_12_1_pct": 49.71
+    },
+    {
+     "ticker": "ABB",
+     "ret_12_1_pct": 49.08
+    }
+   ]
+  },
+  "TC13": {
+   "universe_size": 494,
+   "count": 16,
+   "expected_tickers": [
+    "CHAMBLFERT",
+    "CROMPTON",
+    "FIRSTCRY",
+    "INOXWIND",
+    "IRCON",
+    "IRFC",
+    "JKCEMENT",
+    "NTPCGREEN",
+    "PFC",
+    "RECLTD",
+    "RVNL",
+    "SBILIFE",
+    "SJVN",
+    "TATAPOWER",
+    "TORNTPOWER",
+    "VOLTAS"
+   ],
+   "rows": [
+    {
+     "ticker": "CHAMBLFERT",
+     "cross_date": "2026-09-03",
+     "rsi14": 36.66,
+     "pct_above_52w_low": 4.83
+    },
+    {
+     "ticker": "CROMPTON",
+     "cross_date": "2026-09-04",
+     "rsi14": 37.41,
+     "pct_above_52w_low": 6.9
+    },
+    {
+     "ticker": "FIRSTCRY",
+     "cross_date": "2026-09-04",
+     "rsi14": 30.96,
+     "pct_above_52w_low": 7.14
+    },
+    {
+     "ticker": "INOXWIND",
+     "cross_date": "2026-09-02",
+     "rsi14": 49.21,
+     "pct_above_52w_low": 9.41
+    },
+    {
+     "ticker": "IRCON",
+     "cross_date": "2026-09-03",
+     "rsi14": 34.07,
+     "pct_above_52w_low": 4.15
+    },
+    {
+     "ticker": "IRFC",
+     "cross_date": "2026-09-04",
+     "rsi14": 33.61,
+     "pct_above_52w_low": 2.58
+    },
+    {
+     "ticker": "JKCEMENT",
+     "cross_date": "2026-09-03",
+     "rsi14": 37.46,
+     "pct_above_52w_low": 8.82
+    },
+    {
+     "ticker": "NTPCGREEN",
+     "cross_date": "2026-09-03",
+     "rsi14": 38.24,
+     "pct_above_52w_low": 6.38
+    },
+    {
+     "ticker": "PFC",
+     "cross_date": "2026-09-04",
+     "rsi14": 37.16,
+     "pct_above_52w_low": 7.79
+    },
+    {
+     "ticker": "RECLTD",
+     "cross_date": "2026-09-04",
+     "rsi14": 36.1,
+     "pct_above_52w_low": 4.82
+    },
+    {
+     "ticker": "RVNL",
+     "cross_date": "2026-09-03",
+     "rsi14": 38.85,
+     "pct_above_52w_low": 4.25
+    },
+    {
+     "ticker": "SBILIFE",
+     "cross_date": "2026-09-04",
+     "rsi14": 47.54,
+     "pct_above_52w_low": 4.39
+    },
+    {
+     "ticker": "SJVN",
+     "cross_date": "2026-09-03",
+     "rsi14": 38.23,
+     "pct_above_52w_low": 3.51
+    },
+    {
+     "ticker": "TATAPOWER",
+     "cross_date": "2026-09-02",
+     "rsi14": 47.94,
+     "pct_above_52w_low": 7.45
+    },
+    {
+     "ticker": "TORNTPOWER",
+     "cross_date": "2026-09-02",
+     "rsi14": 51.43,
+     "pct_above_52w_low": 9.35
+    },
+    {
+     "ticker": "VOLTAS",
+     "cross_date": "2026-09-03",
+     "rsi14": 34.18,
+     "pct_above_52w_low": 1.65
+    }
+   ]
+  },
+  "TC14": {
+   "universe_size": 494,
+   "count": 2,
+   "expected_tickers": [
+    "ANGELONE",
+    "BSE"
+   ],
+   "rows": [
+    {
+     "ticker": "ANGELONE",
+     "open": 295.1,
+     "prev_high": 288.0,
+     "gap_pct": 2.47,
+     "close": 299.8,
+     "vol_x_avg20": 5.55
+    },
+    {
+     "ticker": "BSE",
+     "open": 3400.0,
+     "prev_high": 3316.5,
+     "gap_pct": 2.52,
+     "close": 3409.8,
+     "vol_x_avg20": 1.65
+    }
+   ]
+  },
+  "TC15": {
+   "universe_size": 494,
+   "count": 8,
+   "expected_tickers": [
+    "BRIGADE",
+    "CAPLIPOINT",
+    "ENGINERSIN",
+    "IFCI",
+    "LENSKART",
+    "NIACL",
+    "PTCIL",
+    "SAILIFE"
+   ],
+   "rows": [
+    {
+     "ticker": "BRIGADE",
+     "weekly_close": 696.1,
+     "sma30w": 550.04,
+     "prior_26w_high": 671.0,
+     "vol_x_avg10w": 2.41
+    },
+    {
+     "ticker": "CAPLIPOINT",
+     "weekly_close": 2810.8,
+     "sma30w": 2103.6,
+     "prior_26w_high": 2699.0,
+     "vol_x_avg10w": 6.25
+    },
+    {
+     "ticker": "ENGINERSIN",
+     "weekly_close": 279.45,
+     "sma30w": 230.17,
+     "prior_26w_high": 267.0,
+     "vol_x_avg10w": 6.76
+    },
+    {
+     "ticker": "IFCI",
+     "weekly_close": 101.38,
+     "sma30w": 68.93,
+     "prior_26w_high": 95.8,
+     "vol_x_avg10w": 7.41
+    },
+    {
+     "ticker": "LENSKART",
+     "weekly_close": 684.9,
+     "sma30w": 537.14,
+     "prior_26w_high": 673.9,
+     "vol_x_avg10w": 4.73
+    },
+    {
+     "ticker": "NIACL",
+     "weekly_close": 229.91,
+     "sma30w": 164.55,
+     "prior_26w_high": 218.0,
+     "vol_x_avg10w": 5.91
+    },
+    {
+     "ticker": "PTCIL",
+     "weekly_close": 23830.0,
+     "sma30w": 17731.53,
+     "prior_26w_high": 22215.0,
+     "vol_x_avg10w": 2.44
+    },
+    {
+     "ticker": "SAILIFE",
+     "weekly_close": 1584.3,
+     "sma30w": 1162.05,
+     "prior_26w_high": 1506.3,
+     "vol_x_avg10w": 3.58
+    }
+   ]
+  },
+  "TC16": {
+   "universe_size": 494,
+   "benchmark_ew_ret_4w_pct": -0.85,
+   "sector_table": [
+    {
+     "sector": "Textiles",
+     "ew_ret_4w_pct": 4.55,
+     "stocks": 5,
+     "outperforming": true
+    },
+    {
+     "sector": "Realty",
+     "ew_ret_4w_pct": 2.24,
+     "stocks": 11,
+     "outperforming": true
+    },
+    {
+     "sector": "Media Entertainment & Publication",
+     "ew_ret_4w_pct": 1.73,
+     "stocks": 4,
+     "outperforming": true
+    },
+    {
+     "sector": "Telecommunication",
+     "ew_ret_4w_pct": 1.4,
+     "stocks": 9,
+     "outperforming": true
+    },
+    {
+     "sector": "Capital Goods",
+     "ew_ret_4w_pct": 1.22,
+     "stocks": 68,
+     "outperforming": true
+    },
+    {
+     "sector": "Financial Services",
+     "ew_ret_4w_pct": 0.71,
+     "stocks": 98,
+     "outperforming": true
+    },
+    {
+     "sector": "Consumer Services",
+     "ew_ret_4w_pct": 0.66,
+     "stocks": 23,
+     "outperforming": true
+    },
+    {
+     "sector": "Oil Gas & Consumable Fuels",
+     "ew_ret_4w_pct": 0.35,
+     "stocks": 19,
+     "outperforming": true
+    },
+    {
+     "sector": "Healthcare",
+     "ew_ret_4w_pct": 0.34,
+     "stocks": 44,
+     "outperforming": true
+    },
+    {
+     "sector": "Information Technology",
+     "ew_ret_4w_pct": -1.1,
+     "stocks": 25,
+     "outperforming": false
+    },
+    {
+     "sector": "Metals & Mining",
+     "ew_ret_4w_pct": -1.22,
+     "stocks": 20,
+     "outperforming": false
+    },
+    {
+     "sector": "Construction",
+     "ew_ret_4w_pct": -1.57,
+     "stocks": 13,
+     "outperforming": false
+    },
+    {
+     "sector": "Services",
+     "ew_ret_4w_pct": -1.71,
+     "stocks": 14,
+     "outperforming": false
+    },
+    {
+     "sector": "Consumer Durables",
+     "ew_ret_4w_pct": -3.11,
+     "stocks": 16,
+     "outperforming": false
+    },
+    {
+     "sector": "Chemicals",
+     "ew_ret_4w_pct": -3.24,
+     "stocks": 26,
+     "outperforming": false
+    },
+    {
+     "sector": "Power",
+     "ew_ret_4w_pct": -3.93,
+     "stocks": 19,
+     "outperforming": false
+    },
+    {
+     "sector": "Automobile and Auto Components",
+     "ew_ret_4w_pct": -4.39,
+     "stocks": 40,
+     "outperforming": false
+    },
+    {
+     "sector": "Fast Moving Consumer Goods",
+     "ew_ret_4w_pct": -4.57,
+     "stocks": 28,
+     "outperforming": false
+    },
+    {
+     "sector": "Construction Materials",
+     "ew_ret_4w_pct": -5.12,
+     "stocks": 11,
+     "outperforming": false
+    },
+    {
+     "sector": "Diversified",
+     "ew_ret_4w_pct": -11.28,
+     "stocks": 1,
+     "outperforming": false
+    }
+   ],
+   "outperforming_sectors": [
+    "Textiles",
+    "Realty",
+    "Media Entertainment & Publication",
+    "Telecommunication",
+    "Capital Goods",
+    "Financial Services",
+    "Consumer Services",
+    "Oil Gas & Consumable Fuels",
+    "Healthcare"
+   ],
+   "top3_by_sector": {
+    "Textiles": [
+     {
+      "ticker": "WELSPUNLIV",
+      "ret_4w_pct": 27.07
+     },
+     {
+      "ticker": "KPRMILL",
+      "ret_4w_pct": 10.18
+     },
+     {
+      "ticker": "VTL",
+      "ret_4w_pct": -1.41
+     }
+    ],
+    "Realty": [
+     {
+      "ticker": "BRIGADE",
+      "ret_4w_pct": 19.62
+     },
+     {
+      "ticker": "DLF",
+      "ret_4w_pct": 6.21
+     },
+     {
+      "ticker": "OBEROIRLTY",
+      "ret_4w_pct": 5.67
+     }
+    ],
+    "Media Entertainment & Publication": [
+     {
+      "ticker": "PFOCUS",
+      "ret_4w_pct": 6.75
+     },
+     {
+      "ticker": "PVRINOX",
+      "ret_4w_pct": 6.16
+     },
+     {
+      "ticker": "ZEEL",
+      "ret_4w_pct": -2.74
+     }
+    ],
+    "Telecommunication": [
+     {
+      "ticker": "TEJASNET",
+      "ret_4w_pct": 19.61
+     },
+     {
+      "ticker": "IDEA",
+      "ret_4w_pct": 17.99
+     },
+     {
+      "ticker": "TATACOMM",
+      "ret_4w_pct": 0.05
+     }
+    ],
+    "Capital Goods": [
+     {
+      "ticker": "WELCORP",
+      "ret_4w_pct": 40.81
+     },
+     {
+      "ticker": "JYOTICNC",
+      "ret_4w_pct": 28.0
+     },
+     {
+      "ticker": "PTCIL",
+      "ret_4w_pct": 24.92
+     }
+    ],
+    "Financial Services": [
+     {
+      "ticker": "IFCI",
+      "ret_4w_pct": 37.04
+     },
+     {
+      "ticker": "NIACL",
+      "ret_4w_pct": 29.81
+     },
+     {
+      "ticker": "MCX",
+      "ret_4w_pct": 24.16
+     }
+    ],
+    "Consumer Services": [
+     {
+      "ticker": "URBANCO",
+      "ret_4w_pct": 25.98
+     },
+     {
+      "ticker": "LENSKART",
+      "ret_4w_pct": 20.22
+     },
+     {
+      "ticker": "MEESHO",
+      "ret_4w_pct": 9.22
+     }
+    ],
+    "Oil Gas & Consumable Fuels": [
+     {
+      "ticker": "CHENNPETRO",
+      "ret_4w_pct": 13.86
+     },
+     {
+      "ticker": "OIL",
+      "ret_4w_pct": 10.28
+     },
+     {
+      "ticker": "VOGL",
+      "ret_4w_pct": 8.91
+     }
+    ],
+    "Healthcare": [
+     {
+      "ticker": "SAILIFE",
+      "ret_4w_pct": 16.05
+     },
+     {
+      "ticker": "RUBICON",
+      "ret_4w_pct": 13.85
+     },
+     {
+      "ticker": "GLAXO",
+      "ret_4w_pct": 13.79
+     }
+    ]
+   }
+  },
+  "TC17": {
+   "universe_size": 50,
+   "count": 7,
+   "expected_tickers": [
+    "BAJAJ-AUTO",
+    "ETERNAL",
+    "GRASIM",
+    "JSWSTEEL",
+    "KOTAKBANK",
+    "RELIANCE",
+    "TATASTEEL"
+   ],
+   "plans": [
+    {
+     "ticker": "BAJAJ-AUTO",
+     "EP": 11810.0,
+     "ATR14": 231.18,
+     "SL": 11347.63,
+     "target": 12734.74,
+     "risk_pct": 3.92
+    },
+    {
+     "ticker": "ETERNAL",
+     "EP": 325.75,
+     "ATR14": 7.85,
+     "SL": 310.06,
+     "target": 357.14,
+     "risk_pct": 4.82
+    },
+    {
+     "ticker": "GRASIM",
+     "EP": 3322.0,
+     "ATR14": 70.94,
+     "SL": 3180.11,
+     "target": 3605.78,
+     "risk_pct": 4.27
+    },
+    {
+     "ticker": "JSWSTEEL",
+     "EP": 1334.3,
+     "ATR14": 25.26,
+     "SL": 1283.77,
+     "target": 1435.35,
+     "risk_pct": 3.79
+    },
+    {
+     "ticker": "KOTAKBANK",
+     "EP": 421.8,
+     "ATR14": 7.26,
+     "SL": 407.29,
+     "target": 450.83,
+     "risk_pct": 3.44
+    },
+    {
+     "ticker": "RELIANCE",
+     "EP": 1323.1,
+     "ATR14": 21.52,
+     "SL": 1280.06,
+     "target": 1409.18,
+     "risk_pct": 3.25
+    },
+    {
+     "ticker": "TATASTEEL",
+     "EP": 189.0,
+     "ATR14": 4.34,
+     "SL": 180.31,
+     "target": 206.38,
+     "risk_pct": 4.6
+    }
+   ]
+  },
+  "TC18": {
+   "universe_size": 200,
+   "count": 23,
+   "expected_tickers": [
+    "ABCAPITAL",
+    "AUROPHARMA",
+    "BAJAJ-AUTO",
+    "BANKINDIA",
+    "BHEL",
+    "CGPOWER",
+    "DLF",
+    "ETERNAL",
+    "GLENMARK",
+    "GRASIM",
+    "HAL",
+    "HYUNDAI",
+    "IDFCFIRSTB",
+    "INDIANB",
+    "INDUSINDBK",
+    "JSWSTEEL",
+    "KALYANKJIL",
+    "OBEROIRLTY",
+    "OFSS",
+    "PERSISTENT",
+    "PHOENIXLTD",
+    "PNB",
+    "UNIONBANK"
+   ],
+   "rows": [
+    {
+     "ticker": "ABCAPITAL",
+     "close": 404.9,
+     "ema20": 404.86,
+     "ema50": 398.69,
+     "ema200": 358.6,
+     "pct_above_ema20": 0.01
+    },
+    {
+     "ticker": "AUROPHARMA",
+     "close": 1653.1,
+     "ema20": 1636.52,
+     "ema50": 1594.03,
+     "ema200": 1421.16,
+     "pct_above_ema20": 1.01
+    },
+    {
+     "ticker": "BAJAJ-AUTO",
+     "close": 11919.0,
+     "ema20": 11800.16,
+     "ema50": 11319.39,
+     "ema200": 10215.25,
+     "pct_above_ema20": 1.01
+    },
+    {
+     "ticker": "BANKINDIA",
+     "close": 145.0,
+     "ema20": 143.33,
+     "ema50": 143.07,
+     "ema200": 142.24,
+     "pct_above_ema20": 1.16
+    },
+    {
+     "ticker": "BHEL",
+     "close": 431.1,
+     "ema20": 423.33,
+     "ema50": 412.53,
+     "ema200": 351.12,
+     "pct_above_ema20": 1.83
+    },
+    {
+     "ticker": "CGPOWER",
+     "close": 891.0,
+     "ema20": 885.81,
+     "ema50": 885.49,
+     "ema200": 813.18,
+     "pct_above_ema20": 0.59
+    },
+    {
+     "ticker": "DLF",
+     "close": 681.9,
+     "ema20": 673.53,
+     "ema50": 658.31,
+     "ema200": 651.37,
+     "pct_above_ema20": 1.24
+    },
+    {
+     "ticker": "ETERNAL",
+     "close": 322.75,
+     "ema20": 321.57,
+     "ema50": 305.51,
+     "ema200": 280.49,
+     "pct_above_ema20": 0.37
+    },
+    {
+     "ticker": "GLENMARK",
+     "close": 2437.2,
+     "ema20": 2389.84,
+     "ema50": 2319.85,
+     "ema200": 2165.57,
+     "pct_above_ema20": 1.98
+    },
+    {
+     "ticker": "GRASIM",
+     "close": 3322.0,
+     "ema20": 3283.38,
+     "ema50": 3217.18,
+     "ema200": 2997.74,
+     "pct_above_ema20": 1.18
+    },
+    {
+     "ticker": "HAL",
+     "close": 4856.0,
+     "ema20": 4846.04,
+     "ema50": 4724.23,
+     "ema200": 4486.05,
+     "pct_above_ema20": 0.21
+    },
+    {
+     "ticker": "HYUNDAI",
+     "close": 2205.0,
+     "ema20": 2188.04,
+     "ema50": 2118.19,
+     "ema200": 2062.49,
+     "pct_above_ema20": 0.78
+    },
+    {
+     "ticker": "IDFCFIRSTB",
+     "close": 86.71,
+     "ema20": 85.18,
+     "ema50": 82.86,
+     "ema200": 77.2,
+     "pct_above_ema20": 1.8
+    },
+    {
+     "ticker": "INDIANB",
+     "close": 879.7,
+     "ema20": 877.68,
+     "ema50": 864.23,
+     "ema200": 835.8,
+     "pct_above_ema20": 0.23
+    },
+    {
+     "ticker": "INDUSINDBK",
+     "close": 1008.5,
+     "ema20": 1006.16,
+     "ema50": 994.76,
+     "ema200": 931.96,
+     "pct_above_ema20": 0.23
+    },
+    {
+     "ticker": "JSWSTEEL",
+     "close": 1325.0,
+     "ema20": 1305.4,
+     "ema50": 1286.32,
+     "ema200": 1225.95,
+     "pct_above_ema20": 1.5
+    },
+    {
+     "ticker": "KALYANKJIL",
+     "close": 598.8,
+     "ema20": 595.58,
+     "ema50": 553.94,
+     "ema200": 480.94,
+     "pct_above_ema20": 0.54
+    },
+    {
+     "ticker": "OBEROIRLTY",
+     "close": 1875.6,
+     "ema20": 1865.91,
+     "ema50": 1831.83,
+     "ema200": 1725.82,
+     "pct_above_ema20": 0.52
+    },
+    {
+     "ticker": "OFSS",
+     "close": 12058.0,
+     "ema20": 11893.79,
+     "ema50": 11401.76,
+     "ema200": 9744.4,
+     "pct_above_ema20": 1.38
+    },
+    {
+     "ticker": "PERSISTENT",
+     "close": 5643.0,
+     "ema20": 5605.43,
+     "ema50": 5412.17,
+     "ema200": 5335.92,
+     "pct_above_ema20": 0.67
+    },
+    {
+     "ticker": "PHOENIXLTD",
+     "close": 1942.0,
+     "ema20": 1928.86,
+     "ema50": 1928.77,
+     "ema200": 1816.87,
+     "pct_above_ema20": 0.68
+    },
+    {
+     "ticker": "PNB",
+     "close": 117.0,
+     "ema20": 115.57,
+     "ema50": 113.19,
+     "ema200": 112.28,
+     "pct_above_ema20": 1.24
+    },
+    {
+     "ticker": "UNIONBANK",
+     "close": 187.22,
+     "ema20": 184.64,
+     "ema50": 179.51,
+     "ema200": 169.4,
+     "pct_above_ema20": 1.4
+    }
+   ]
+  },
+  "TC19": {
+   "universe_size": 368,
+   "count": 116,
+   "expected_tickers": [
+    "ACE",
+    "ACMESOLAR",
+    "AEGISLOG",
+    "AEQUS",
+    "AETHER",
+    "AJANTPHARM",
+    "AKUMS",
+    "ALIVUS",
+    "AMAGI",
+    "ANANDRATHI",
+    "ARVIND",
+    "ASKAUTOLTD",
+    "ASTRAMICRO",
+    "ATLANTAELE",
+    "AVALON",
+    "AZAD",
+    "BALRAMCHIN",
+    "BEML",
+    "BLUESTONE",
+    "BRIGADE",
+    "CAPLIPOINT",
+    "CARTRADE",
+    "CGCL",
+    "CHENNPETRO",
+    "CLEANMAX",
+    "CPPLUS",
+    "CRAFTSMAN",
+    "CRISIL",
+    "CUB",
+    "CUPID",
+    "CYIENT",
+    "DEVYANI",
+    "EDELWEISS",
+    "ELGIEQUIP",
+    "EMCURE",
+    "ENGINERSIN",
+    "FINCABLES",
+    "GABRIEL",
+    "GLAND",
+    "GODREJAGRO",
+    "GRANULES",
+    "GRWRHITECH",
+    "HAPPYFORGE",
+    "HEGAM",
+    "HONASA",
+    "IFCI",
+    "IIFL",
+    "INDGN",
+    "INOXINDIA",
+    "IPCALAB",
+    "JINDALSAW",
+    "JYOTICNC",
+    "KAJARIACER",
+    "KARURVYSYA",
+    "KENNAMET",
+    "KIRLOSENG",
+    "KPIL",
+    "KPRMILL",
+    "KRN",
+    "KTKBANK",
+    "LALPATHLAB",
+    "LTFOODS",
+    "LUMAXTECH",
+    "MANORAMA",
+    "MANYAVAR",
+    "MARKSANS",
+    "MEDANTA",
+    "MINDACORP",
+    "NAVINFLUOR",
+    "NAZARA",
+    "NETWEB",
+    "NEULANDLAB",
+    "NIACL",
+    "PARADEEP",
+    "PARAS",
+    "PCJEWELLER",
+    "PFOCUS",
+    "PNBHOUSING",
+    "PPLPHARMA",
+    "PTCIL",
+    "PVRINOX",
+    "QPOWER",
+    "REDINGTON",
+    "RKFORGE",
+    "RUBICON",
+    "SAGILITY",
+    "SAILIFE",
+    "SANSERA",
+    "SEDEMAC",
+    "SGMART",
+    "SHADOWFAX",
+    "SHAILY",
+    "SHILPAMED",
+    "SHREEJISPG",
+    "SHRIPISTON",
+    "SHYAMMETL",
+    "SKYGOLD",
+    "SONACOMS",
+    "SOUTHBANK",
+    "SUDEEPPHRM",
+    "SUVEN",
+    "SYRMA",
+    "TBOTEK",
+    "TDPOWERSYS",
+    "TEJASNET",
+    "THELEELA",
+    "TI",
+    "URBANCO",
+    "USHAMART",
+    "VARROC",
+    "VIJAYA",
+    "VOLTAMP",
+    "WABAG",
+    "WELENT",
+    "WELSPUNLIV",
+    "WOCKPHARMA"
+   ],
+   "rows": [
+    {
+     "ticker": "ACE",
+     "mcap_cr": 13395.4,
+     "turnover20_cr": 41.27,
+     "weekly_rsi": 64.85,
+     "weekly_close": 1125.4,
+     "ema20w": 1024.19
+    },
+    {
+     "ticker": "ACMESOLAR",
+     "mcap_cr": 29522.98,
+     "turnover20_cr": 84.88,
+     "weekly_rsi": 71.51,
+     "weekly_close": 418.0,
+     "ema20w": 353.07
+    },
+    {
+     "ticker": "AEGISLOG",
+     "mcap_cr": 44584.02,
+     "turnover20_cr": 109.85,
+     "weekly_rsi": 61.66,
+     "weekly_close": 1270.2,
+     "ema20w": 1122.34
+    },
+    {
+     "ticker": "AEQUS",
+     "mcap_cr": 15859.26,
+     "turnover20_cr": 71.32,
+     "weekly_rsi": 63.14,
+     "weekly_close": 242.18,
+     "ema20w": 219.27
+    },
+    {
+     "ticker": "AETHER",
+     "mcap_cr": 21576.24,
+     "turnover20_cr": 35.21,
+     "weekly_rsi": 70.89,
+     "weekly_close": 1625.6,
+     "ema20w": 1401.86
+    },
+    {
+     "ticker": "AJANTPHARM",
+     "mcap_cr": 43295.8,
+     "turnover20_cr": 28.23,
+     "weekly_rsi": 61.64,
+     "weekly_close": 3464.8,
+     "ema20w": 3297.51
+    },
+    {
+     "ticker": "AKUMS",
+     "mcap_cr": 11723.79,
+     "turnover20_cr": 37.75,
+     "weekly_rsi": 72.99,
+     "weekly_close": 765.75,
+     "ema20w": 649.44
+    },
+    {
+     "ticker": "ALIVUS",
+     "mcap_cr": 16774.26,
+     "turnover20_cr": 27.2,
+     "weekly_rsi": 73.8,
+     "weekly_close": 1366.3,
+     "ema20w": 1183.36
+    },
+    {
+     "ticker": "AMAGI",
+     "mcap_cr": 12186.37,
+     "turnover20_cr": 97.2,
+     "weekly_rsi": 60.35,
+     "weekly_close": 563.3,
+     "ema20w": 524.06
+    },
+    {
+     "ticker": "ANANDRATHI",
+     "mcap_cr": 36793.08,
+     "turnover20_cr": 46.05,
+     "weekly_rsi": 76.43,
+     "weekly_close": 2215.9,
+     "ema20w": 1987.66
+    },
+    {
+     "ticker": "ARVIND",
+     "mcap_cr": 15042.49,
+     "turnover20_cr": 44.32,
+     "weekly_rsi": 65.03,
+     "weekly_close": 552.95,
+     "ema20w": 503.46
+    },
+    {
+     "ticker": "ASKAUTOLTD",
+     "mcap_cr": 12200.17,
+     "turnover20_cr": 25.22,
+     "weekly_rsi": 70.67,
+     "weekly_close": 618.85,
+     "ema20w": 530.34
+    },
+    {
+     "ticker": "ASTRAMICRO",
+     "mcap_cr": 16415.99,
+     "turnover20_cr": 66.8,
+     "weekly_rsi": 64.8,
+     "weekly_close": 1729.0,
+     "ema20w": 1569.21
+    },
+    {
+     "ticker": "ATLANTAELE",
+     "mcap_cr": 14469.64,
+     "turnover20_cr": 32.45,
+     "weekly_rsi": 62.19,
+     "weekly_close": 1881.7,
+     "ema20w": 1653.97
+    },
+    {
+     "ticker": "AVALON",
+     "mcap_cr": 14691.37,
+     "turnover20_cr": 110.48,
+     "weekly_rsi": 80.54,
+     "weekly_close": 2196.6,
+     "ema20w": 1741.77
+    },
+    {
+     "ticker": "AZAD",
+     "mcap_cr": 17936.29,
+     "turnover20_cr": 179.53,
+     "weekly_rsi": 67.7,
+     "weekly_close": 2777.3,
+     "ema20w": 2349.63
+    },
+    {
+     "ticker": "BALRAMCHIN",
+     "mcap_cr": 14612.92,
+     "turnover20_cr": 519.64,
+     "weekly_rsi": 67.14,
+     "weekly_close": 690.6,
+     "ema20w": 590.72
+    },
+    {
+     "ticker": "BEML",
+     "mcap_cr": 17139.21,
+     "turnover20_cr": 105.08,
+     "weekly_rsi": 64.07,
+     "weekly_close": 2057.8,
+     "ema20w": 1835.58
+    },
+    {
+     "ticker": "BLUESTONE",
+     "mcap_cr": 12876.93,
+     "turnover20_cr": 139.09,
+     "weekly_rsi": 72.35,
+     "weekly_close": 842.75,
+     "ema20w": 676.17
+    },
+    {
+     "ticker": "BRIGADE",
+     "mcap_cr": 22704.16,
+     "turnover20_cr": 60.39,
+     "weekly_rsi": 67.45,
+     "weekly_close": 696.1,
+     "ema20w": 582.75
+    },
+    {
+     "ticker": "CAPLIPOINT",
+     "mcap_cr": 21365.37,
+     "turnover20_cr": 68.15,
+     "weekly_rsi": 73.71,
+     "weekly_close": 2810.8,
+     "ema20w": 2368.11
+    },
+    {
+     "ticker": "CARTRADE",
+     "mcap_cr": 14585.44,
+     "turnover20_cr": 110.5,
+     "weekly_rsi": 67.05,
+     "weekly_close": 3000.2,
+     "ema20w": 2581.32
+    },
+    {
+     "ticker": "CGCL",
+     "mcap_cr": 26930.69,
+     "turnover20_cr": 181.29,
+     "weekly_rsi": 74.04,
+     "weekly_close": 279.9,
+     "ema20w": 225.64
+    },
+    {
+     "ticker": "CHENNPETRO",
+     "mcap_cr": 21624.91,
+     "turnover20_cr": 351.28,
+     "weekly_rsi": 72.47,
+     "weekly_close": 1452.2,
+     "ema20w": 1203.89
+    },
+    {
+     "ticker": "CLEANMAX",
+     "mcap_cr": 15806.98,
+     "turnover20_cr": 31.56,
+     "weekly_rsi": 61.03,
+     "weekly_close": 1347.9,
+     "ema20w": 1209.32
+    },
+    {
+     "ticker": "CPPLUS",
+     "mcap_cr": 45428.38,
+     "turnover20_cr": 105.69,
+     "weekly_rsi": 70.68,
+     "weekly_close": 3704.6,
+     "ema20w": 3195.51
+    },
+    {
+     "ticker": "CRAFTSMAN",
+     "mcap_cr": 29810.82,
+     "turnover20_cr": 54.62,
+     "weekly_rsi": 74.34,
+     "weekly_close": 11398.0,
+     "ema20w": 9547.59
+    },
+    {
+     "ticker": "CRISIL",
+     "mcap_cr": 35117.03,
+     "turnover20_cr": 25.83,
+     "weekly_rsi": 64.31,
+     "weekly_close": 4802.0,
+     "ema20w": 4368.89
+    },
+    {
+     "ticker": "CUB",
+     "mcap_cr": 23383.57,
+     "turnover20_cr": 57.85,
+     "weekly_rsi": 64.19,
+     "weekly_close": 236.01,
+     "ema20w": 210.44
+    },
+    {
+     "ticker": "CUPID",
+     "mcap_cr": 38074.07,
+     "turnover20_cr": 723.87,
+     "weekly_rsi": 86.83,
+     "weekly_close": 283.15,
+     "ema20w": 207.09
+    },
+    {
+     "ticker": "CYIENT",
+     "mcap_cr": 11469.92,
+     "turnover20_cr": 179.11,
+     "weekly_rsi": 67.0,
+     "weekly_close": 1101.8,
+     "ema20w": 927.55
+    },
+    {
+     "ticker": "DEVYANI",
+     "mcap_cr": 17172.39,
+     "turnover20_cr": 73.36,
+     "weekly_rsi": 61.18,
+     "weekly_close": 139.28,
+     "ema20w": 125.46
+    },
+    {
+     "ticker": "EDELWEISS",
+     "mcap_cr": 12880.4,
+     "turnover20_cr": 76.4,
+     "weekly_rsi": 64.27,
+     "weekly_close": 136.08,
+     "ema20w": 120.44
+    },
+    {
+     "ticker": "ELGIEQUIP",
+     "mcap_cr": 20241.65,
+     "turnover20_cr": 55.29,
+     "weekly_rsi": 67.25,
+     "weekly_close": 642.1,
+     "ema20w": 584.88
+    },
+    {
+     "ticker": "EMCURE",
+     "mcap_cr": 36568.62,
+     "turnover20_cr": 25.4,
+     "weekly_rsi": 63.51,
+     "weekly_close": 1927.6,
+     "ema20w": 1804.1
+    },
+    {
+     "ticker": "ENGINERSIN",
+     "mcap_cr": 15706.27,
+     "turnover20_cr": 163.0,
+     "weekly_rsi": 67.92,
+     "weekly_close": 279.45,
+     "ema20w": 238.53
+    },
+    {
+     "ticker": "FINCABLES",
+     "mcap_cr": 18661.66,
+     "turnover20_cr": 289.29,
+     "weekly_rsi": 61.42,
+     "weekly_close": 1220.2,
+     "ema20w": 1088.17
+    },
+    {
+     "ticker": "GABRIEL",
+     "mcap_cr": 25931.94,
+     "turnover20_cr": 41.98,
+     "weekly_rsi": 60.78,
+     "weekly_close": 1353.2,
+     "ema20w": 1260.77
+    },
+    {
+     "ticker": "GLAND",
+     "mcap_cr": 48387.78,
+     "turnover20_cr": 281.35,
+     "weekly_rsi": 73.59,
+     "weekly_close": 2932.4,
+     "ema20w": 2443.09
+    },
+    {
+     "ticker": "GODREJAGRO",
+     "mcap_cr": 12407.65,
+     "turnover20_cr": 67.68,
+     "weekly_rsi": 62.69,
+     "weekly_close": 644.85,
+     "ema20w": 583.55
+    },
+    {
+     "ticker": "GRANULES",
+     "mcap_cr": 23139.91,
+     "turnover20_cr": 56.36,
+     "weekly_rsi": 63.55,
+     "weekly_close": 848.3,
+     "ema20w": 795.35
+    },
+    {
+     "ticker": "GRWRHITECH",
+     "mcap_cr": 16463.64,
+     "turnover20_cr": 41.53,
+     "weekly_rsi": 72.06,
+     "weekly_close": 7086.5,
+     "ema20w": 6312.72
+    },
+    {
+     "ticker": "HAPPYFORGE",
+     "mcap_cr": 21131.7,
+     "turnover20_cr": 28.32,
+     "weekly_rsi": 82.66,
+     "weekly_close": 2238.5,
+     "ema20w": 1721.48
+    },
+    {
+     "ticker": "HEGAM",
+     "mcap_cr": 24017.61,
+     "turnover20_cr": 127.0,
+     "weekly_rsi": 69.17,
+     "weekly_close": 728.25,
+     "ema20w": 628.97
+    },
+    {
+     "ticker": "HONASA",
+     "mcap_cr": 15357.37,
+     "turnover20_cr": 105.81,
+     "weekly_rsi": 67.31,
+     "weekly_close": 471.05,
+     "ema20w": 430.35
+    },
+    {
+     "ticker": "IFCI",
+     "mcap_cr": 27314.96,
+     "turnover20_cr": 776.89,
+     "weekly_rsi": 73.44,
+     "weekly_close": 101.38,
+     "ema20w": 76.06
+    },
+    {
+     "ticker": "IIFL",
+     "mcap_cr": 27692.73,
+     "turnover20_cr": 182.43,
+     "weekly_rsi": 68.87,
+     "weekly_close": 651.15,
+     "ema20w": 570.64
+    },
+    {
+     "ticker": "INDGN",
+     "mcap_cr": 14484.6,
+     "turnover20_cr": 45.94,
+     "weekly_rsi": 70.13,
+     "weekly_close": 601.5,
+     "ema20w": 533.22
+    },
+    {
+     "ticker": "INOXINDIA",
+     "mcap_cr": 20437.55,
+     "turnover20_cr": 95.75,
+     "weekly_rsi": 81.14,
+     "weekly_close": 2247.8,
+     "ema20w": 1820.38
+    },
+    {
+     "ticker": "IPCALAB",
+     "mcap_cr": 49860.49,
+     "turnover20_cr": 135.84,
+     "weekly_rsi": 68.91,
+     "weekly_close": 1965.3,
+     "ema20w": 1733.77
+    },
+    {
+     "ticker": "JINDALSAW",
+     "mcap_cr": 19466.57,
+     "turnover20_cr": 91.3,
+     "weekly_rsi": 69.3,
+     "weekly_close": 305.3,
+     "ema20w": 259.75
+    },
+    {
+     "ticker": "JYOTICNC",
+     "mcap_cr": 22831.01,
+     "turnover20_cr": 134.72,
+     "weekly_rsi": 66.15,
+     "weekly_close": 1003.9,
+     "ema20w": 834.67
+    },
+    {
+     "ticker": "KAJARIACER",
+     "mcap_cr": 19479.45,
+     "turnover20_cr": 31.21,
+     "weekly_rsi": 60.75,
+     "weekly_close": 1239.6,
+     "ema20w": 1168.88
+    },
+    {
+     "ticker": "KARURVYSYA",
+     "mcap_cr": 33722.19,
+     "turnover20_cr": 55.58,
+     "weekly_rsi": 68.98,
+     "weekly_close": 348.85,
+     "ema20w": 315.78
+    },
+    {
+     "ticker": "KENNAMET",
+     "mcap_cr": 10304.5,
+     "turnover20_cr": 29.61,
+     "weekly_rsi": 85.18,
+     "weekly_close": 4688.5,
+     "ema20w": 3196.01
+    },
+    {
+     "ticker": "KIRLOSENG",
+     "mcap_cr": 32052.23,
+     "turnover20_cr": 97.35,
+     "weekly_rsi": 62.15,
+     "weekly_close": 2201.9,
+     "ema20w": 2007.92
+    },
+    {
+     "ticker": "KPIL",
+     "mcap_cr": 24020.87,
+     "turnover20_cr": 50.51,
+     "weekly_rsi": 64.17,
+     "weekly_close": 1406.6,
+     "ema20w": 1318.45
+    },
+    {
+     "ticker": "KPRMILL",
+     "mcap_cr": 40633.45,
+     "turnover20_cr": 35.84,
+     "weekly_rsi": 63.34,
+     "weekly_close": 1186.3,
+     "ema20w": 1074.83
+    },
+    {
+     "ticker": "KRN",
+     "mcap_cr": 10333.93,
+     "turnover20_cr": 42.77,
+     "weekly_rsi": 72.5,
+     "weekly_close": 1578.7,
+     "ema20w": 1275.99
+    },
+    {
+     "ticker": "KTKBANK",
+     "mcap_cr": 12861.95,
+     "turnover20_cr": 92.95,
+     "weekly_rsi": 80.23,
+     "weekly_close": 340.1,
+     "ema20w": 284.37
+    },
+    {
+     "ticker": "LALPATHLAB",
+     "mcap_cr": 31350.08,
+     "turnover20_cr": 39.34,
+     "weekly_rsi": 66.04,
+     "weekly_close": 1877.5,
+     "ema20w": 1728.93
+    },
+    {
+     "ticker": "LTFOODS",
+     "mcap_cr": 15445.81,
+     "turnover20_cr": 121.37,
+     "weekly_rsi": 63.38,
+     "weekly_close": 444.8,
+     "ema20w": 409.16
+    },
+    {
+     "ticker": "LUMAXTECH",
+     "mcap_cr": 13303.7,
+     "turnover20_cr": 100.33,
+     "weekly_rsi": 63.53,
+     "weekly_close": 1951.9,
+     "ema20w": 1714.86
+    },
+    {
+     "ticker": "MANORAMA",
+     "mcap_cr": 12582.82,
+     "turnover20_cr": 195.84,
+     "weekly_rsi": 74.92,
+     "weekly_close": 1993.4,
+     "ema20w": 1635.36
+    },
+    {
+     "ticker": "MANYAVAR",
+     "mcap_cr": 14437.71,
+     "turnover20_cr": 34.49,
+     "weekly_rsi": 73.27,
+     "weekly_close": 594.2,
+     "ema20w": 472.85
+    },
+    {
+     "ticker": "MARKSANS",
+     "mcap_cr": 14807.13,
+     "turnover20_cr": 204.15,
+     "weekly_rsi": 73.02,
+     "weekly_close": 326.75,
+     "ema20w": 265.4
+    },
+    {
+     "ticker": "MEDANTA",
+     "mcap_cr": 39496.74,
+     "turnover20_cr": 42.08,
+     "weekly_rsi": 69.28,
+     "weekly_close": 1469.8,
+     "ema20w": 1330.26
+    },
+    {
+     "ticker": "MINDACORP",
+     "mcap_cr": 16541.16,
+     "turnover20_cr": 57.3,
+     "weekly_rsi": 63.96,
+     "weekly_close": 702.8,
+     "ema20w": 660.28
+    },
+    {
+     "ticker": "NAVINFLUOR",
+     "mcap_cr": 43906.92,
+     "turnover20_cr": 119.52,
+     "weekly_rsi": 78.0,
+     "weekly_close": 8557.5,
+     "ema20w": 7591.12
+    },
+    {
+     "ticker": "NAZARA",
+     "mcap_cr": 14181.82,
+     "turnover20_cr": 68.14,
+     "weekly_rsi": 72.58,
+     "weekly_close": 368.65,
+     "ema20w": 318.19
+    },
+    {
+     "ticker": "NETWEB",
+     "mcap_cr": 30871.11,
+     "turnover20_cr": 1089.93,
+     "weekly_rsi": 62.24,
+     "weekly_close": 5193.0,
+     "ema20w": 4584.61
+    },
+    {
+     "ticker": "NEULANDLAB",
+     "mcap_cr": 29072.53,
+     "turnover20_cr": 120.99,
+     "weekly_rsi": 72.54,
+     "weekly_close": 22660.0,
+     "ema20w": 19377.94
+    },
+    {
+     "ticker": "NIACL",
+     "mcap_cr": 37889.17,
+     "turnover20_cr": 153.0,
+     "weekly_rsi": 73.85,
+     "weekly_close": 229.91,
+     "ema20w": 178.21
+    },
+    {
+     "ticker": "PARADEEP",
+     "mcap_cr": 16304.77,
+     "turnover20_cr": 97.02,
+     "weekly_rsi": 60.27,
+     "weekly_close": 157.0,
+     "ema20w": 142.45
+    },
+    {
+     "ticker": "PARAS",
+     "mcap_cr": 11402.3,
+     "turnover20_cr": 225.33,
+     "weekly_rsi": 67.11,
+     "weekly_close": 1414.9,
+     "ema20w": 1174.49
+    },
+    {
+     "ticker": "PCJEWELLER",
+     "mcap_cr": 11632.0,
+     "turnover20_cr": 307.53,
+     "weekly_rsi": 65.13,
+     "weekly_close": 11.86,
+     "ema20w": 9.88
+    },
+    {
+     "ticker": "PFOCUS",
+     "mcap_cr": 23908.36,
+     "turnover20_cr": 28.65,
+     "weekly_rsi": 61.0,
+     "weekly_close": 307.0,
+     "ema20w": 274.2
+    },
+    {
+     "ticker": "PNBHOUSING",
+     "mcap_cr": 30409.74,
+     "turnover20_cr": 92.46,
+     "weekly_rsi": 67.56,
+     "weekly_close": 1166.0,
+     "ema20w": 1069.07
+    },
+    {
+     "ticker": "PPLPHARMA",
+     "mcap_cr": 28384.55,
+     "turnover20_cr": 85.11,
+     "weekly_rsi": 69.1,
+     "weekly_close": 214.22,
+     "ema20w": 187.99
+    },
+    {
+     "ticker": "PTCIL",
+     "mcap_cr": 35727.24,
+     "turnover20_cr": 114.96,
+     "weekly_rsi": 78.31,
+     "weekly_close": 23830.0,
+     "ema20w": 18862.12
+    },
+    {
+     "ticker": "PVRINOX",
+     "mcap_cr": 11797.2,
+     "turnover20_cr": 55.99,
+     "weekly_rsi": 72.42,
+     "weekly_close": 1227.2,
+     "ema20w": 1087.59
+    },
+    {
+     "ticker": "QPOWER",
+     "mcap_cr": 11580.22,
+     "turnover20_cr": 43.16,
+     "weekly_rsi": 67.79,
+     "weekly_close": 1495.3,
+     "ema20w": 1199.05
+    },
+    {
+     "ticker": "REDINGTON",
+     "mcap_cr": 29027.28,
+     "turnover20_cr": 187.45,
+     "weekly_rsi": 70.28,
+     "weekly_close": 371.3,
+     "ema20w": 297.7
+    },
+    {
+     "ticker": "RKFORGE",
+     "mcap_cr": 12980.41,
+     "turnover20_cr": 72.28,
+     "weekly_rsi": 63.05,
+     "weekly_close": 700.85,
+     "ema20w": 634.03
+    },
+    {
+     "ticker": "RUBICON",
+     "mcap_cr": 29271.01,
+     "turnover20_cr": 86.14,
+     "weekly_rsi": 82.34,
+     "weekly_close": 1768.3,
+     "ema20w": 1385.81
+    },
+    {
+     "ticker": "SAGILITY",
+     "mcap_cr": 21917.98,
+     "turnover20_cr": 108.64,
+     "weekly_rsi": 60.44,
+     "weekly_close": 46.82,
+     "ema20w": 43.12
+    },
+    {
+     "ticker": "SAILIFE",
+     "mcap_cr": 33653.42,
+     "turnover20_cr": 118.04,
+     "weekly_rsi": 84.92,
+     "weekly_close": 1584.3,
+     "ema20w": 1281.2
+    },
+    {
+     "ticker": "SANSERA",
+     "mcap_cr": 23610.14,
+     "turnover20_cr": 87.98,
+     "weekly_rsi": 76.16,
+     "weekly_close": 3782.6,
+     "ema20w": 3225.79
+    },
+    {
+     "ticker": "SEDEMAC",
+     "mcap_cr": 12430.5,
+     "turnover20_cr": 58.59,
+     "weekly_rsi": 66.08,
+     "weekly_close": 2814.4,
+     "ema20w": 2504.54
+    },
+    {
+     "ticker": "SGMART",
+     "mcap_cr": 10397.99,
+     "turnover20_cr": 29.88,
+     "weekly_rsi": 77.36,
+     "weekly_close": 824.75,
+     "ema20w": 663.36
+    },
+    {
+     "ticker": "SHADOWFAX",
+     "mcap_cr": 15185.87,
+     "turnover20_cr": 123.4,
+     "weekly_rsi": 76.88,
+     "weekly_close": 259.55,
+     "ema20w": 211.81
+    },
+    {
+     "ticker": "SHAILY",
+     "mcap_cr": 15078.62,
+     "turnover20_cr": 51.77,
+     "weekly_rsi": 66.7,
+     "weekly_close": 3278.3,
+     "ema20w": 2922.63
+    },
+    {
+     "ticker": "SHILPAMED",
+     "mcap_cr": 18857.02,
+     "turnover20_cr": 142.17,
+     "weekly_rsi": 91.46,
+     "weekly_close": 964.15,
+     "ema20w": 652.12
+    },
+    {
+     "ticker": "SHREEJISPG",
+     "mcap_cr": 11080.89,
+     "turnover20_cr": 81.81,
+     "weekly_rsi": 76.9,
+     "weekly_close": 680.15,
+     "ema20w": 553.18
+    },
+    {
+     "ticker": "SHRIPISTON",
+     "mcap_cr": 21044.99,
+     "turnover20_cr": 36.21,
+     "weekly_rsi": 72.91,
+     "weekly_close": 4536.9,
+     "ema20w": 4034.22
+    },
+    {
+     "ticker": "SHYAMMETL",
+     "mcap_cr": 29650.13,
+     "turnover20_cr": 59.51,
+     "weekly_rsi": 63.5,
+     "weekly_close": 1065.3,
+     "ema20w": 978.94
+    },
+    {
+     "ticker": "SKYGOLD",
+     "mcap_cr": 12102.62,
+     "turnover20_cr": 109.73,
+     "weekly_rsi": 76.04,
+     "weekly_close": 781.45,
+     "ema20w": 618.62
+    },
+    {
+     "ticker": "SONACOMS",
+     "mcap_cr": 49247.03,
+     "turnover20_cr": 146.46,
+     "weekly_rsi": 71.15,
+     "weekly_close": 789.0,
+     "ema20w": 694.63
+    },
+    {
+     "ticker": "SOUTHBANK",
+     "mcap_cr": 12387.63,
+     "turnover20_cr": 38.6,
+     "weekly_rsi": 61.49,
+     "weekly_close": 47.29,
+     "ema20w": 44.37
+    },
+    {
+     "ticker": "SUDEEPPHRM",
+     "mcap_cr": 15014.26,
+     "turnover20_cr": 34.95,
+     "weekly_rsi": 81.64,
+     "weekly_close": 1329.3,
+     "ema20w": 912.91
+    },
+    {
+     "ticker": "SUVEN",
+     "mcap_cr": 10680.87,
+     "turnover20_cr": 34.44,
+     "weekly_rsi": 71.3,
+     "weekly_close": 378.0,
+     "ema20w": 298.7
+    },
+    {
+     "ticker": "SYRMA",
+     "mcap_cr": 28071.24,
+     "turnover20_cr": 157.29,
+     "weekly_rsi": 67.11,
+     "weekly_close": 1457.3,
+     "ema20w": 1282.71
+    },
+    {
+     "ticker": "TBOTEK",
+     "mcap_cr": 18034.75,
+     "turnover20_cr": 28.82,
+     "weekly_rsi": 66.71,
+     "weekly_close": 1688.9,
+     "ema20w": 1494.98
+    },
+    {
+     "ticker": "TDPOWERSYS",
+     "mcap_cr": 23217.44,
+     "turnover20_cr": 242.77,
+     "weekly_rsi": 68.91,
+     "weekly_close": 740.1,
+     "ema20w": 622.14
+    },
+    {
+     "ticker": "TEJASNET",
+     "mcap_cr": 10926.31,
+     "turnover20_cr": 288.11,
+     "weekly_rsi": 61.2,
+     "weekly_close": 614.15,
+     "ema20w": 529.12
+    },
+    {
+     "ticker": "THELEELA",
+     "mcap_cr": 18502.94,
+     "turnover20_cr": 34.65,
+     "weekly_rsi": 69.34,
+     "weekly_close": 554.05,
+     "ema20w": 489.46
+    },
+    {
+     "ticker": "TI",
+     "mcap_cr": 13265.02,
+     "turnover20_cr": 66.83,
+     "weekly_rsi": 62.17,
+     "weekly_close": 535.1,
+     "ema20w": 486.0
+    },
+    {
+     "ticker": "URBANCO",
+     "mcap_cr": 26666.23,
+     "turnover20_cr": 250.81,
+     "weekly_rsi": 75.51,
+     "weekly_close": 181.09,
+     "ema20w": 142.01
+    },
+    {
+     "ticker": "USHAMART",
+     "mcap_cr": 15650.74,
+     "turnover20_cr": 36.31,
+     "weekly_rsi": 61.01,
+     "weekly_close": 514.15,
+     "ema20w": 484.11
+    },
+    {
+     "ticker": "VARROC",
+     "mcap_cr": 12626.57,
+     "turnover20_cr": 35.73,
+     "weekly_rsi": 75.08,
+     "weekly_close": 826.35,
+     "ema20w": 689.55
+    },
+    {
+     "ticker": "VIJAYA",
+     "mcap_cr": 15379.62,
+     "turnover20_cr": 31.71,
+     "weekly_rsi": 67.51,
+     "weekly_close": 1493.2,
+     "ema20w": 1329.05
+    },
+    {
+     "ticker": "VOLTAMP",
+     "mcap_cr": 11551.73,
+     "turnover20_cr": 43.36,
+     "weekly_rsi": 66.5,
+     "weekly_close": 11418.0,
+     "ema20w": 9992.03
+    },
+    {
+     "ticker": "WABAG",
+     "mcap_cr": 12531.43,
+     "turnover20_cr": 130.61,
+     "weekly_rsi": 61.36,
+     "weekly_close": 2005.3,
+     "ema20w": 1836.88
+    },
+    {
+     "ticker": "WELENT",
+     "mcap_cr": 11033.54,
+     "turnover20_cr": 58.92,
+     "weekly_rsi": 80.79,
+     "weekly_close": 813.6,
+     "ema20w": 595.84
+    },
+    {
+     "ticker": "WELSPUNLIV",
+     "mcap_cr": 19630.07,
+     "turnover20_cr": 195.95,
+     "weekly_rsi": 78.78,
+     "weekly_close": 208.51,
+     "ema20w": 162.66
+    },
+    {
+     "ticker": "WOCKPHARMA",
+     "mcap_cr": 33939.74,
+     "turnover20_cr": 166.02,
+     "weekly_rsi": 65.4,
+     "weekly_close": 2088.7,
+     "ema20w": 1832.45
+    }
+   ]
+  },
+  "TC20": {
+   "universe_size": 100,
+   "count": 0,
+   "expected_tickers": [],
+   "technical_only_pass": [
+    "ABB",
+    "ADANIENSOL",
+    "ADANIENT",
+    "ADANIGREEN",
+    "ADANIPORTS",
+    "ADANIPOWER",
+    "APOLLOHOSP",
+    "BAJAJ-AUTO",
+    "BAJAJFINSV",
+    "BAJAJHLDNG",
+    "BAJFINANCE",
+    "BOSCHLTD",
+    "BSE",
+    "CGPOWER",
+    "CHOLAFIN",
+    "CUMMINSIND",
+    "DIVISLAB",
+    "DLF",
+    "EICHERMOT",
+    "ENRIN",
+    "ETERNAL",
+    "GAIL",
+    "GRASIM",
+    "HAL",
+    "HINDALCO",
+    "HINDZINC",
+    "HYUNDAI",
+    "ICICIBANK",
+    "IDEA",
+    "INDIGO",
+    "JINDALSTEL",
+    "JSWSTEEL",
+    "KOTAKBANK",
+    "MAZDOCK",
+    "MOTHERSON",
+    "NESTLEIND",
+    "PIDILITIND",
+    "PNB",
+    "POWERINDIA",
+    "SHRIRAMFIN",
+    "SIEMENS",
+    "SOLARINDS",
+    "SUNPHARMA",
+    "TATACAP",
+    "TECHM",
+    "TITAN",
+    "TMCV",
+    "TORNTPHARM",
+    "TVSMOTOR",
+    "UNIONBANK",
+    "ZYDUSLIFE"
+   ],
+   "technical_only_count": 51,
+   "note": "P/E and ROE have no data source: no stock may be shown as fully qualified"
+  }
+ }
+}

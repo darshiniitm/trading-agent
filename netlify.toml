@@ -1,0 +1,34 @@
+# Netlify site for the prompt-screener web app (docs/netlify-production-plan.md §6).
+# The screening engine is NOT here: Netlify runs JS/TS functions only, so the engine is a separate always-on service
+# (Dockerfile.engine / fly.engine.toml) reached over ENGINE_BASE_URL with ENGINE_TOKEN.
+#
+# Site settings in the Netlify UI: Base directory `frontend`, Package directory `apps/web`.
+[build]
+  base    = "frontend"
+  command = "npm ci && npm run build:functions -w apps/web && npm run build -w apps/web"
+  publish = "apps/web/.next"
+
+[[plugins]]
+  # Explicit Next.js runtime: auto-detection looks in frontend/, but the Next app is in frontend/apps/web.
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NEXT_TELEMETRY_DISABLED = "1"
+  # GRAFANA_PG_DATABASE is a database *name* (a short word like "postgres"), not a credential. Netlify's scanner flags every
+  # occurrence of that word in the repo (env examples, lockfile, tests). The real secrets stay scanned.
+  # NEXT_PUBLIC_SUPABASE_ANON_KEY is public by design (Next inlines NEXT_PUBLIC_* into the bundle; RLS protects the data).
+  # OTEL_SERVICE_NAME is a plain label that matches text in the Next.js runtime's generated handler.
+  SECRETS_SCAN_OMIT_KEYS = "GRAFANA_PG_DATABASE,NEXT_PUBLIC_SUPABASE_ANON_KEY,OTEL_SERVICE_NAME"
+
+# Netlify-authored functions only (netlify/functions); the Next.js routes are bundled by the Next adapter, which reads
+# serverComponentsExternalPackages in next.config.mjs. `pg` stays external so one copy of the driver is shared.
+[functions]
+  # the background function (draft-job-background, 15 min) is bundled by `npm run build:functions` into apps/web/netlify/functions.
+  # If Netlify resolves this relative to the repository root instead of the base directory, use frontend/apps/web/netlify/functions.
+  directory = "apps/web/netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["pg"]
+
+# Deploy Previews must use the STAGING Supabase project and engine, never production data.
+# Set these per deploy context in the UI (Site configuration -> Environment variables -> scopes), not here.

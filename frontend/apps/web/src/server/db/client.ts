@@ -1,22 +1,24 @@
-import Database from "better-sqlite3";
-import fs from "node:fs";
-import path from "node:path";
-import { ensureOwnerUser } from "./seed";
-import { applyMigrations } from "./migrate";
+import type { Pool } from "pg";
+import { appPoolFromEnv, pgDb, type Db } from "./pg";
 
-// PS_DB_PATH lets a demo/screenshot run use a throwaway database instead of data/app.db.
-const DB_PATH = process.env.PS_DB_PATH ?? path.join(process.cwd(), "data", "app.db");
+export type { Db } from "./pg";
 
-let instance: Database.Database | null = null;
+// One pool per server process / function instance, kept on globalThis so Next's module reloads in dev (and
+// separate route bundles in production) share it instead of each opening their own connections.
+const g = globalThis as unknown as { __appPool?: Pool; __appDb?: Db };
 
-export function db(): Database.Database {
-  if (instance) return instance;
-  fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-  const raw = new Database(DB_PATH);
-  raw.pragma("journal_mode = WAL");
-  raw.pragma("foreign_keys = ON");
-  applyMigrations(raw);
-  ensureOwnerUser(raw);
-  instance = raw;
-  return instance;
+/** The app database (Supabase Postgres, schema screener_app). Lazy: nothing connects until the first query. */
+export function db(): Db {
+  if (!g.__appDb) {
+    g.__appPool = appPoolFromEnv();
+    g.__appDb = pgDb(g.__appPool);
+  }
+  return g.__appDb;
+}
+
+export async function closeDb(): Promise<void> {
+  const pool = g.__appPool;
+  g.__appPool = undefined;
+  g.__appDb = undefined;
+  await pool?.end();
 }

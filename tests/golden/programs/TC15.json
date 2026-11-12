@@ -1,0 +1,230 @@
+{
+ "program": {
+  "program_version": 5,
+  "universe": {
+   "source": "index",
+   "index": "NIFTY 500"
+  },
+  "sets": [
+   {
+    "id": "S1",
+    "from": "universe",
+    "label": "qualified stocks",
+    "eval": {
+     "mode": "literal",
+     "timeframe": "1W",
+     "bar": "last_completed"
+    },
+    "where": {
+     "all": [
+      "C1",
+      "C2",
+      "C3",
+      "C4"
+     ]
+    }
+   }
+  ],
+  "conditions": [
+   {
+    "id": "C1",
+    "lhs": {
+     "ind": "bar",
+     "params": {
+      "source": "close"
+     },
+     "tf": "1W"
+    },
+    "op": ">",
+    "rhs": {
+     "ind": "sma",
+     "params": {
+      "length": 30,
+      "source": "close"
+     },
+     "tf": "1W"
+    },
+    "phrase": "weekly close above a rising 30-week moving average"
+   },
+   {
+    "id": "C2",
+    "lhs": {
+     "ind": "sma",
+     "params": {
+      "length": 30,
+      "source": "close"
+     },
+     "tf": "1W"
+    },
+    "op": "up_over",
+    "bars": 4,
+    "phrase": "weekly close above a rising 30-week moving average"
+   },
+   {
+    "id": "C3",
+    "lhs": {
+     "ind": "bar",
+     "params": {
+      "source": "close"
+     },
+     "tf": "1W"
+    },
+    "op": ">",
+    "rhs": {
+     "ind": "high_n",
+     "params": {
+      "lookback": 26,
+      "skip": 1
+     },
+     "tf": "1W"
+    },
+    "phrase": "breaking above the 26-week high"
+   },
+   {
+    "id": "C4",
+    "lhs": {
+     "ind": "bar",
+     "params": {
+      "source": "volume"
+     },
+     "tf": "1W"
+    },
+    "op": ">=",
+    "rhs": {
+     "ind": "volume_avg",
+     "params": {
+      "length": 10,
+      "skip": 1
+     },
+     "tf": "1W"
+    },
+    "rhs_mult": 2,
+    "phrase": "on at least twice the 10-week average volume"
+   }
+  ],
+  "actions": [],
+  "source_phrases": [
+   {
+    "path": "conditions.C1.rhs.params.length",
+    "phrase": "30",
+    "span": [
+     94,
+     96
+    ]
+   },
+   {
+    "path": "conditions.C2.params.length",
+    "phrase": "30",
+    "span": [
+     94,
+     96
+    ]
+   },
+   {
+    "path": "conditions.C3.rhs.params.lookback",
+    "phrase": "26",
+    "span": [
+     137,
+     139
+    ]
+   },
+   {
+    "path": "conditions.C4.rhs.params.length",
+    "phrase": "10",
+    "span": [
+     173,
+     175
+    ]
+   },
+   {
+    "path": "universe.index",
+    "phrase": "Nifty 500",
+    "span": [
+     55,
+     64
+    ]
+   }
+  ],
+  "needs_input": [],
+  "unsupported": [],
+  "ignored": [],
+  "unrecognised": [],
+  "answers": [],
+  "assumptions": [
+   {
+    "path": "conditions.C1.params.source",
+    "label": "price = the close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C1.rhs.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C2.bars",
+    "label": "rising = higher than 4 bars ago",
+    "value": 4,
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C2.params.source",
+    "label": "price source: close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C3.params.source",
+    "label": "price = the close",
+    "value": "close",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C3.rhs.params.skip",
+    "label": "breakout = above the previous bars' high (current bar excluded)",
+    "value": 1,
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C4.params.source",
+    "label": "volume",
+    "value": "volume",
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C4.rhs_mult",
+    "label": "volume at least 2x its average",
+    "value": 2,
+    "provenance": "assumed"
+   },
+   {
+    "path": "conditions.C4.rhs.params.skip",
+    "label": "average of the previous bars (today excluded)",
+    "value": 1,
+    "provenance": "assumed"
+   }
+  ],
+  "not_evaluable": []
+ },
+ "english": "From **NIFTY 500** stocks, on **weekly** candles, find stocks where **the close is above SMA(30, close)**, and **SMA(30, close) is higher than it was 4 bars ago**, and **the close is above Highest high of N bars(26)**, and **the volume is at least Average volume(10) × 2**.",
+ "issues": [],
+ "clauses": [
+  {
+   "id": "L1",
+   "text": "Stan Weinstein stage 2 breakout on the weekly chart in Nifty 500: weekly close above a rising 30-week moving average, breaking above the 26-week high, on at least twice the 10-week average volume",
+   "span": [
+    0,
+    195
+   ],
+   "status": "ok",
+   "maps_to": "C1: the close [1W] > SMA(30, close); C2: SMA(30, close) [1W] higher than 4 bars ago; C3: the close [1W] > Highest high of N bars(26, 1); C4: the volume [1W] ≥ Average volume(10, 1) × 2; universe: NIFTY 500",
+   "questions": 0
+  }
+ ],
+ "reader": {
+  "calls": 0,
+  "dropped": []
+ }
+}

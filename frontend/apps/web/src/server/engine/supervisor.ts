@@ -9,6 +9,7 @@ import { spawn as nodeSpawn, type ChildProcess } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { POLL_READY_MS, emptyStatus, fromWarm, type EngineStatus } from "@/lib/engineStatus";
+import { withEngineToken } from "@/server/engine/client";
 
 // Never stop an engine sooner than three of the slowest polls: a tab that is merely between two heartbeats is still there.
 export const MIN_IDLE_MS = POLL_READY_MS * 3;
@@ -38,14 +39,16 @@ export class EngineSupervisor {
   constructor(deps: Partial<SupervisorDeps> = {}) {
     this.d = { spawn: nodeSpawn, fetch, now: Date.now, env: process.env, exists: existsSync, startTimer: true, ...deps };
     this.lastBeat = this.d.now();
-    if (this.d.startTimer) {
+    if (this.d.startTimer && this.managed) {   // an engine we do not own is never stopped for being idle
       this.timer = setInterval(() => void this.tick(), Math.min(15_000, Math.max(250, this.idleMs / 4)));
       this.timer.unref?.();
     }
   }
 
   // ---- configuration --------------------------------------------------------------------------------------------------
-  get managed(): boolean { return this.d.env.ENGINE_MANAGED !== "0"; }
+  // A Netlify function cannot run a child process, so there the engine is always a separate service (ENGINE_BASE_URL),
+  // whether or not ENGINE_MANAGED=0 was remembered.
+  get managed(): boolean { return this.d.env.ENGINE_MANAGED !== "0" && !this.d.env.NETLIFY; }
   get idleMs(): number { return Math.max(MIN_IDLE_MS, Number(this.d.env.ENGINE_IDLE_MINUTES ?? 10) * 60_000); }
   get baseUrl(): string { return this.d.env.ENGINE_BASE_URL ?? "http://127.0.0.1:8001"; }
   private get port(): string { try { return new URL(this.baseUrl).port || "8001"; } catch { return "8001"; } }
@@ -100,7 +103,7 @@ export class EngineSupervisor {
     const cmd = this.d.exists(venv) ? venv : "uvicorn";
     const child = this.d.spawn(cmd, ["--factory", "engine.app:create_app", "--host", "127.0.0.1", "--port", this.port], {
       cwd: dir, stdio: ["ignore", "pipe", "pipe"],
-      env: { ...this.d.env, ENGINE_PARENT_PID: String(process.pid), PYTHONUNBUFFERED: "1" },
+      env: { ...this.d.env, ENGINE_PARENT_PID: String(process.pid), PYTHONUNBUFFERED: "1", OTEL_SERVICE_NAME: this.d.env.ENGINE_OTEL_SERVICE_NAME ?? "prompt-screener-engine" },
     });
     this.child = child;
     const sink = (b: Buffer) => { this.log.push(...b.toString().split("\n").filter(Boolean)); if (this.log.length > LOG_LINES) this.log.splice(0, this.log.length - LOG_LINES); };
@@ -121,7 +124,7 @@ export class EngineSupervisor {
   /** Restart after an error: ask a live engine to reload, or spawn a fresh one. */
   async retry(): Promise<void> {
     if (await this.probe()) {
-      try { await this.d.fetch(`${this.baseUrl}/warmup/retry`, { method: "POST", signal: AbortSignal.timeout(3000) }); } catch { /* status shows it */ }
+      try { await this.d.fetch(`${this.baseUrl}/warmup/retry`, { ...withEngineToken({ method: "POST" }, this.d.env), signal: AbortSignal.timeout(3000) }); } catch { /* status shows it */ }
       return;
     }
     this.spawnError = null;
