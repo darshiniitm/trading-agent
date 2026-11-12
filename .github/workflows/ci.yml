@@ -21,7 +21,8 @@ jobs:
       - run: python -m pytest tests/engine tests/test_deploy_scripts.py tests/test_secrets_env_shim.py -q
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with: { node-version: "22", cache: npm, cache-dependency-path: frontend/package-lock.json }
-      - run: npm ci --omit=optional && npm test
+      # not --omit=optional: vitest needs rollup's platform binary, itself an optional dependency
+      - run: npm ci && npm test
         working-directory: frontend
 
   image:
