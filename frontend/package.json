@@ -2,8 +2,7 @@
   "name": "prompt-screener-frontend",
   "private": true,
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/web"
   ],
   "scripts": {
     "dev": "npm run dev -w apps/web",

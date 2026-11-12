@@ -7,7 +7,7 @@ Design: `docs/prompt-agent-interpreter-plan.md` §2. Entries are JSON in `entrie
   (Exception: the message "recognised: X, not computable yet" also reports `proposed` entries by name — it never builds a rule from one.)
 - **Implemented.** `engine.implemented: true` entries are the ones `registry.json` is generated from. Flipping it to true
   requires the engine function to exist.
-- **Build.** `npm run kb:build -w packages/spec` writes `src/kb.generated.json` and `src/registry.json`; `kb:check` fails if stale
+- **Build.** `npm --prefix packages/spec run kb:build` (from `frontend`) writes `src/kb.generated.json` and `src/registry.json`; `kb:check` fails if stale
   (a test also checks). Never edit the generated files.
 - **Add a term.** `npx tsx scripts/kb-curate.ts "<term>"` (from `apps/web`) researches it into `entries/curated.json` as `proposed` and
   queues a line in `requests.md`. Review the parameters, ranges and aliases, set `status: reviewed`, then build.
